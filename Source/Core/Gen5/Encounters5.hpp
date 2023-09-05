@@ -51,13 +51,6 @@ namespace Encounters5
     const DreamRadarTemplate *getDreamRadarEncounters(int index);
 
     /**
-     * @brief Gets hidden grotto encounters
-     *
-     * @return Vector of grotto encounters
-     */
-    std::vector<HiddenGrottoArea> getHiddenGrottoEncounters();
-
-    /**
      * @brief Gets wild encounters for the \p encounter and \p profile
      *
      * @param encounter Encounter type
@@ -67,6 +60,13 @@ namespace Encounters5
      * @return Vector of wild encounters
      */
     std::vector<EncounterArea5> getEncounters(Encounter encounter, u8 season, const Profile5 *profile);
+
+    /**
+     * @brief Gets hidden grotto encounters
+     *
+     * @return Vector of grotto encounters
+     */
+    std::vector<HiddenGrottoArea> getHiddenGrottoEncounters();
 
     /**
      * @brief Gets static encounters from the \p type

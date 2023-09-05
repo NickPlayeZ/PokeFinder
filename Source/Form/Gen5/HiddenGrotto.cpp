@@ -150,7 +150,7 @@ void HiddenGrotto::generate()
     u32 initialAdvances = ui->textBoxGeneratorInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxGeneratorMaxAdvances->getUInt();
     u32 delay = ui->textBoxGeneratorDelay->getUInt();
-    u8 powerLevel = ui->comboBoxGeneratorGrottoPower->currentData().toUInt();
+    u8 powerLevel = ui->comboBoxGeneratorGrottoPower->getCurrentUInt();
 
     HiddenGrottoFilter filter(ui->checkListGeneratorSlot->getCheckedArray<11>(), ui->checkListGeneratorGender->getCheckedArray<2>(),
                               ui->checkListGeneratorGroup->getCheckedArray<4>());
@@ -249,7 +249,7 @@ void HiddenGrotto::search()
 
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
-    u8 powerLevel = ui->comboBoxSearcherGrottoPower->currentData().toUInt();
+    u8 powerLevel = ui->comboBoxSearcherGrottoPower->getCurrentUInt();
 
     HiddenGrottoFilter filter(ui->checkListSearcherSlot->getCheckedArray<11>(), ui->checkListSearcherGender->getCheckedArray<2>(),
                               ui->checkListSearcherGroup->getCheckedArray<4>());
