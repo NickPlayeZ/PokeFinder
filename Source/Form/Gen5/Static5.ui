@@ -259,7 +259,33 @@
           <item row="5" column="1">
            <widget class="TextBox" name="textBoxGeneratorDelay"/>
           </item>
-          <item row="6" column="0" colspan="2">
+          <item row="6" column="0">
+           <widget class="QLabel" name="labelGeneratorLuckyPower">
+            <property name="text">
+             <string>Lucky Power</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="ComboBox" name="comboBoxGeneratorLuckyPower">
+            <item>
+             <property name="text">
+              <string notr="true">0</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string notr="true">3</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>S/MAX</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="7" column="0" colspan="2">
            <widget class="QPushButton" name="pushButtonGenerate">
             <property name="text">
              <string>Generate</string>
@@ -497,26 +523,52 @@
            </widget>
           </item>
           <item row="5" column="0">
+           <widget class="QLabel" name="labelSearcherLuckyPower">
+            <property name="text">
+             <string>Lucky Power</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="ComboBox" name="comboBoxSearcherLuckyPower">
+            <item>
+             <property name="text">
+              <string notr="true">0</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string notr="true">3</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>S/MAX</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="6" column="0">
            <widget class="QLabel" name="labelSearcherStartDate">
             <property name="text">
              <string>Start Date</string>
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
+          <item row="6" column="1">
            <widget class="DateEdit" name="dateEditSearcherStartDate"/>
           </item>
-          <item row="6" column="0">
+          <item row="7" column="0">
            <widget class="QLabel" name="labelSearcherEndDate">
             <property name="text">
              <string>End Date</string>
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
+          <item row="7" column="1">
            <widget class="DateEdit" name="dateEditSearcherEndDate"/>
           </item>
-          <item row="7" column="0" colspan="2">
+          <item row="8" column="0" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
              <widget class="QPushButton" name="pushButtonSearch">
@@ -751,6 +803,7 @@
   <tabstop>textBoxGeneratorInitialAdvances</tabstop>
   <tabstop>textBoxGeneratorMaxAdvances</tabstop>
   <tabstop>textBoxGeneratorDelay</tabstop>
+  <tabstop>comboBoxGeneratorLuckyPower</tabstop>
   <tabstop>pushButtonGenerate</tabstop>
   <tabstop>comboBoxGeneratorCategory</tabstop>
   <tabstop>comboBoxGeneratorPokemon</tabstop>
@@ -760,7 +813,9 @@
   <tabstop>comboMenuSearcherLead</tabstop>
   <tabstop>textBoxSearcherInitialIVAdvances</tabstop>
   <tabstop>textBoxSearcherMaxIVAdvances</tabstop>
+  <tabstop>textBoxSearcherInitialAdvances</tabstop>
   <tabstop>textBoxSearcherMaxAdvances</tabstop>
+  <tabstop>comboBoxSearcherLuckyPower</tabstop>
   <tabstop>dateEditSearcherStartDate</tabstop>
   <tabstop>dateEditSearcherEndDate</tabstop>
   <tabstop>pushButtonSearch</tabstop>

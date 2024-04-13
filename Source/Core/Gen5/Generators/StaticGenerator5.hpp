@@ -21,16 +21,16 @@
 #define STATICGENERATOR5_HPP
 
 #include <Core/Gen5/Profile5.hpp>
+#include <Core/Gen5/StaticTemplate5.hpp>
 #include <Core/Parents/Filters/StateFilter.hpp>
 #include <Core/Parents/Generators/StaticGenerator.hpp>
-#include <Core/Parents/StaticTemplate.hpp>
 
 class State5;
 
 /**
  * @brief Static encounter generator for Gen5
  */
-class StaticGenerator5 : public StaticGenerator<StaticTemplate, Profile5, StateFilter>
+class StaticGenerator5 : public StaticGenerator<StaticTemplate5, Profile5, StateFilter>
 {
 public:
     /**
@@ -41,12 +41,13 @@ public:
      * @param delay Number of advances to offset
      * @param method Encounter method
      * @param lead Encounter lead
+     * @param luckyPower Lucky power level
      * @param staticTemplate Pokemon template
      * @param profile Profile Information
      * @param filter State filter
      */
-    StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 delay, Method method, Lead lead, const StaticTemplate &staticTemplate,
-                     const Profile5 &profile, const StateFilter &filter);
+    StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 delay, Method method, Lead lead, u8 luckyPower,
+                     const StaticTemplate5 &staticTemplate, const Profile5 &profile, const StateFilter &filter);
 
     /**
      * @brief Generates states for the \p encounterArea
@@ -68,6 +69,9 @@ public:
      * @return Vector of computed states
      */
     std::vector<State5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const;
+
+private:
+    u8 luckyPower;
 };
 
 #endif // STATICGENERATOR5_HPP

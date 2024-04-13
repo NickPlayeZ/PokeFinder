@@ -71,12 +71,9 @@ static u16 getItem(BWRNG &rng, Lead lead, const PersonalInfo *info)
 
 WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 delay, Method method, Lead lead, u8 luckyPower,
                                const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter) :
-    WildGenerator(initialAdvances, maxAdvances, delay, method, lead, area, profile, filter), luckyPower(luckyPower)
+    WildGenerator(initialAdvances, maxAdvances, delay, method, lead, area, profile, filter),
+    luckyPower((profile.getVersion() & Game::BW) != Game::None ? 0 : luckyPower)
 {
-    if ((profile.getVersion() & Game::BW) != Game::None)
-    {
-        luckyPower = 0;
-    }
 }
 
 std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, u32 maxAdvances) const

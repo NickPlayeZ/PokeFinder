@@ -27,7 +27,7 @@ class DreamRadarTemplate;
 class EncounterArea5;
 class HiddenGrottoArea;
 class Profile5;
-class StaticTemplate;
+class StaticTemplate5;
 enum class Encounter : u8;
 
 namespace Encounters5
@@ -83,7 +83,7 @@ namespace Encounters5
      *
      * @return Pointer to static encounters area
      */
-    const StaticTemplate *getStaticEncounters(int index, int *size = nullptr);
+    const StaticTemplate5 *getStaticEncounters(int index, int *size = nullptr);
 
     /**
      * @brief Gets static encounters from the \p type and \p index
@@ -100,7 +100,7 @@ namespace Encounters5
      *
      * @return Pointer to static encounter
      */
-    const StaticTemplate *getStaticEncounter(int type, int index);
+    const StaticTemplate5 *getStaticEncounter(int type, int index);
 }
 
 #endif // ENCOUNTERS5_HPP
