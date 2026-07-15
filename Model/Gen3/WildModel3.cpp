@@ -20,7 +20,9 @@
 #include "WildModel3.hpp"
 #include <Core/Enum/Lead.hpp>
 #include <Core/Util/Translator.hpp>
+#include <QColor>
 #include <QCoreApplication>
+#include <QFont>
 #include <QStringList>
 
 static QString getSynchronizeLeadName3(Lead lead, u32 flags, u8 targetNature)
@@ -120,10 +122,29 @@ int WildGeneratorModel3::columnCount(const QModelIndex &parent) const
 
 QVariant WildGeneratorModel3::data(const QModelIndex &index, int role) const
 {
+    const auto &state = model[index.row()];
+    if (!state.isValid())
+    {
+        if (role == Qt::FontRole)
+        {
+            QFont font;
+            font.setItalic(true);
+            return font;
+        }
+        else if (role == Qt::ForegroundRole)
+        {
+            return QColor(128, 128, 128);
+        }
+    }
+
     if (role == Qt::DisplayRole)
     {
-        const auto &state = model[index.row()];
         int column = index.column();
+        if (!state.isValid() && column > 0)
+        {
+            return "-";
+        }
+
         switch (column)
         {
         case 0:

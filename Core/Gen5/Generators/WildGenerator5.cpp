@@ -459,10 +459,10 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             doubleBattle = true;
         }
 
+        bool valid = true;
         if (area.getEncounter() == Encounter::SuperRod && getPercentRand(go, bw) > rate)
         {
-            rng.next();
-            continue;
+            valid = false;
         }
 
         BWRNG triggerGo(triggerRNG, jump);
@@ -471,7 +471,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         u8 movingSteps = searchMovingTrigger
             ? StepEncounter5::getSteps(profile.getVersion(), area.getEncounter(), area.getRate(), movingTrigger, isStepModifier(lead))
             : StepEncounter5::impossible;
-        bool valid = !searchMovingTrigger || movingSteps != StepEncounter5::impossible;
+        valid = valid && (!searchMovingTrigger || movingSteps != StepEncounter5::impossible);
         if (requireMovingTrigger && movingSteps == StepEncounter5::impossible)
         {
             rng.nextUInt(0x1fff);

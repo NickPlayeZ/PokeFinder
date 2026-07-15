@@ -323,8 +323,7 @@ void Wild5::generate()
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
 
     auto states = generator.generate(seed, ivAdvances, 0);
-    if (searchMovingTrigger
-        && hasActiveGeneratorFilter(ui->filterGenerator, encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount()))
+    if (hasActiveGeneratorFilter(ui->filterGenerator, encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount()))
     {
         std::erase_if(states, [](const auto &state) { return !state.isValid(); });
     }

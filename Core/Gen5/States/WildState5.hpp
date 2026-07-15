@@ -51,11 +51,10 @@ public:
     WildState5(u16 prng, u8 movingTrigger, u8 movingSteps, u32 advances, u32 ivAdvances, u32 pid, const std::array<u8, 6> &ivs, u8 ability,
                u8 gender, u8 level, u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info,
                bool valid = true, Lead lead = Lead::None) :
-        WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info),
+        WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info, valid),
         ivAdvances(ivAdvances),
         movingTrigger(movingTrigger),
         movingSteps(movingSteps),
-        valid(valid),
         chatot(prng / 82),
         lead(lead),
         leadFlags(getLeadFlag(lead)),
@@ -162,17 +161,6 @@ public:
         return movingSteps;
     }
 
-    /**
-     * @brief Determines if the state can be hit
-     *
-     * @return true State can be hit
-     * @return false State cannot be hit
-     */
-    bool isValid() const
-    {
-        return valid;
-    }
-
 private:
     static constexpr u8 getLeadFlag(Lead lead)
     {
@@ -205,7 +193,6 @@ private:
     u32 ivAdvances;
     u8 movingTrigger;
     u8 movingSteps;
-    bool valid;
     u8 chatot;
     Lead lead;
     u8 leadFlags;

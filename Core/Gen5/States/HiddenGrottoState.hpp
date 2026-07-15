@@ -39,7 +39,7 @@ public:
      * @param gender Pokemon gender
      */
     HiddenGrottoState(u16 prng, u32 advances, u8 group, u8 slot, u16 specie, u8 gender) :
-        advances(advances), data(specie), item(false), chatot(prng / 82), gender(gender), group(group), slot(slot)
+        advances(advances), data(specie), item(false), chatot(prng / 82), gender(gender), group(group), slot(slot), valid(true)
     {
     }
 
@@ -53,7 +53,18 @@ public:
      * @param item Item number
      */
     HiddenGrottoState(u16 prng, u32 advances, u8 group, u8 slot, u16 item) :
-        advances(advances), data(item), item(true), chatot(prng / 82), gender(0), group(group), slot(slot)
+        advances(advances), data(item), item(true), chatot(prng / 82), gender(0), group(group), slot(slot), valid(true)
+    {
+    }
+
+    /**
+     * @brief Construct a new invalid HiddenGrottoState object
+     *
+     * @param prng PRNG call to determine Chatot pitch
+     * @param advances Advances of the state
+     */
+    HiddenGrottoState(u16 prng, u32 advances) :
+        advances(advances), data(0), item(false), chatot(prng / 82), gender(0), group(0), slot(0), valid(false)
     {
     }
 
@@ -129,6 +140,17 @@ public:
         return slot;
     }
 
+    /**
+     * @brief Determines if the state produces hidden grotto contents
+     *
+     * @return true State produces contents
+     * @return false State does not produce contents
+     */
+    bool isValid() const
+    {
+        return valid;
+    }
+
 private:
     u32 advances;
     u16 data;
@@ -137,6 +159,7 @@ private:
     u8 gender;
     u8 group;
     u8 slot;
+    bool valid;
 };
 
 #endif // HIDDENGROTTOSTATE_HPP

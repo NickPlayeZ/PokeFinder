@@ -761,9 +761,9 @@ void Wild4::generate()
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
 
     auto states = generator.generate(seed, fixedSlot);
-    if (searchStepEncounter && hasActiveGeneratorFilter(ui->filterGenerator, encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount()))
+    if (hasActiveGeneratorFilter(ui->filterGenerator, encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount()))
     {
-        std::erase_if(states, [](const auto &state) { return !state.getStepEncounter(); });
+        std::erase_if(states, [](const auto &state) { return !state.isValid(); });
     }
     generatorModel->addItems(states);
 }

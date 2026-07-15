@@ -104,6 +104,10 @@ std::vector<HiddenGrottoState> HiddenGrottoSlotGenerator::generate(u64 seed) con
                 }
             }
         }
+        else
+        {
+            states.emplace_back(prng, advances + initialAdvances + cnt);
+        }
     }
 
     return states;

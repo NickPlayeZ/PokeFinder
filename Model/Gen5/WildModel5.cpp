@@ -118,7 +118,7 @@ int WildGeneratorModel5::columnCount(const QModelIndex &parent) const
 QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
 {
     const auto &state = model[index.row()];
-    if (showMovingTrigger && !state.isValid())
+    if (!state.isValid())
     {
         if (role == Qt::FontRole)
         {
@@ -144,7 +144,7 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             column += 2;
         }
 
-        if (showMovingTrigger && !state.isValid() && column > 3)
+        if (!state.isValid() && column > (showMovingTrigger ? 3 : 1))
         {
             return "-";
         }
