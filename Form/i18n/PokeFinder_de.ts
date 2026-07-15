@@ -11232,5 +11232,10 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <source>Compound Eyes</source>
         <translation>Facettenauge</translation>
     </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.cpp" line="1"/>
+        <source>Arena Trap / Illuminate / No Guard</source>
+        <translation>Ausweglos / Erleuchtung / Schildlos</translation>
+    </message>
 </context>
 </TS>

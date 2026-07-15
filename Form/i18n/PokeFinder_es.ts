@@ -11235,5 +11235,10 @@ Profile is missing or has an incompatible SHA cache.</source>
         <source>Compound Eyes</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.cpp" line="1"/>
+        <source>Arena Trap / Illuminate / No Guard</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>
