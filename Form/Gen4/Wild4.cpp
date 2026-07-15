@@ -1112,8 +1112,9 @@ void Wild4::search()
     bool searchStepEncounter = ui->checkBoxSearcherStepEncounter->isChecked();
     u8 stepOptions = searchStepEncounter ? getSearcherStepOptions() : 0;
 
+    auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
-    auto *searcher = new WildSearcher4(minAdvance, maxAdvance, minDelay, maxDelay, method, getSearcherLeads(ui->comboMenuSearcherLead),
+    auto *searcher = new WildSearcher4(minAdvance, maxAdvance, minDelay, maxDelay, method, leads,
                                        feebas, shiny, unownRadio, happiness,
                                        searchStepEncounter, stepOptions, area, *currentProfile, filter);
 
@@ -1122,7 +1123,7 @@ void Wild4::search()
     {
         maxProgress *= max[i] - min[i] + 1;
     }
-    searcher->setMaxProgress(maxProgress);
+    searcher->setMaxProgress(maxProgress * leads.size());
 
     auto *thread = QThread::create([=] { searcher->startSearch(min, max, fixedSlot); });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
