@@ -9615,6 +9615,58 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <translation>Albero del Miele</translation>
     </message>
     <message>
+        <source>Step Encounter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>White Flute</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Movement</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pokemon March</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pokemon Lullaby</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Walking</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Running</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Biking</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Walking in Long Grass</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Running in Long Grass</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Walking / Running</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Walking / Running in Long Grass</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Step Modifier</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Levels</source>
         <translation>Livelli</translation>
     </message>
@@ -9664,6 +9716,10 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     <message>
         <source>Lucky Power</source>
         <translation>Potere fortuna</translation>
+    </message>
+    <message>
+        <source>Step Encounter</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Generate</source>
@@ -10348,6 +10404,10 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <source>Characteristic</source>
         <translation>Caratteristica</translation>
     </message>
+    <message>
+        <source>Steps</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>WildGeneratorModel5</name>
@@ -10460,6 +10520,10 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <location filename="../../Model/Gen5/WildModel5.hpp" line="82"/>
         <source>Characteristic</source>
         <translation>Caratteristica</translation>
+    </message>
+    <message>
+        <source>Steps</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -10913,6 +10977,65 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     <message>
         <location filename="../../Model/Gen4/WildModel4.cpp" line="1"/>
         <source>Sticky Hold / Suction Cups</source>
+    </message>
+    <message>
+        <source>Steps</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Movement</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Step Modifier</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Walking</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Running</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Biking</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Walking in Long Grass</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Running in Long Grass</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Surfing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Walking / Running</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Walking / Running in Long Grass</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>White Flute</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pokemon March</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pokemon Lullaby</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lullaby</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -10942,6 +11065,11 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <location filename="../../Model/Gen5/WildModel5.hpp" line="139"/>
         <source>Advances</source>
         <translation>Avanzamenti</translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.hpp" line="139"/>
+        <source>Steps</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../Model/Gen5/WildModel5.hpp" line="139"/>
