@@ -890,6 +890,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                 switch (leadCategory)
                 {
                 case Lead::None:
+                case Lead::ArenaTrap:
                 case Lead::CompoundEyes:
                     if ((nextRNG / 0xa3e) == nature)
                     {
@@ -1512,6 +1513,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchHoneyTree(u8 hp, u8 atk, u8
                 switch (leadCategory)
                 {
                 case Lead::None:
+                case Lead::ArenaTrap:
                 case Lead::CompoundEyes:
                     if ((nextRNG / 0xa3e) == nature)
                     {
@@ -1636,6 +1638,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchPokeRadar(u8 hp, u8 atk, u8
                 switch (leadCategory)
                 {
                 case Lead::None:
+                case Lead::ArenaTrap:
                 case Lead::CompoundEyes:
                     if ((nextRNG / 0xa3e) == nature)
                     {
