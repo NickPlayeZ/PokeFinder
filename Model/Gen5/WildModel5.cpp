@@ -70,6 +70,10 @@ static QString getLeadName(Lead lead, u8 flags)
         {
             leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Compound Eyes"));
         }
+        if ((flags & (1 << 7)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Arena Trap / Illuminate / No Guard"));
+        }
 
         return leads.join(" / ");
     }
