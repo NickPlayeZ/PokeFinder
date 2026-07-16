@@ -127,7 +127,7 @@ static bool hasActiveGeneratorFilter(const Filter *filter, u8 encounterSlots)
     }
 
     return hasUnchecked(filter->getNatures()) || hasUnchecked(filter->getHiddenPowers())
-        || hasUnchecked(filter->getEncounterSlots(), encounterSlots);
+        || hasUnchecked(filter->getWildEncounterSlots(), encounterSlots);
 }
 
 static bool supportsMovingTrigger(Encounter encounter, const Profile5 *profile)
@@ -193,6 +193,9 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     addSearcherLeadItems(ui->comboMenuSearcherLead);
     ui->comboMenuSearcherLead->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
+    ui->checkBoxGeneratorSwarm->setText(tr("Swarm"));
+    ui->checkBoxSearcherSwarm->setText(tr("Swarm"));
+
     ui->comboBoxGeneratorLocation->enableAutoComplete();
     ui->comboBoxSearcherLocation->enableAutoComplete();
 
@@ -217,6 +220,8 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     connect(ui->comboBoxSearcherPokemon, &QComboBox::currentIndexChanged, this, &Wild5::searcherPokemonIndexChanged);
     connect(ui->comboBoxGeneratorSeason, &QComboBox::currentIndexChanged, this, &Wild5::generatorSeasonIndexChanged);
     connect(ui->comboBoxSearcherSeason, &QComboBox::currentIndexChanged, this, &Wild5::searcherSeasonIndexChanged);
+    connect(ui->checkBoxGeneratorSwarm, &QCheckBox::checkStateChanged, this, [=] { generatorEncounterIndexChanged(0); });
+    connect(ui->checkBoxSearcherSwarm, &QCheckBox::checkStateChanged, this, [=] { searcherEncounterIndexChanged(0); });
     connect(ui->filterGenerator, &Filter::showStatsChanged, generatorModel, &WildGeneratorModel5::setShowStats);
     connect(ui->filterSearcher, &Filter::showStatsChanged, searcherModel, &WildSearcherModel5::setShowStats);
     connect(ui->checkBoxGeneratorMovingTrigger, &QCheckBox::toggled, this, [this](bool checked) {
@@ -320,7 +325,12 @@ void Wild5::generate()
     u8 luckyPower = ui->comboBoxGeneratorLuckyPower->getCurrentUChar();
     bool searchMovingTrigger = ui->checkBoxGeneratorMovingTrigger->isChecked() && (currentProfile->getVersion() & Game::Gen5) != Game::None;
 
-    auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
+    WildStateFilter filter(ui->filterGenerator->getGender(), ui->filterGenerator->getAbility(), ui->filterGenerator->getShiny(),
+                           ui->filterGenerator->getLevelMin(), ui->filterGenerator->getLevelMax(), ui->filterGenerator->getHeightMin(),
+                           ui->filterGenerator->getHeightMax(), ui->filterGenerator->getWeightMin(), ui->filterGenerator->getWeightMax(),
+                           ui->filterGenerator->getDisableFilters(), ui->filterGenerator->getMinIVs(), ui->filterGenerator->getMaxIVs(),
+                           ui->filterGenerator->getNatures(), ui->filterGenerator->getHiddenPowers(),
+                           ui->filterGenerator->getWildEncounterSlots());
     WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, searchMovingTrigger, false,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
 
@@ -344,6 +354,13 @@ void Wild5::generatorEncounterIndexChanged(int index)
     {
         auto encounter = ui->comboBoxGeneratorEncounter->getEnum<Encounter>();
         u16 currentLocation = ui->comboBoxGeneratorLocation->getCurrentUShort();
+        bool grass = encounter == Encounter::Grass;
+        ui->checkBoxGeneratorSwarm->setVisible(grass);
+        if (!grass && ui->checkBoxGeneratorSwarm->isChecked())
+        {
+            ui->checkBoxGeneratorSwarm->setChecked(false);
+        }
+
         bool movingTrigger = supportsMovingTrigger(encounter, currentProfile);
         ui->checkBoxGeneratorMovingTrigger->setEnabled(movingTrigger);
         if (!movingTrigger)
@@ -352,7 +369,7 @@ void Wild5::generatorEncounterIndexChanged(int index)
         }
 
         u8 season = ui->comboBoxGeneratorSeason->currentIndex();
-        encounterGenerator = Encounters5::getEncounters(encounter, season, currentProfile);
+        encounterGenerator = Encounters5::getEncounters(encounter, season, currentProfile, grass && ui->checkBoxGeneratorSwarm->isChecked());
 
         std::vector<u16> locs;
         std::ranges::transform(encounterGenerator, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });
@@ -499,7 +516,12 @@ void Wild5::search()
     bool searchMovingTrigger
         = ui->checkBoxSearcherMovingTrigger->isChecked() && supportsMovingTrigger(ui->comboBoxSearcherEncounter->getEnum<Encounter>(), currentProfile);
 
-    auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
+    WildStateFilter filter(ui->filterSearcher->getGender(), ui->filterSearcher->getAbility(), ui->filterSearcher->getShiny(),
+                           ui->filterSearcher->getLevelMin(), ui->filterSearcher->getLevelMax(), ui->filterSearcher->getHeightMin(),
+                           ui->filterSearcher->getHeightMax(), ui->filterSearcher->getWeightMin(), ui->filterSearcher->getWeightMax(),
+                           ui->filterSearcher->getDisableFilters(), ui->filterSearcher->getMinIVs(), ui->filterSearcher->getMaxIVs(),
+                           ui->filterSearcher->getNatures(), ui->filterSearcher->getHiddenPowers(),
+                           ui->filterSearcher->getWildEncounterSlots());
     WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, getSearcherLeads(ui->comboMenuSearcherLead), luckyPower,
                              searchMovingTrigger, searchMovingTrigger,
                              encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter);
@@ -558,6 +580,13 @@ void Wild5::searcherEncounterIndexChanged(int index)
     {
         auto encounter = ui->comboBoxSearcherEncounter->getEnum<Encounter>();
         u16 currentLocation = ui->comboBoxSearcherLocation->getCurrentUShort();
+        bool grass = encounter == Encounter::Grass;
+        ui->checkBoxSearcherSwarm->setVisible(grass);
+        if (!grass && ui->checkBoxSearcherSwarm->isChecked())
+        {
+            ui->checkBoxSearcherSwarm->setChecked(false);
+        }
+
         bool movingTrigger = supportsMovingTrigger(encounter, currentProfile);
         ui->checkBoxSearcherMovingTrigger->setEnabled(movingTrigger);
         if (!movingTrigger)
@@ -566,7 +595,7 @@ void Wild5::searcherEncounterIndexChanged(int index)
         }
 
         u8 season = ui->comboBoxSearcherSeason->currentIndex();
-        encounterSearcher = Encounters5::getEncounters(encounter, season, currentProfile);
+        encounterSearcher = Encounters5::getEncounters(encounter, season, currentProfile, grass && ui->checkBoxSearcherSwarm->isChecked());
 
         std::vector<u16> locs;
         std::ranges::transform(encounterSearcher, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });
@@ -678,6 +707,8 @@ void Wild5::transferSettings(int index)
         ui->comboBoxSearcherPokemon->setCurrentIndex(ui->comboBoxGeneratorPokemon->currentIndex());
         ui->comboBoxSearcherSeason->setCurrentIndex(ui->comboBoxGeneratorSeason->currentIndex());
         ui->checkBoxSearcherMovingTrigger->setChecked(ui->checkBoxGeneratorMovingTrigger->isChecked());
+        ui->checkBoxSearcherSwarm->setChecked(ui->checkBoxGeneratorSwarm->isChecked());
+        ui->checkBoxSearcherMovingTrigger->setChecked(ui->checkBoxGeneratorMovingTrigger->isChecked());
     }
     else
     {
@@ -685,6 +716,8 @@ void Wild5::transferSettings(int index)
         ui->comboBoxGeneratorLocation->setCurrentIndex(ui->comboBoxSearcherLocation->currentIndex());
         ui->comboBoxGeneratorPokemon->setCurrentIndex(ui->comboBoxSearcherPokemon->currentIndex());
         ui->comboBoxGeneratorSeason->setCurrentIndex(ui->comboBoxSearcherSeason->currentIndex());
+        ui->checkBoxGeneratorMovingTrigger->setChecked(ui->checkBoxSearcherMovingTrigger->isChecked());
+        ui->checkBoxGeneratorSwarm->setChecked(ui->checkBoxSearcherSwarm->isChecked());
         ui->checkBoxGeneratorMovingTrigger->setChecked(ui->checkBoxSearcherMovingTrigger->isChecked());
     }
 }
