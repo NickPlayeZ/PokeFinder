@@ -74,7 +74,8 @@ int runTest(QStringList &fails)
 {
     Testname test;
 
-    int ret = QTest::qExec(&test);
+    QStringList args { test.metaObject()->className(), "-o", "-,txt" };
+    int ret = QTest::qExec(&test, args);
     if (ret != 0)
     {
         fails.append(QString("%1: %2 test(s) failed").arg(test.metaObject()->className()).arg(ret));
