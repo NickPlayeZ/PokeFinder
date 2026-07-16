@@ -1254,6 +1254,18 @@
         <translation>IVs aus der Zwischenablage einfügen</translation>
     </message>
     <message>
+        <source>Incompatible Parents</source>
+        <translation>Inkompatible Eltern</translation>
+    </message>
+    <message>
+        <source>Gender of selected parents are not compatible for breeding</source>
+        <translation>Geschlechter der ausgewählten Eltern sind zum Züchten nicht kompatibel</translation>
+    </message>
+    <message>
+        <source>Parents incompatible for breeding Hidden Ability!</source>
+        <translation>Eltern nicht kompatibel für Versteckte Fähigkeit!</translation>
+    </message>
+    <message>
         <location filename="../Controls/EggSettings.cpp" line="274"/>
         <location filename="../Controls/EggSettings.cpp" line="281"/>
         <source>Power Weight</source>

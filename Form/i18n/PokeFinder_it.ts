@@ -1254,6 +1254,18 @@
         <translation>Incolla le IVs dagli appunti</translation>
     </message>
     <message>
+        <source>Incompatible Parents</source>
+        <translation>Genitori Incompatibili</translation>
+    </message>
+    <message>
+        <source>Gender of selected parents are not compatible for breeding</source>
+        <translation>Il sesso dei genitori selezionati non è compatibile per l&apos;accoppiamento</translation>
+    </message>
+    <message>
+        <source>Parents incompatible for breeding Hidden Ability!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../Controls/EggSettings.cpp" line="274"/>
         <location filename="../Controls/EggSettings.cpp" line="281"/>
         <source>Power Weight</source>
