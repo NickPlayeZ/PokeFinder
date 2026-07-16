@@ -67,6 +67,7 @@ set(PROJECT_UI
     Gen4/Tools/SeedToTime4.ui
     Gen4/Wild4.ui
     Gen5/DreamRadar.ui
+    Gen5/Pickup.ui
     Gen5/HiddenGrotto.ui
     Gen5/Eggs5.ui
     Gen5/Event5.ui
@@ -94,6 +95,7 @@ set(PROJECT_UI
     Gen8/Wild8.ui
     MainWindow.ui
     Util/EncounterLookup.ui
+    Util/AdvanceFinder.ui
     Util/IVCalculator.ui
     Util/IVToPID.ui
     Util/Researcher.ui
@@ -190,6 +192,8 @@ set(PROJECT_SOURCES
     Gen5/Event5.hpp
     Gen5/HiddenGrotto.cpp
     Gen5/HiddenGrotto.hpp
+    Gen5/Pickup.cpp
+    Gen5/Pickup.hpp
     Gen5/IDs5.cpp
     Gen5/IDs5.hpp
     Gen5/Phenomenon.cpp
@@ -238,6 +242,8 @@ set(PROJECT_SOURCES
     MainWindow.hpp
     Util/EncounterLookup.cpp
     Util/EncounterLookup.hpp
+    Util/AdvanceFinder.cpp
+    Util/AdvanceFinder.hpp
     Util/IVCalculator.cpp
     Util/IVCalculator.hpp
     Util/IVToPID.cpp

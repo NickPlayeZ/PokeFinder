@@ -36,6 +36,7 @@
 #include <Form/Controls/Filter.hpp>
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
 #include <Form/Gen4/Tools/SeedToTime4.hpp>
+#include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen4/WildModel4.hpp>
 #include <Model/SortFilterProxyModel.hpp>
 #include <QAbstractItemView>
@@ -205,6 +206,9 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
 
     ui->tableViewGenerator->setModel(generatorModel);
     ui->tableViewSearcher->setModel(proxyModel);
+
+    auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    connect(advanceFinder, &QAction::triggered, this, &Wild4::openAdvanceFinder);
 
     ui->textBoxGeneratorSeed->setValues(InputType::Seed32Bit);
     ui->textBoxGeneratorInitialAdvances->setValues(InputType::Advance32Bit);
@@ -766,6 +770,12 @@ void Wild4::generate()
         std::erase_if(states, [](const auto &state) { return !state.isValid(); });
     }
     generatorModel->addItems(states);
+}
+
+void Wild4::openAdvanceFinder()
+{
+    auto *advanceFinder = new AdvanceFinder(generatorModel, ui->tableViewGenerator, this);
+    advanceFinder->show();
 }
 
 void Wild4::generatorEncounterIndexChanged(int index)

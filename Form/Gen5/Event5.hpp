@@ -101,6 +101,11 @@ private slots:
     void generate();
 
     /**
+     * @brief Opens advance finder for the generated results
+     */
+    void openAdvanceFinder();
+
+    /**
      * @brief Reads in settings from a imported wondercard file
      */
     void generatorImportEvent();

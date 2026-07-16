@@ -29,8 +29,10 @@
 #include <Core/Util/Utilities.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/EggModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
+#include <QAction>
 #include <QMessageBox>
 #include <QSettings>
 #include <QThread>
@@ -47,6 +49,9 @@ Eggs5::Eggs5(QWidget *parent) : QWidget(parent), ui(new Ui::Eggs5)
 
     generatorModel = new EggGeneratorModel5(ui->tableViewGenerator);
     ui->tableViewGenerator->setModel(generatorModel);
+
+    auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    connect(advanceFinder, &QAction::triggered, this, &Eggs5::openAdvanceFinder);
 
     searcherModel = new EggSearcherModel5(ui->tableViewSearcher);
     proxyModel = new SortFilterProxyModel(ui->tableViewSearcher, searcherModel);
@@ -155,6 +160,12 @@ void Eggs5::generate()
 
     auto states = generator.generate(seed);
     generatorModel->addItems(states);
+}
+
+void Eggs5::openAdvanceFinder()
+{
+    auto *advanceFinder = new AdvanceFinder(generatorModel, ui->tableViewGenerator, this);
+    advanceFinder->show();
 }
 
 void Eggs5::search()

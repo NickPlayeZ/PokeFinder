@@ -32,7 +32,7 @@ namespace AdjacentSeedsCalculator
 {
     /**
      * @brief Computes "nearby" seeds for calibration purposes
-     * 
+     *
      * @param minIVAdvance Minimum IV advances
      * @param maxIVAdvance Maximum IV advances
      * @param seconds Second search range
@@ -46,7 +46,7 @@ namespace AdjacentSeedsCalculator
 
     /**
      * @brief Computes chatot/needle string for seed verification purposes
-     * 
+     *
      * @param seed PRNG state
      * @param advances PRNG advances
      * @param count Number of chatot/needle calls to output

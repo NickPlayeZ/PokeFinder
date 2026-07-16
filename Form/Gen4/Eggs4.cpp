@@ -28,6 +28,7 @@
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
 #include <Form/Gen4/Tools/SeedToTime4.hpp>
+#include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen4/EggModel4.hpp>
 #include <Model/SortFilterProxyModel.hpp>
 #include <QAction>
@@ -51,6 +52,9 @@ Eggs4::Eggs4(QWidget *parent) : QWidget(parent), ui(new Ui::Eggs4)
 
     ui->tableViewGenerator->setModel(generatorModel);
     ui->tableViewSearcher->setModel(proxyModel);
+
+    auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    connect(advanceFinder, &QAction::triggered, this, &Eggs4::openAdvanceFinder);
 
     ui->textBoxGeneratorSeedHeld->setValues(InputType::Seed32Bit);
     ui->textBoxGeneratorInitialAdvancesHeld->setValues(InputType::Advance32Bit);
@@ -199,6 +203,12 @@ void Eggs4::generate()
 
     auto states = generator.generate(seedHeld, seedPickup);
     generatorModel->addItems(states);
+}
+
+void Eggs4::openAdvanceFinder()
+{
+    auto *advanceFinder = new AdvanceFinder(generatorModel, ui->tableViewGenerator, this);
+    advanceFinder->show();
 }
 
 void Eggs4::search()

@@ -38,8 +38,11 @@
 #include <Form/Controls/CheckList.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <Form/Gen5/Tools/AdjacentSeeds.hpp>
+#include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/WildModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
+#include <QAction>
 #include <QButtonGroup>
 #include <QFileDialog>
 #include <QGridLayout>
@@ -87,6 +90,13 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
 
     ui->tableViewGenerator->setModel(generatorModel);
     ui->tableViewSearcher->setModel(proxyModel);
+
+    auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    connect(advanceFinder, &QAction::triggered, this, &Phenomenon::openAdvanceFinder);
+
+    auto *adjacentSeeds = new QAction(tr("Adjacent Seeds"), ui->tableViewSearcher);
+    connect(adjacentSeeds, &QAction::triggered, this, &Phenomenon::openAdjacentSeeds);
+    ui->tableViewSearcher->addAction(adjacentSeeds);
 
     ui->textBoxGeneratorSeed->setValues(InputType::Seed64Bit);
     ui->textBoxGeneratorIVAdvances->setValues(InputType::Advance32Bit);
@@ -442,6 +452,21 @@ void Phenomenon::generate()
     auto states = generator.generate(seed, ivAdvances, 0);
     std::erase_if(states, [this](const WildState5 &state) { return removeByGeneratorFilters(state); });
     generatorModel->addItems(states);
+}
+
+void Phenomenon::openAdvanceFinder()
+{
+    auto *advanceFinder = new AdvanceFinder(generatorModel, ui->tableViewGenerator, this);
+    advanceFinder->show();
+}
+
+void Phenomenon::openAdjacentSeeds()
+{
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &state = searcherModel->getItem(index.row());
+
+    auto *window = new AdjacentSeeds(false, state.getButtons(), state.getDateTime(), *currentProfile);
+    window->show();
 }
 
 void Phenomenon::generatorEncounterIndexChanged(int index)

@@ -101,6 +101,11 @@ private slots:
     void generate();
 
     /**
+     * @brief Opens advance finder for the generated results
+     */
+    void openAdvanceFinder();
+
+    /**
      * @brief Updates the locations listed. Also toggles what controls are displayed based on relevance to the current settings.
      *
      * @param index Encounter index

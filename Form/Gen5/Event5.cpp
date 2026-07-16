@@ -32,8 +32,10 @@
 #include <Core/Util/Utilities.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/EventModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
+#include <QAction>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
@@ -51,6 +53,9 @@ Event5::Event5(QWidget *parent) : QWidget(parent), ui(new Ui::Event5)
 
     generatorModel = new EventGeneratorModel5(ui->tableViewGenerator);
     ui->tableViewGenerator->setModel(generatorModel);
+
+    auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    connect(advanceFinder, &QAction::triggered, this, &Event5::openAdvanceFinder);
 
     searcherModel = new EventSearcherModel5(ui->tableViewSearcher);
     proxyModel = new SortFilterProxyModel(ui->tableViewSearcher, searcherModel);
@@ -194,6 +199,12 @@ void Event5::generate()
 
     auto states = generator.generate(seed);
     generatorModel->addItems(states);
+}
+
+void Event5::openAdvanceFinder()
+{
+    auto *advanceFinder = new AdvanceFinder(generatorModel, ui->tableViewGenerator, this);
+    advanceFinder->show();
 }
 
 void Event5::generatorImportEvent()

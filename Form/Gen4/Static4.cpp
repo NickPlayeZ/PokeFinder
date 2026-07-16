@@ -32,8 +32,10 @@
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
 #include <Form/Gen4/Tools/SeedToTime4.hpp>
+#include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen4/StaticModel4.hpp>
 #include <Model/SortFilterProxyModel.hpp>
+#include <QAction>
 #include <QSettings>
 #include <QSizePolicy>
 #include <QThread>
@@ -75,6 +77,9 @@ Static4::Static4(QWidget *parent) : QWidget(parent), ui(new Ui::Static4)
 
     ui->tableViewGenerator->setModel(generatorModel);
     ui->tableViewSearcher->setModel(proxyModel);
+
+    auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    connect(advanceFinder, &QAction::triggered, this, &Static4::openAdvanceFinder);
 
     ui->textBoxGeneratorSeed->setValues(InputType::Seed32Bit);
     ui->textBoxGeneratorInitialAdvances->setValues(InputType::Advance32Bit);
@@ -196,6 +201,12 @@ void Static4::generate()
 
     auto states = generator.generate(seed);
     generatorModel->addItems(states);
+}
+
+void Static4::openAdvanceFinder()
+{
+    auto *advanceFinder = new AdvanceFinder(generatorModel, ui->tableViewGenerator, this);
+    advanceFinder->show();
 }
 
 void Static4::generatorCategoryIndexChanged(int index)

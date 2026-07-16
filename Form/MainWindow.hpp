@@ -36,6 +36,7 @@ class Eggs5;
 class Event5;
 class DreamRadar;
 class HiddenGrotto;
+class Pickup;
 class IDs5;
 class Phenomenon;
 class Static5;
@@ -119,6 +120,7 @@ private:
     HiddenGrotto *hiddenGrotto = nullptr;
     IDs5 *ids5 = nullptr;
     Phenomenon *phenomenon = nullptr;
+    Pickup *pickup = nullptr;
     Static5 *static5 = nullptr;
     Wild5 *wild5 = nullptr;
 
@@ -268,6 +270,11 @@ private slots:
      * @brief Opens the Hidden Grotto window
      */
     void openHiddenGrotto();
+
+    /**
+     * @brief Opens the Gen 5 Pickup window
+     */
+    void openPickup();
 
     /**
      * @brief Opens the Gen 5 IDs window

@@ -86,6 +86,11 @@ private slots:
     void generate();
 
     /**
+     * @brief Opens advance finder for the generated results
+     */
+    void openAdvanceFinder();
+
+    /**
      * @brief Searches egg encounters from date range
      */
     void search();

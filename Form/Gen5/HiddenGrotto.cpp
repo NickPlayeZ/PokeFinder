@@ -36,6 +36,7 @@
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
+#include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/HiddenGrottoModel.hpp>
 #include <Model/SortFilterProxyModel.hpp>
 #include <QAction>
@@ -65,9 +66,16 @@ HiddenGrotto::HiddenGrotto(QWidget *parent) :
     grottoGeneratorModel = new HiddenGrottoSlotGeneratorModel5(ui->tableViewGrottoGenerator);
     ui->tableViewGrottoGenerator->setModel(grottoGeneratorModel);
 
+    auto *grottoAdvanceFinder = ui->tableViewGrottoGenerator->addAction(tr("Advance Finder"));
+    connect(grottoAdvanceFinder, &QAction::triggered, this, &HiddenGrotto::openGrottoAdvanceFinder);
+
     grottoSearcherModel = new HiddenGrottoSlotSearcherModel5(ui->tableViewGrottoSearcher);
     grottoProxyModel = new SortFilterProxyModel(ui->tableViewGrottoSearcher, grottoSearcherModel);
     ui->tableViewGrottoSearcher->setModel(grottoProxyModel);
+
+    auto *grottoAdjacentSeeds = new QAction(tr("Adjacent Seeds"), ui->tableViewGrottoSearcher);
+    connect(grottoAdjacentSeeds, &QAction::triggered, this, &HiddenGrotto::openGrottoAdjacentSeeds);
+    ui->tableViewGrottoSearcher->addAction(grottoAdjacentSeeds);
 
     ui->textBoxGrottoGeneratorSeed->setValues(InputType::Seed64Bit);
     ui->textBoxGrottoGeneratorInitialAdvances->setValues(InputType::Advance32Bit);
@@ -86,6 +94,9 @@ HiddenGrotto::HiddenGrotto(QWidget *parent) :
 
     pokemonGeneratorModel = new HiddenGrottoGeneratorModel5(ui->tableViewPokemonGenerator);
     ui->tableViewPokemonGenerator->setModel(pokemonGeneratorModel);
+
+    auto *pokemonAdvanceFinder = ui->tableViewPokemonGenerator->addAction(tr("Advance Finder"));
+    connect(pokemonAdvanceFinder, &QAction::triggered, this, &HiddenGrotto::openPokemonAdvanceFinder);
 
     pokemonSearcherModel = new HiddenGrottoSearcherModel5(ui->tableViewPokemonSearcher);
     pokemonProxyModel = new SortFilterProxyModel(ui->tableViewPokemonSearcher, pokemonSearcherModel);
@@ -469,6 +480,27 @@ void HiddenGrotto::openAdjacentSeeds()
 
     auto *window = new AdjacentSeeds(false, state.getButtons(), state.getDateTime(), *currentProfile);
     window->show();
+}
+
+void HiddenGrotto::openGrottoAdjacentSeeds()
+{
+    QModelIndex index = grottoProxyModel->mapToSource(ui->tableViewGrottoSearcher->currentIndex());
+    const auto &state = grottoSearcherModel->getItem(index.row());
+
+    auto *window = new AdjacentSeeds(false, state.getButtons(), state.getDateTime(), *currentProfile);
+    window->show();
+}
+
+void HiddenGrotto::openGrottoAdvanceFinder()
+{
+    auto *advanceFinder = new AdvanceFinder(grottoGeneratorModel, ui->tableViewGrottoGenerator, this);
+    advanceFinder->show();
+}
+
+void HiddenGrotto::openPokemonAdvanceFinder()
+{
+    auto *advanceFinder = new AdvanceFinder(pokemonGeneratorModel, ui->tableViewPokemonGenerator, this);
+    advanceFinder->show();
 }
 
 void HiddenGrotto::pokemonGenerate()
