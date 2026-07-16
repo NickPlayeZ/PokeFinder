@@ -99,7 +99,14 @@ jobs:
         run: cmake --build build
 
       - name: Test PokeFinder
-        run: ctest --test-dir build -V --output-on-failure
+        run: ctest --test-dir build -V
+
+      - name: Upload CTest logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-logs
+          path: build/Testing/Temporary/LastTest.log
 
       - name: Package PokeFinder (Windows)
         if: matrix.platform-name == 'Windows'
