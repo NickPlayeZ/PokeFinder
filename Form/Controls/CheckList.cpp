@@ -190,6 +190,11 @@ std::vector<u16> CheckList::getExplicitCheckedData() const
     return data;
 }
 
+Qt::CheckState CheckList::getCheckState() const
+{
+    return checkState();
+}
+
 void CheckList::resetChecks()
 {
     for (int i = 0; i < model->rowCount(); i++)

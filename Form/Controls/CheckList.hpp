@@ -127,6 +127,13 @@ public:
     std::vector<u16> getExplicitCheckedData() const;
 
     /**
+     * @brief Determines the current check state of the check boxes
+     *
+     * @return Checked if all check boxes are checked, PartiallyChecked if some check boxes are checked, and Unchecked otherwise
+     */
+    Qt::CheckState getCheckState() const;
+
+    /**
      * @brief Sets all check boxes to be unchecked
      */
     void resetChecks();

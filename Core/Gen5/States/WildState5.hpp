@@ -50,11 +50,13 @@ public:
      */
     WildState5(u16 prng, u8 movingTrigger, u8 movingSteps, u32 advances, u32 ivAdvances, u32 pid, const std::array<u8, 6> &ivs, u8 ability,
                u8 gender, u8 level, u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info,
-               bool valid = true, Lead lead = Lead::None) :
+               bool valid = true, Lead lead = Lead::None, bool phenomenon = false, bool phenomenonItem = false) :
         WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info, valid),
         ivAdvances(ivAdvances),
         movingTrigger(movingTrigger),
         movingSteps(movingSteps),
+        phenomenon(phenomenon),
+        phenomenonItem(phenomenonItem),
         chatot(prng / 82),
         lead(lead),
         leadFlags(getLeadFlag(lead)),
@@ -161,6 +163,28 @@ public:
         return movingSteps;
     }
 
+    /**
+     * @brief Returns whether the frame triggers a phenomenon on the 20th step
+     *
+     * @return true if the phenomenon triggers
+     * @return false if the phenomenon does not trigger
+     */
+    bool getPhenomenon() const
+    {
+        return phenomenon;
+    }
+
+    /**
+     * @brief Returns whether the state is a phenomenon item instead of a Pokemon
+     *
+     * @return true if the state is an item
+     * @return false if the state is a Pokemon
+     */
+    bool getPhenomenonItem() const
+    {
+        return phenomenonItem;
+    }
+
 private:
     static constexpr u8 getLeadFlag(Lead lead)
     {
@@ -193,6 +217,8 @@ private:
     u32 ivAdvances;
     u8 movingTrigger;
     u8 movingSteps;
+    bool phenomenon;
+    bool phenomenonItem;
     u8 chatot;
     Lead lead;
     u8 leadFlags;
