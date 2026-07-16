@@ -122,6 +122,8 @@ qt_add_executable(PokeFinderTest
     Util/IVToPIDCalculatorTest.hpp
 )
 
+set_target_properties(PokeFinderTest PROPERTIES WIN32_EXECUTABLE FALSE)
+
 add_test(NAME Test COMMAND PokeFinderTest)
 
 target_include_directories(PokeFinderTest PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/generated)
