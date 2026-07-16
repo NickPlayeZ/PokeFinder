@@ -99,7 +99,7 @@ jobs:
         run: cmake --build build
 
       - name: Test PokeFinder
-        run: ctest --test-dir build -V
+        run: ctest --test-dir build -V --output-on-failure
 
       - name: Package PokeFinder (Windows)
         if: matrix.platform-name == 'Windows'
