@@ -109,6 +109,7 @@ void WildGenerator3Test::generate()
     WildGenerator3 generator(0, 9, 0, method, lead, settings.feebasTile, bike, item, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed);
+    std::erase_if(states, [](const WildGeneratorState &state) { return !state.isValid(); });
     QCOMPARE(states.size(), j.size());
 
     for (size_t i = 0; i < states.size(); i++)

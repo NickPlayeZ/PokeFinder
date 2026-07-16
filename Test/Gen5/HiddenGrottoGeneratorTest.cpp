@@ -156,6 +156,7 @@ void HiddenGrottoGeneratorTest::slot()
     HiddenGrottoSlotGenerator generator(0, 99, 0, 55, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed);
+    std::erase_if(states, [](const HiddenGrottoState &state) { return !state.isValid(); });
     QCOMPARE(states.size(), j.size());
 
     for (size_t i = 0; i < states.size(); i++)

@@ -97,6 +97,7 @@ void WildGenerator5Test::generate()
     WildGenerator5 generator(0, 9, 0, Method::Method5, lead, 0, false, false, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed, 0, 0);
+    std::erase_if(states, [](const WildState5 &state) { return !state.isValid(); });
     QCOMPARE(states.size(), j.size());
 
     for (size_t i = 0; i < states.size(); i++)

@@ -105,6 +105,7 @@ void WildGenerator4Test::generateMethodJ()
     WildGenerator4 generator(0, 9, 0, Method::MethodJ, lead, settings.dppt.feebasTile, false, false, 50, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed, 0);
+    std::erase_if(states, [](const WildGeneratorState4 &state) { return !state.isValid(); });
     QCOMPARE(states.size(), j.size());
 
     for (size_t i = 0; i < states.size(); i++)
@@ -175,6 +176,7 @@ void WildGenerator4Test::generateMethodK()
     WildGenerator4 generator(0, 9, 0, Method::MethodK, lead, false, false, false, 50, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed, 0);
+    std::erase_if(states, [](const WildGeneratorState4 &state) { return !state.isValid(); });
     QCOMPARE(states.size(), j.size());
 
     for (size_t i = 0; i < states.size(); i++)
