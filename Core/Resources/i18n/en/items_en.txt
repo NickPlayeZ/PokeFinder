@@ -12,6 +12,7 @@
 29,Max Revive
 33,Moomoo Milk
 38,Ether
+39,Max Ether
 40,Elixir
 41,Max Elixir
 43,Berry Juice
@@ -46,6 +47,11 @@
 96,Damp Mulch
 97,Stable Mulch
 98,Gooey Mulch
+99,Root Fossil
+100,Claw Fossil
+101,Helix Fossil
+102,Dome Fossil
+103,Old Amber
 106,Rare Bone
 107,Shiny Stone
 108,Dusk Stone

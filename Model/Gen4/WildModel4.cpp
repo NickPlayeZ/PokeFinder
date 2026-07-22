@@ -67,6 +67,11 @@ QVariant WildGeneratorModel4::data(const QModelIndex &index, int role) const
             return "-";
         }
 
+        if (state.getSpecie() == 0 && column > 5)
+        {
+            return QString("-");
+        }
+
         switch (column)
         {
         case 0:

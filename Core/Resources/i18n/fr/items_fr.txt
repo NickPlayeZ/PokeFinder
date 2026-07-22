@@ -12,6 +12,7 @@
 29,Rappel Max
 33,Lait Meumeu
 38,Huile
+39,Huile Max
 40,Élixir
 41,Max Élixir
 43,Jus de Baie
@@ -46,6 +47,11 @@
 96,Fertihumide
 97,Fertistable
 98,Fertiglu
+99,Foss. Racine
+100,Foss. Griffe
+101,Nautile
+102,Fossile Dôme
+103,Vieil Ambre
 106,Os Rare
 107,Pierre Éclat
 108,Pierre Nuit

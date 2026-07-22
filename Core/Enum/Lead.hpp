@@ -57,6 +57,13 @@ enum class Lead : u8
     QuickFeet = ArenaTrap,
     Stench = ArenaTrap,
     WhiteSmoke = ArenaTrap,
+
+    RockSmashMagnetPull,
+    RockSmashSuctionCups,
+    RockSmashSuperLuck,
+    KeenEye,
+    Intimidate,
+    SereneGrace,
 };
 
 /**

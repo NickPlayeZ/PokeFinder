@@ -198,6 +198,33 @@
           <item row="2" column="2" colspan="2">
            <widget class="ComboBox" name="comboBoxGeneratorPokemon"/>
           </item>
+          <item row="10" column="0" colspan="2">
+           <widget class="QCheckBox" name="checkBoxGeneratorRockSmashPokemon">
+            <property name="text">
+             <string>Walking Pokemon uses Rock Smash?</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="2">
+           <widget class="QLabel" name="labelGeneratorLeadLevel">
+            <property name="text">
+             <string>Lead Level</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="3">
+           <widget class="QSpinBox" name="spinBoxGeneratorLeadLevel">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="value">
+             <number>1</number>
+            </property>
+           </widget>
+          </item>
           <item row="3" column="0" colspan="2">
            <widget class="QLabel" name="labelGeneratorTime">
             <property name="text">
@@ -1120,6 +1147,8 @@
   <tabstop>comboBoxGeneratorEncounter</tabstop>
   <tabstop>comboBoxGeneratorLocation</tabstop>
   <tabstop>comboBoxGeneratorPokemon</tabstop>
+  <tabstop>checkBoxGeneratorRockSmashPokemon</tabstop>
+  <tabstop>spinBoxGeneratorLeadLevel</tabstop>
   <tabstop>comboBoxGeneratorTime</tabstop>
   <tabstop>comboBoxGeneratorHappiness</tabstop>
   <tabstop>comboBoxGeneratorDualSlot</tabstop>

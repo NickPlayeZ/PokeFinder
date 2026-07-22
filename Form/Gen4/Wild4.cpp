@@ -168,6 +168,9 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->labelGeneratorMovement->setEnabled(false);
     ui->comboBoxGeneratorMovement->setVisible(false);
     ui->comboBoxGeneratorMovement->setEnabled(false);
+    ui->checkBoxGeneratorRockSmashPokemon->setVisible(false);
+    ui->labelGeneratorLeadLevel->setVisible(false);
+    ui->spinBoxGeneratorLeadLevel->setVisible(false);
     ui->checkBoxSearcherStepEncounter->setVisible(false);
     ui->checkBoxSearcherWhiteFlute->setVisible(false);
     ui->checkBoxSearcherWhiteFlute->setEnabled(false);
@@ -206,6 +209,13 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->comboMenuGeneratorLead->addMenu(tr("Encounter Modifier"),
                                         { { tr("Sticky Hold"), toInt(Lead::StickyHold) },
                                           { tr("Suction Cups"), toInt(Lead::SuctionCups) } });
+    ui->comboMenuGeneratorLead->addMenu(tr("Item Modifier"),
+                                        { { tr("Intimidate"), toInt(Lead::Intimidate) },
+                                          { tr("Keen Eye"), toInt(Lead::KeenEye) },
+                                          { tr("Magnet Pull"), toInt(Lead::RockSmashMagnetPull) },
+                                          { tr("Serene Grace"), toInt(Lead::SereneGrace) },
+                                          { tr("Suction Cups"), toInt(Lead::RockSmashSuctionCups) },
+                                          { tr("Super Luck"), toInt(Lead::RockSmashSuperLuck) } });
     ui->comboMenuGeneratorLead->addMenu(tr("Level Modifier"),
                                         { { tr("Hustle"), toInt(Lead::Hustle) },
                                           { tr("Pressure"), toInt(Lead::Pressure) },
@@ -734,10 +744,12 @@ void Wild4::generate()
     u8 movement = ui->comboBoxGeneratorMovement->getCurrentUChar();
     bool fastMovement = movement == Biking || movement == WalkingLongGrass || movement == RunningLongGrass;
     u8 radio = ui->checkBoxGeneratorRadio->isChecked() ? ui->comboBoxGeneratorRadio->currentIndex() + 1 : 0;
+    bool rockSmashPokemon = ui->checkBoxGeneratorRockSmashPokemon->isChecked();
+    u8 leadLevel = lead == Lead::KeenEye || lead == Lead::Intimidate ? ui->spinBoxGeneratorLeadLevel->value() : 0;
 
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
     WildGenerator4 generator(initialAdvances, maxAdvances, offset, method, lead, feebasTile, chained, unownRadio, happiness,
-                             searchStepEncounter, whiteFlute, fastMovement, movement, radio,
+                             searchStepEncounter, whiteFlute, fastMovement, movement, radio, rockSmashPokemon, leadLevel,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
 
     auto states = generator.generate(seed, fixedSlot);
@@ -760,6 +772,7 @@ void Wild4::generatorEncounterIndexChanged(int index)
         bool grass = encounter == Encounter::Grass;
         bool hgss = (currentProfile->getVersion() & Game::HGSS) != Game::None;
         bool stepEncounter = encounter == Encounter::Grass || encounter == Encounter::Surfing || encounter == Encounter::BugCatchingContest;
+        bool rock = encounter == Encounter::RockSmash;
         bool swarm = encounter == Encounter::Grass || encounter == Encounter::Surfing || encounter == Encounter::OldRod
             || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod;
         bool honey = encounter == Encounter::HoneyTree;
@@ -816,6 +829,19 @@ void Wild4::generatorEncounterIndexChanged(int index)
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::MagnetPull), bug || honey);
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Static), bug || honey);
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Pressure), bug); // Also handles Hustle and Vital Spirit
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashMagnetPull), !rock);
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashSuctionCups), !rock);
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashSuperLuck), !rock);
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::KeenEye), !rock);
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Intimidate), !rock);
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::SereneGrace), !rock);
+
+        ui->checkBoxGeneratorRockSmashPokemon->setVisible(rock);
+        if (!ui->checkBoxGeneratorRockSmashPokemon->isVisible())
+        {
+            ui->checkBoxGeneratorRockSmashPokemon->setChecked(false);
+        }
+        generatorLeadIndexChanged();
 
         updateEncounterGenerator();
 
@@ -964,6 +990,15 @@ void Wild4::generatorPokemonIndexChanged(int index)
     }
 }
 
+void Wild4::generatorLeadIndexChanged()
+{
+    auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
+    bool visible = ui->comboBoxGeneratorEncounter->getEnum<Encounter>() == Encounter::RockSmash
+        && (lead == Lead::KeenEye || lead == Lead::Intimidate);
+    ui->labelGeneratorLeadLevel->setVisible(visible);
+    ui->spinBoxGeneratorLeadLevel->setVisible(visible);
+}
+
 void Wild4::generatorPokeRadarStateChanged(Qt::CheckState state)
 {
     ui->checkBoxGeneratorPokeRadarShiny->setVisible(state == Qt::Checked);
@@ -996,6 +1031,12 @@ void Wild4::profileChanged(const Profile4 &profile)
     ui->comboBoxGeneratorEncounter->setItemHidden(ui->comboBoxGeneratorEncounter->findData(toInt(Encounter::HeadbuttSpecial)), !hgss);
     ui->comboMenuGeneratorLead->hideAction(toInt(Lead::ArenaTrap), false); // Also handles Illuminate and No Guard
     ui->comboMenuGeneratorLead->hideAction(toInt(Lead::StickyHold), !hgss); // Also handles Suction Cups
+    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashMagnetPull), !hgss);
+    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashSuctionCups), !hgss);
+    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashSuperLuck), !hgss);
+    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::KeenEye), !hgss);
+    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Intimidate), !hgss);
+    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::SereneGrace), !hgss);
 
     ui->comboBoxSearcherEncounter->setItemHidden(ui->comboBoxSearcherEncounter->findData(toInt(Encounter::HoneyTree)), hgss);
     ui->comboBoxSearcherEncounter->setItemHidden(ui->comboBoxSearcherEncounter->findData(toInt(Encounter::RockSmash)), !hgss);
