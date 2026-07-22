@@ -47,8 +47,8 @@ public:
      * @param profile Profile Information
      * @param filter State filter
      */
-    HiddenGrottoSlotGenerator(u32 initialAdvances, u32 maxAdvances, u32 offset, u8 powerLevel, const HiddenGrottoArea &area,
-                              const Profile5 &profile, const HiddenGrottoFilter &filter);
+    HiddenGrottoSlotGenerator(u32 initialAdvances, u32 maxAdvances, u32 offset, u8 powerLevel, const HiddenGrottoArea &encounterArea,
+                              const Profile5 &profile, const HiddenGrottoFilter &filter, u16 item = 0, u8 minItemAmount = 1);
 
     /**
      * @brief Generates states
@@ -60,7 +60,9 @@ public:
     std::vector<HiddenGrottoState> generate(u64 seed) const;
 
 private:
-    HiddenGrottoArea area;
+    HiddenGrottoArea encounterArea;
+    u16 item;
+    u8 minItemAmount;
     u8 powerLevel;
 };
 

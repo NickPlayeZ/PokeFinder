@@ -3942,6 +3942,11 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     </message>
     <message>
         <location filename="../../Model/Gen5/HiddenGrottoModel.hpp" line="142"/>
+        <source>Amount</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/HiddenGrottoModel.hpp" line="142"/>
         <source>Group</source>
         <translation>Gruppo</translation>
     </message>
