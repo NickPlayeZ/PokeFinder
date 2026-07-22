@@ -46,13 +46,15 @@ public:
      * @param info Pokemon information
      * @param valid State can be hit
      */
-    WildState5(u32 prng, u8 movingTrigger, u8 movingSteps, u32 advances, u32 ivAdvances, u32 pid, const std::array<u8, 6> &ivs, u8 ability,
-               u8 gender, u8 level, u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info,
-               bool valid = true) :
+    WildState5(u32 prng, u8 movingTrigger, u8 movingSteps, bool phenomenon, bool phenomenonItem, u32 advances, u32 ivAdvances, u32 pid,
+               const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie,
+               u8 form, const PersonalInfo *info, bool valid = true) :
         WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info),
         ivAdvances(ivAdvances),
         movingTrigger(movingTrigger),
         movingSteps(movingSteps),
+        phenomenon(phenomenon),
+        phenomenonItem(phenomenonItem),
         valid(valid),
         chatot(static_cast<u8>(((static_cast<u64>(prng) * 0x1fff) >> 32) / 82)),
         needle(static_cast<u8>((static_cast<u64>(prng) * 8) >> 32))
@@ -111,6 +113,28 @@ public:
     }
 
     /**
+     * @brief Returns whether the frame triggers a phenomenon on the 20th step
+     *
+     * @return true if the phenomenon triggers
+     * @return false if the phenomenon does not trigger
+     */
+    bool getPhenomenon() const
+    {
+        return phenomenon;
+    }
+
+    /**
+     * @brief Returns whether the state is a phenomenon item instead of a Pokemon
+     *
+     * @return true if the state is an item
+     * @return false if the state is a Pokemon
+     */
+    bool getPhenomenonItem() const
+    {
+        return phenomenonItem;
+    }
+
+    /**
      * @brief Returns the needle value
      *
      * @return Needle value
@@ -124,6 +148,8 @@ private:
     u32 ivAdvances;
     u8 movingTrigger;
     u8 movingSteps;
+    bool phenomenon;
+    bool phenomenonItem;
     bool valid;
     u8 chatot;
     u8 needle;

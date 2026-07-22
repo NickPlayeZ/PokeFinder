@@ -46,6 +46,7 @@
 #include <Form/Gen5/HiddenGrotto.hpp>
 #include <Form/Gen5/IDs5.hpp>
 #include <Form/Gen5/Pickup.hpp>
+#include <Form/Gen5/Phenomenon.hpp>
 #include <Form/Gen5/Profile/ProfileCalibrator5.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Static5.hpp>
@@ -113,6 +114,7 @@ MainWindow::MainWindow(bool profile, QWidget *parent) : QMainWindow(parent), ui(
     connect(ui->pushButtonHiddenGrotto, &QPushButton::clicked, this, &MainWindow::openHiddenGrotto);
     connect(ui->pushButtonIDs5, &QPushButton::clicked, this, &MainWindow::openIDs5);
     connect(ui->pushButtonPickup, &QPushButton::clicked, this, &MainWindow::openPickup);
+    connect(ui->pushButtonPhenomenon, &QPushButton::clicked, this, &MainWindow::openPhenomenon);
     connect(ui->pushButtonStatic5, &QPushButton::clicked, this, &MainWindow::openStatic5);
     connect(ui->pushButtonWild5, &QPushButton::clicked, this, &MainWindow::openWild5);
     connect(ui->actionAdjacentSeed, &QAction::triggered, this, &MainWindow::openAdjacentSeed);
@@ -541,6 +543,29 @@ void MainWindow::openPickup()
     {
         pickup->show();
         pickup->raise();
+    }
+}
+
+void MainWindow::openPhenomenon()
+{
+    if (!phenomenon)
+    {
+        phenomenon = new Phenomenon();
+        connect(phenomenon, &Phenomenon::profilesChanged, this, &MainWindow::updateProfiles);
+        connect(this, &MainWindow::profilesChanged5, phenomenon, &Phenomenon::updateProfiles);
+    }
+
+    if (!phenomenon->hasProfiles())
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("No profiles found"),
+                        tr("Please use the Profile Calibrator under Gen 5 Tools to create one"));
+        msg.exec();
+        phenomenon->close();
+    }
+    else
+    {
+        phenomenon->show();
+        phenomenon->raise();
     }
 }
 
