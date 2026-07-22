@@ -56,6 +56,20 @@ static bool isRockSmashItemState(const WildGeneratorState4 &state)
         && std::ranges::find(cianwoodItems, state.getItem()) != cianwoodItems.end();
 }
 
+static std::vector<WildGeneratorState4> getValidStates(const std::vector<WildGeneratorState4> &states)
+{
+    std::vector<WildGeneratorState4> validStates;
+    for (const auto &state : states)
+    {
+        if (state.isValid())
+        {
+            validStates.emplace_back(state);
+        }
+    }
+
+    return validStates;
+}
+
 void WildGenerator4Test::generateMethodJ_data()
 {
     QTest::addColumn<u32>("seed");
@@ -115,11 +129,12 @@ void WildGenerator4Test::generateMethodJ()
     WildGenerator4 generator(0, 9, 0, Method::MethodJ, lead, settings.dppt.feebasTile, false, false, 50, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed, 0);
-    QCOMPARE(states.size(), j.size());
+    auto validStates = getValidStates(states);
+    QCOMPARE(validStates.size(), j.size());
 
-    for (size_t i = 0; i < states.size(); i++)
+    for (size_t i = 0; i < validStates.size(); i++)
     {
-        const auto &state = states[i];
+        const auto &state = validStates[i];
         QVERIFY(state == j[i]);
     }
 }
@@ -185,9 +200,10 @@ void WildGenerator4Test::generateMethodK()
     WildGenerator4 generator(0, 9, 0, Method::MethodK, lead, false, false, false, 50, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed, 0);
+    auto validStates = getValidStates(states);
     std::vector<WildGeneratorState4> pokemonStates;
     std::vector<WildGeneratorState4> itemStates;
-    for (const auto &state : states)
+    for (const auto &state : validStates)
     {
         if (state.getSpecie() == 0)
         {
@@ -274,11 +290,12 @@ void WildGenerator4Test::generateHoneyTree()
     WildGenerator4 generator(0, 9, 0, Method::HoneyTree, lead, false, false, false, 50, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed, index);
-    QCOMPARE(states.size(), j.size());
+    auto validStates = getValidStates(states);
+    QCOMPARE(validStates.size(), j.size());
 
-    for (size_t i = 0; i < states.size(); i++)
+    for (size_t i = 0; i < validStates.size(); i++)
     {
-        const auto &state = states[i];
+        const auto &state = validStates[i];
         QVERIFY(state == j[i]);
     }
 }
@@ -344,11 +361,12 @@ void WildGenerator4Test::generatePokeRadar()
     WildGenerator4 generator(0, 9, 0, Method::PokeRadar, lead, false, shiny, false, 50, *encounterArea, profile, filter);
 
     auto states = generator.generate(seed, index);
-    QCOMPARE(states.size(), j.size());
+    auto validStates = getValidStates(states);
+    QCOMPARE(validStates.size(), j.size());
 
-    for (size_t i = 0; i < states.size(); i++)
+    for (size_t i = 0; i < validStates.size(); i++)
     {
-        const auto &state = states[i];
+        const auto &state = validStates[i];
         QVERIFY(state == j[i]);
     }
 }

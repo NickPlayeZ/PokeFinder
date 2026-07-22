@@ -206,6 +206,10 @@ std::vector<HiddenGrottoState> HiddenGrottoSlotGenerator::generate(u64 seed, u8 
                 }
             }
         }
+        else
+        {
+            states.emplace_back(prng, advances + initialAdvances + cnt);
+        }
     }
 
     if (searchItemAmount && itemAmount >= minItemAmount)

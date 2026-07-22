@@ -304,7 +304,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, 
     {
         std::array<u8, 6> iv;
         std::ranges::generate(iv, [&rngList] { return rngList.next(); });
-        if (filter.compareIV(iv))
+        if (area.getEncounter() == Encounter::SuperRod || filter.compareIV(iv))
         {
             ivs.emplace_back(initialAdvances + cnt, iv);
         }
@@ -427,6 +427,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             payloadRng.next();
         }
         BWRNG go(payloadRng, jump);
+        bool valid = true;
 
         bool cuteCharm = false;
         bool magnetStatic = false;
@@ -524,8 +525,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
         if (!phenomenonItem && area.getEncounter() == Encounter::SuperRod && getPercentRand(go, bw) > rate)
         {
-            rng.next();
-            continue;
+            valid = false;
         }
 
         BWRNG triggerGo(triggerRNG, jump);
@@ -535,13 +535,10 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             ? StepEncounter5::getSteps(profile.getVersion(), area.getEncounter(), area.getRate(), movingTrigger,
                                        getStepEncounterModifier(lead, passPower))
             : StepEncounter5::impossible;
-        bool valid = !searchMovingTrigger || movingSteps != StepEncounter5::impossible;
-        if (requireMovingTrigger && movingSteps == StepEncounter5::impossible)
+        valid &= !searchMovingTrigger || movingSteps != StepEncounter5::impossible;
+        if (requireMovingTrigger && !valid)
         {
             rng.nextUInt(0x1fff);
-            encounterRNG.next();
-            triggerRNG.next();
-            continue;
         }
 
         if (searchMovingTrigger && !bw2)
@@ -618,12 +615,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         u32 prng = rng.nextUInt();
         if (passPower != PassPower5::None && initialAdvances + cnt < 4)
         {
-            if (searchMovingTrigger)
-            {
-                encounterRNG.next();
-                triggerRNG.next();
-            }
-            continue;
+            valid = false;
         }
 
         if (searchMovingTrigger)

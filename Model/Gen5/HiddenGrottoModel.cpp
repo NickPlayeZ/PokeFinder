@@ -20,6 +20,8 @@
 #include "HiddenGrottoModel.hpp"
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <QColor>
+#include <QFont>
 #include <QStringList>
 
 namespace
@@ -72,10 +74,29 @@ int HiddenGrottoSlotGeneratorModel5::columnCount(const QModelIndex &parent) cons
 
 QVariant HiddenGrottoSlotGeneratorModel5::data(const QModelIndex &index, int role) const
 {
+    const auto &state = model[index.row()];
+    if (!state.isValid())
+    {
+        if (role == Qt::FontRole && index.column() != 2)
+        {
+            QFont font;
+            font.setItalic(true);
+            return font;
+        }
+        else if (role == Qt::ForegroundRole)
+        {
+            return QColor(128, 128, 128);
+        }
+    }
+
     if (role == Qt::DisplayRole)
     {
-        const auto &state = model[index.row()];
         int column = index.column();
+        if (!state.isValid() && column > 2)
+        {
+            return "-";
+        }
+
         switch (column)
         {
         case 0:

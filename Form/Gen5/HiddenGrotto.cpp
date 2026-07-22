@@ -50,6 +50,12 @@
 #include <algorithm>
 #include <vector>
 
+template <size_t size>
+static bool hasUnchecked(const std::array<bool, size> &values)
+{
+    return std::ranges::find(values, false) != values.end();
+}
+
 static const QString settingPrefix = QStringLiteral("hiddenGrotto");
 
 static std::vector<std::pair<u8, QString>> getSortedPokemonSlots(const HiddenGrottoArea &area, Game version)
@@ -357,6 +363,12 @@ void HiddenGrotto::grottoGenerate()
                                         encounter[ui->comboBoxGrottoGeneratorLocation->currentIndex()], *currentProfile, filter);
 
     auto states = generator.generate(seed);
+    if (hasUnchecked(ui->checkListGrottoGeneratorSlot->getCheckedArray<11>())
+        || hasUnchecked(ui->checkListGrottoGeneratorGender->getCheckedArray<2>())
+        || hasUnchecked(ui->checkListGrottoGeneratorGroup->getCheckedArray<4>()))
+    {
+        std::erase_if(states, [](const auto &state) { return !state.isValid(); });
+    }
     grottoGeneratorModel->addItems(states);
 }
 
