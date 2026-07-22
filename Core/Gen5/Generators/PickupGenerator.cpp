@@ -175,8 +175,8 @@ static std::optional<WildState5> generateWild(BWRNG &go, u32 advances, u64 seed,
     std::array<u8, 6> ivs;
     std::ranges::generate(ivs, [&rngList] { return rngList.next(); });
 
-    return WildState5(0, advances, ivAdvances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(),
-                      slot.getForm(), info);
+    return WildState5(0, 255, 255, false, false, advances, ivAdvances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item,
+                      slot.getSpecie(), slot.getForm(), info);
 }
 
 PickupGenerator::PickupGenerator(u32 initialAdvances, u32 maxAdvances, const std::array<Slot, 6> &pickupSlots,
