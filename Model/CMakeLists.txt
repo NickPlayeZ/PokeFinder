@@ -46,6 +46,8 @@ add_library(PokeFinderModel STATIC
     Gen5/HiddenGrottoModel.hpp
     Gen5/IDModel5.cpp
     Gen5/IDModel5.hpp
+    Gen5/PickupModel.cpp
+    Gen5/PickupModel.hpp
     Gen5/IRNGProvider5.hpp
     Gen5/ProfileModel5.cpp
     Gen5/ProfileModel5.hpp
