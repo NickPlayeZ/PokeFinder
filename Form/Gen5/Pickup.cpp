@@ -252,7 +252,8 @@ void Pickup::updateEncounterLocations(ComboBox *encounter, ComboBox *season, Com
     }
 
     u16 currentLocation = location->getCurrentUShort();
-    areas = Encounters5::getEncounters(encounter->getEnum<Encounter>(), season->currentIndex(), currentProfile);
+    EncounterSettings5 settings { false, static_cast<u8>(season->currentIndex()) };
+    areas = Encounters5::getEncounters(encounter->getEnum<Encounter>(), settings, currentProfile);
 
     std::vector<u16> locs;
     std::ranges::transform(areas, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });

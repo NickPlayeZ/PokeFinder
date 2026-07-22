@@ -142,14 +142,14 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="0">
+        <item row="6" column="0">
          <widget class="QPushButton" name="pushButtonPickup">
           <property name="text">
            <string>Pickup</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="0">
+        <item row="5" column="0">
          <widget class="QPushButton" name="pushButtonPhenomenon">
           <property name="text">
            <string>Phenomenon</string>

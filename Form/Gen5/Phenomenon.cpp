@@ -72,7 +72,7 @@ namespace
         std::array<bool, 16> powers;
         powers.fill(true);
 
-        std::array<bool, 12> encounterSlots;
+        std::array<bool, 13> encounterSlots;
         encounterSlots.fill(true);
 
         return WildStateFilter(255, 255, 255, 1, 100, 0, 255, 0, 255, true, ivMin, ivMax, natures, powers, encounterSlots);
@@ -425,8 +425,8 @@ void Phenomenon::generatorEncounterIndexChanged(int index)
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::ArenaTrap), !encounterModifier);
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::SuctionCups), !encounterModifier);
 
-        u8 season = ui->comboBoxGeneratorSeason->currentIndex();
-        encounterGenerator = Encounters5::getEncounters(encounter, season, currentProfile);
+        EncounterSettings5 settings { false, static_cast<u8>(ui->comboBoxGeneratorSeason->currentIndex()) };
+        encounterGenerator = Encounters5::getEncounters(encounter, settings, currentProfile);
 
         std::vector<u16> locs;
         std::ranges::transform(encounterGenerator, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });
@@ -672,8 +672,8 @@ void Phenomenon::searcherEncounterIndexChanged(int index)
         ui->comboMenuSearcherLead->hideAction(toInt(Lead::ArenaTrap), !encounterModifier);
         ui->comboMenuSearcherLead->hideAction(toInt(Lead::SuctionCups), !encounterModifier);
 
-        u8 season = ui->comboBoxSearcherSeason->currentIndex();
-        encounterSearcher = Encounters5::getEncounters(encounter, season, currentProfile);
+        EncounterSettings5 settings { false, static_cast<u8>(ui->comboBoxSearcherSeason->currentIndex()) };
+        encounterSearcher = Encounters5::getEncounters(encounter, settings, currentProfile);
 
         std::vector<u16> locs;
         std::ranges::transform(encounterSearcher, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });

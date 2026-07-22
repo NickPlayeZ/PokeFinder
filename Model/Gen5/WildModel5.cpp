@@ -126,7 +126,7 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
                 return "-";
             }
             return QString("%1: %2")
-                .arg(state.getEncounterSlot())
+                .arg(state.getEncounterSlot() == 12 ? tr("S") : QString::number(state.getEncounterSlot()))
                 .arg(QString::fromStdString(Translator::getSpecie(state.getSpecie(), state.getForm())));
         case 7:
             if (item)
@@ -280,7 +280,7 @@ QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
                 return "-";
             }
             return QString("%1: %2")
-                .arg(state.getEncounterSlot())
+                .arg(state.getEncounterSlot() == 12 ? tr("S") : QString::number(state.getEncounterSlot()))
                 .arg(QString::fromStdString(Translator::getSpecie(state.getSpecie(), state.getForm())));
         case 8:
             if (item)
