@@ -31,6 +31,7 @@
 #include <Core/Util/Utilities.hpp>
 #include <algorithm>
 #include <array>
+#include <iterator>
 
 static u8 gen(MT &rng)
 {
@@ -246,18 +247,50 @@ static u16 getPhenomenonItem(BWRNG &rng, Encounter encounter, Game version, u8 l
     return encounter == Encounter::DustCloud ? getDustCloudItem(rng, version, location) : getFlyingShadowItem(rng);
 }
 
+static bool usesNsPokemonReleasedOffset(Encounter encounter)
+{
+    return encounter == Encounter::Grass || encounter == Encounter::GrassDark || encounter == Encounter::Surfing;
+}
+
 WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, u8 passPower,
                                bool searchMovingTrigger, bool requireMovingTrigger,
                                const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter) :
-    WildGenerator(initialAdvances, maxAdvances, offset, method, lead, area, profile, filter),
-    passPower((profile.getVersion() & Game::BW) != Game::None ? PassPower5::combine(PassPower5::None, PassPower5::getEncounterPower(passPower)) : passPower),
-    searchMovingTrigger(searchMovingTrigger),
-    requireMovingTrigger(requireMovingTrigger)
+    WildGenerator5(initialAdvances, maxAdvances, offset, method, lead, std::vector<u8> { passPower }, searchMovingTrigger, requireMovingTrigger,
+                   area, profile, filter)
 {
+}
+
+WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, const std::vector<u8> &passPowers,
+                               bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area, const Profile5 &profile,
+                               const WildStateFilter &filter, bool requirePassPowerIVAdvance) :
+    WildGenerator(initialAdvances, maxAdvances, offset, method, lead, area, profile, filter),
+    passPowers(passPowers),
+    searchMovingTrigger(searchMovingTrigger),
+    requireMovingTrigger(requireMovingTrigger),
+    requirePassPowerIVAdvance(requirePassPowerIVAdvance)
+{
+    if ((profile.getVersion() & Game::BW) != Game::None)
+    {
+        for (u8 &passPower : this->passPowers)
+        {
+            passPower = PassPower5::combine(PassPower5::None, PassPower5::getEncounterPower(passPower));
+        }
+    }
+
     if (!searchMovingTrigger)
     {
-        this->passPower = getLuckyPower(this->passPower);
+        for (u8 &passPower : this->passPowers)
+        {
+            passPower = getLuckyPower(passPower);
+        }
     }
+
+    if (this->passPowers.empty())
+    {
+        this->passPowers.emplace_back(PassPower5::None);
+    }
+    std::ranges::sort(this->passPowers);
+    this->passPowers.erase(std::ranges::unique(this->passPowers).begin(), this->passPowers.end());
 }
 
 std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, u32 maxAdvances) const
@@ -288,6 +321,55 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, 
 }
 
 std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const
+{
+    if (passPowers.size() == 1)
+    {
+        if (requirePassPowerIVAdvance && passPowers[0] != PassPower5::None)
+        {
+            auto powerIVs = ivs;
+            std::erase_if(powerIVs, [](const auto &iv) { return iv.first < 2; });
+            return powerIVs.empty() ? std::vector<WildState5>() : generate(seed, powerIVs, passPowers[0]);
+        }
+
+        return generate(seed, ivs, passPowers[0]);
+    }
+
+    std::vector<WildState5> states;
+    for (u8 activePassPower : passPowers)
+    {
+        auto powerIVs = ivs;
+        if (requirePassPowerIVAdvance && activePassPower != PassPower5::None)
+        {
+            std::erase_if(powerIVs, [](const auto &iv) { return iv.first < 2; });
+        }
+        if (powerIVs.empty())
+        {
+            continue;
+        }
+
+        auto powerStates = generate(seed, powerIVs, activePassPower);
+        states.reserve(states.size() + powerStates.size());
+        for (const auto &state : powerStates)
+        {
+            auto duplicate = std::ranges::find_if(states, [&state](const WildState5 &other) {
+                return state.getAdvances() == other.getAdvances() && state.getIVAdvances() == other.getIVAdvances()
+                    && state.getMovingTrigger() == other.getMovingTrigger() && state.getMovingSteps() == other.getMovingSteps()
+                    && state.getItem() == other.getItem() && state.getEncounterSlot() == other.getEncounterSlot()
+                    && state.getSpecie() == other.getSpecie() && state.getForm() == other.getForm() && state.getLevel() == other.getLevel()
+                    && state.getPID() == other.getPID() && state.getShiny() == other.getShiny() && state.getNature() == other.getNature()
+                    && state.getAbility() == other.getAbility() && state.getIVs() == other.getIVs()
+                    && state.getGender() == other.getGender() && state.isValid() == other.isValid();
+            });
+            if (duplicate == states.end())
+            {
+                states.emplace_back(state);
+            }
+        }
+    }
+    return states;
+}
+
+std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower) const
 {
     u8 luckyPower = getLuckyPower(passPower);
     u32 advances = Utilities5::initialAdvances(seed, profile);
@@ -334,9 +416,17 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
     }
 
     std::vector<WildState5> states;
+    bool nsPokemonReleasedOffset
+        = profile.getMemoryLink() && profile.getNsPokemonReleased() && usesNsPokemonReleasedOffset(area.getEncounter());
     for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
     {
-        BWRNG go(searchMovingTrigger ? encounterRNG : rng, jump);
+        BWRNG rowRng(searchMovingTrigger ? encounterRNG : rng, jump);
+        BWRNG payloadRng(searchMovingTrigger ? encounterRNG : rng);
+        if (nsPokemonReleasedOffset)
+        {
+            payloadRng.next();
+        }
+        BWRNG go(payloadRng, jump);
 
         bool cuteCharm = false;
         bool magnetStatic = false;
@@ -400,7 +490,17 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             }
             else
             {
-                bool flag = getPercentRand(go, bw) >= 50;
+                bool flag;
+                if (nsPokemonReleasedOffset && lead <= Lead::SynchronizeEnd)
+                {
+                    flag = getPercentRand(rowRng, bw) >= 50;
+                    getPercentRand(go, bw);
+                }
+                else
+                {
+                    flag = getPercentRand(go, bw) >= 50;
+                }
+
                 if (lead == Lead::MagnetPull || lead == Lead::Static)
                 {
                     magnetStatic = flag;
@@ -516,6 +616,16 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
         bool phenomenon = canTriggerPhenomenon(area.getEncounter()) && BWRNG(rng).nextUInt(1000) < getPhenomenonRate(area.getEncounter());
         u32 prng = rng.nextUInt();
+        if (passPower != PassPower5::None && initialAdvances + cnt < 4)
+        {
+            if (searchMovingTrigger)
+            {
+                encounterRNG.next();
+                triggerRNG.next();
+            }
+            continue;
+        }
+
         if (searchMovingTrigger)
         {
             encounterRNG.next();
@@ -524,7 +634,8 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         for (const auto &iv : ivs)
         {
             WildState5 state(prng, movingTrigger, movingSteps, phenomenon, phenomenonItem, advances + initialAdvances + cnt, iv.first, pid,
-                             iv.second, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(), slot.getForm(), info, valid);
+                             iv.second, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(), slot.getForm(), info, valid,
+                             passPower);
             if (!valid || phenomenonItem || filter.compareState(static_cast<const WildState &>(state)))
             {
                 states.emplace_back(state);

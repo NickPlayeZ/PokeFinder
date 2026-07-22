@@ -3524,10 +3524,6 @@
         <translation>Lichtungskraft</translation>
     </message>
     <message>
-        <source>S/MAX</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Settings</source>
         <translation>Einstellungen</translation>
     </message>
@@ -3667,6 +3663,22 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     <message>
         <source>Levels</source>
         <translation type="unfinished">Level</translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑</source>
+        <translation>Lichtungskraft +</translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑↑</source>
+        <translation>Lichtungskraft ++</translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑↑↑</source>
+        <translation>Lichtungskraft +++</translation>
+    </message>
+    <message>
+        <source>Grotto Power S</source>
+        <translation>Lichtungskraft S</translation>
     </message>
 </context>
 <context>
@@ -3969,6 +3981,26 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <location filename="../../Model/Gen5/HiddenGrottoModel.hpp" line="142"/>
         <source>Buttons</source>
         <translation>Knopfdrücke</translation>
+    </message>
+    <message>
+        <source>Pass Power</source>
+        <translation>Transferkraft</translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑</source>
+        <translation>Lichtungskraft +</translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑↑</source>
+        <translation>Lichtungskraft ++</translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑↑↑</source>
+        <translation>Lichtungskraft +++</translation>
+    </message>
+    <message>
+        <source>Grotto Power S</source>
+        <translation>Lichtungskraft S</translation>
     </message>
 </context>
 <context>
@@ -5868,6 +5900,10 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <translation>Mementolink</translation>
     </message>
     <message>
+        <source>N's Pokémon released</source>
+        <translation>Ns Pokémon freigelassen</translation>
+    </message>
+    <message>
         <source>Shiny Charm</source>
         <translation>Schillerpin</translation>
     </message>
@@ -6364,7 +6400,12 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <translation>Mementolink</translation>
     </message>
     <message>
-        <location filename="../../Model/Gen5/ProfileModel5.hpp" line="73"/>
+        <location filename="../../Model/Gen5/ProfileModel5.hpp" line="74"/>
+        <source>N's Pokémon released</source>
+        <translation>Ns Pokémon freigelassen</translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/ProfileModel5.hpp" line="74"/>
         <source>Shiny Charm</source>
         <translation>Schillerpin</translation>
     </message>
@@ -7947,6 +7988,10 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <source>Yancy</source>
         <translation>Sabine</translation>
     </message>
+    <message>
+        <source>Lucky Power ↑↑↑/S</source>
+        <translation>Beschwörungskraft +++/S</translation>
+    </message>
 </context>
 <context>
     <name>Static8</name>
@@ -8802,6 +8847,14 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <location filename="../../Model/Gen5/StaticModel5.hpp" line="179"/>
         <source>Buttons</source>
         <translation>Knopfdrücke</translation>
+    </message>
+    <message>
+        <source>Pass Power</source>
+        <translation>Transferkraft</translation>
+    </message>
+    <message>
+        <source>Lucky Power ↑↑↑/S</source>
+        <translation>Beschwörungskraft +++/S</translation>
     </message>
 </context>
 <context>
@@ -10198,28 +10251,16 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <translation>Transferkraft</translation>
     </message>
     <message>
-        <source>Lucky Power 1</source>
-        <translation>Beschwörungskraft 1</translation>
+        <source>Encounter Power ↑</source>
+        <translation>Begegnungskraft +</translation>
     </message>
     <message>
-        <source>Lucky Power 2</source>
-        <translation>Beschwörungskraft 2</translation>
+        <source>Encounter Power ↑↑</source>
+        <translation>Begegnungskraft ++</translation>
     </message>
     <message>
-        <source>Lucky Power 3/S</source>
-        <translation>Beschwörungskraft 3/S</translation>
-    </message>
-    <message>
-        <source>Encounter Power 1</source>
-        <translation>Begegnungskraft 1</translation>
-    </message>
-    <message>
-        <source>Encounter Power 2</source>
-        <translation>Begegnungskraft 2</translation>
-    </message>
-    <message>
-        <source>Encounter Power 3</source>
-        <translation>Begegnungskraft 3</translation>
+        <source>Encounter Power ↑↑↑</source>
+        <translation>Begegnungskraft +++</translation>
     </message>
     <message>
         <source>Step Encounter</source>
@@ -10441,6 +10482,18 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     <message>
         <source>Levels</source>
         <translation>Level</translation>
+    </message>
+    <message>
+        <source>Lucky Power ↑</source>
+        <translation>Beschwörungskraft +</translation>
+    </message>
+    <message>
+        <source>Lucky Power ↑↑</source>
+        <translation>Beschwörungskraft ++</translation>
+    </message>
+    <message>
+        <source>Lucky Power ↑↑↑/S</source>
+        <translation>Beschwörungskraft +++/S</translation>
     </message>
 </context>
 <context>
@@ -11577,11 +11630,15 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     </message>
     <message>
         <source>Phenomenon</source>
-        <translation>Phänomen</translation>
+        <translation>Ph&#xe4;nomen</translation>
     </message>
     <message>
         <source>Yes</source>
         <translation>Ja</translation>
+    </message>
+    <message>
+        <source>Pass Power</source>
+        <translation>Transferkraft</translation>
     </message>
 </context>
  <context>

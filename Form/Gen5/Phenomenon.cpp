@@ -36,6 +36,7 @@
 #include <Core/Parents/ProfileLoader.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Form/Controls/CheckList.hpp>
+#include <Form/Controls/ComboMenu.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
@@ -49,6 +50,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
+#include <QSizePolicy>
 #include <QThread>
 #include <QTimer>
 #include <algorithm>
@@ -58,6 +60,40 @@ namespace
     bool supportsEncounterModifier(Encounter encounter)
     {
         return encounter == Encounter::DustCloud || encounter == Encounter::FlyingShadow;
+    }
+
+    std::vector<u8> getCheckedUChars(const ComboMenu *comboMenu)
+    {
+        auto data = comboMenu->getCheckedData();
+        std::vector<u8> values;
+        values.reserve(data.size());
+        for (int value : data)
+        {
+            values.emplace_back(value);
+        }
+        return values;
+    }
+
+    bool hasPassPower(const std::vector<u8> &powers)
+    {
+        return std::ranges::find_if(powers, [](u8 power) { return power != PassPower5::None; }) != powers.end();
+    }
+
+    std::vector<u8> getLuckyPowers(std::vector<u8> powers, bool bw)
+    {
+        if (bw)
+        {
+            return { PassPower5::None };
+        }
+
+        if (powers.empty())
+        {
+            powers.emplace_back(PassPower5::None);
+        }
+
+        std::ranges::sort(powers);
+        powers.erase(std::ranges::unique(powers).begin(), powers.end());
+        return powers;
     }
 
     WildStateFilter getUnfilteredWildStateFilter()
@@ -188,7 +224,12 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     ui->comboBoxSearcherLocation->enableAutoComplete();
 
     ui->comboBoxGeneratorLuckyPower->setup({ 0, 1, 2, 3 });
-    ui->comboBoxSearcherLuckyPower->setup({ 0, 1, 2, 3 });
+    ui->comboBoxSearcherLuckyPower->addAction(tr("None"), PassPower5::None);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑"), PassPower5::Lucky1);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑↑"), PassPower5::Lucky2);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑↑↑/S"), PassPower5::Lucky3);
+    ui->comboBoxSearcherLuckyPower->setCheckedData({ PassPower5::None });
+    ui->comboBoxSearcherLuckyPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
     connect(advanceFinder, &QAction::triggered, this, &Phenomenon::openAdvanceFinder);
@@ -598,11 +639,13 @@ void Phenomenon::search()
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
     auto lead = ui->comboMenuSearcherLead->getEnum<Lead>();
-    u8 luckyPower = ui->comboBoxSearcherLuckyPower->getCurrentUChar();
+    auto luckyPowers = getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower),
+                                      (currentProfile->getVersion() & Game::BW) != Game::None);
+    searcherModel->setShowPassPower(hasPassPower(luckyPowers));
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
-    WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, lead, luckyPower, false, false,
-                             encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter);
+    WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, lead, luckyPowers, false, false,
+                             encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter, true);
 
     SearcherBase5<WildGenerator5, WildState5> *searcher;
     if (fastSearchEnabled())
@@ -785,6 +828,7 @@ void Phenomenon::transferSettings(int index)
         ui->comboBoxSearcherLocation->setCurrentIndex(ui->comboBoxGeneratorLocation->currentIndex());
         ui->comboBoxSearcherPokemon->setCurrentIndex(ui->comboBoxGeneratorPokemon->currentIndex());
         ui->comboBoxSearcherSeason->setCurrentIndex(ui->comboBoxGeneratorSeason->currentIndex());
+        ui->comboBoxSearcherLuckyPower->setCheckedData({ ui->comboBoxGeneratorLuckyPower->getCurrentUChar() });
     }
     else
     {
@@ -792,5 +836,8 @@ void Phenomenon::transferSettings(int index)
         ui->comboBoxGeneratorLocation->setCurrentIndex(ui->comboBoxSearcherLocation->currentIndex());
         ui->comboBoxGeneratorPokemon->setCurrentIndex(ui->comboBoxSearcherPokemon->currentIndex());
         ui->comboBoxGeneratorSeason->setCurrentIndex(ui->comboBoxSearcherSeason->currentIndex());
+        auto luckyPowers = getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower),
+                                          (currentProfile->getVersion() & Game::BW) != Game::None);
+        ui->comboBoxGeneratorLuckyPower->setCurrentIndex(luckyPowers.empty() ? 0 : luckyPowers.front());
     }
 }

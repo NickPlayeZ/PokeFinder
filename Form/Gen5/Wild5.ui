@@ -117,43 +117,7 @@
            </widget>
           </item>
           <item row="6" column="1">
-           <widget class="ComboBox" name="comboBoxGeneratorLuckyPower">
-            <item>
-             <property name="text">
-              <string>None</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Lucky Power 1</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Lucky Power 2</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Lucky Power 3/S</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Encounter Power 1</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Encounter Power 2</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Encounter Power 3</string>
-             </property>
-            </item>
-           </widget>
+           <widget class="ComboMenu" name="comboBoxGeneratorLuckyPower"/>
           </item>
           <item row="7" column="0" colspan="2">
            <widget class="QPushButton" name="pushButtonGenerate">
@@ -424,43 +388,7 @@
            </widget>
           </item>
           <item row="5" column="1">
-           <widget class="ComboBox" name="comboBoxSearcherLuckyPower">
-            <item>
-             <property name="text">
-              <string>None</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Lucky Power 1</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Lucky Power 2</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Lucky Power 3/S</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Encounter Power 1</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Encounter Power 2</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Encounter Power 3</string>
-             </property>
-            </item>
-           </widget>
+           <widget class="ComboMenu" name="comboBoxSearcherLuckyPower"/>
           </item>
           <item row="6" column="0">
            <widget class="QLabel" name="labelSearcherStartDate">

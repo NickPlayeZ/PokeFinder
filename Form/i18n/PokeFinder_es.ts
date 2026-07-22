@@ -3525,10 +3525,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>S/MAX</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Settings</source>
         <translation>Configuraciones</translation>
     </message>
@@ -3666,6 +3662,22 @@ Profile is missing or has an incompatible SHA cache.</source>
     </message>
     <message>
         <source>Levels</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑↑</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑↑↑</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grotto Power S</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -3968,6 +3980,26 @@ Profile is missing or has an incompatible SHA cache.</source>
     <message>
         <location filename="../../Model/Gen5/HiddenGrottoModel.hpp" line="142"/>
         <source>Buttons</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pass Power</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑↑</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grotto Power ↑↑↑</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grotto Power S</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -5869,6 +5901,10 @@ Profile is missing or has an incompatible SHA cache.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>N's Pokémon released</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Shiny Charm</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6365,7 +6401,12 @@ Profile is missing or has an incompatible SHA cache.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../Model/Gen5/ProfileModel5.hpp" line="73"/>
+        <location filename="../../Model/Gen5/ProfileModel5.hpp" line="74"/>
+        <source>N's Pokémon released</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/ProfileModel5.hpp" line="74"/>
         <source>Shiny Charm</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7953,6 +7994,10 @@ Profile is missing or has an incompatible SHA cache.</source>
         <source>Yancy</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Lucky Power ↑↑↑/S</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>Static8</name>
@@ -8807,6 +8852,14 @@ Profile is missing or has an incompatible SHA cache.</source>
     <message>
         <location filename="../../Model/Gen5/StaticModel5.hpp" line="179"/>
         <source>Buttons</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pass Power</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lucky Power ↑↑↑/S</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -10203,27 +10256,15 @@ Profile is missing or has an incompatible SHA cache.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Lucky Power 1</source>
+        <source>Encounter Power ↑</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Lucky Power 2</source>
+        <source>Encounter Power ↑↑</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Lucky Power 3/S</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Encounter Power 1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Encounter Power 2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Encounter Power 3</source>
+        <source>Encounter Power ↑↑↑</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -10444,6 +10485,18 @@ Profile is missing or has an incompatible SHA cache.</source>
     </message>
     <message>
         <source>Levels</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lucky Power ↑</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lucky Power ↑↑</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lucky Power ↑↑↑/S</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -11585,6 +11638,10 @@ Profile is missing or has an incompatible SHA cache.</source>
     </message>
     <message>
         <source>Yes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pass Power</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

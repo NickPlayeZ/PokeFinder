@@ -48,9 +48,10 @@ public:
      */
     WildState5(u32 prng, u8 movingTrigger, u8 movingSteps, bool phenomenon, bool phenomenonItem, u32 advances, u32 ivAdvances, u32 pid,
                const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie,
-               u8 form, const PersonalInfo *info, bool valid = true) :
+               u8 form, const PersonalInfo *info, bool valid = true, u8 passPower = 0) :
         WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info),
         ivAdvances(ivAdvances),
+        passPower(passPower),
         movingTrigger(movingTrigger),
         movingSteps(movingSteps),
         phenomenon(phenomenon),
@@ -144,8 +145,19 @@ public:
         return needle;
     }
 
+    /**
+     * @brief Returns the pass power of the state
+     *
+     * @return Pass power
+     */
+    u8 getPassPower() const
+    {
+        return passPower;
+    }
+
 private:
     u32 ivAdvances;
+    u8 passPower;
     u8 movingTrigger;
     u8 movingSteps;
     bool phenomenon;

@@ -18,18 +18,63 @@
  */
 
 #include "WildModel5.hpp"
+#include <Core/Gen5/Generators/WildGenerator5.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
 #include <QColor>
 #include <QFont>
+#include <QStringList>
 
 namespace
 {
 constexpr int generatorStepsColumn = 3;
 constexpr int generatorPhenomenonColumn = 4;
+constexpr int searcherPassPowerColumn = 1;
 constexpr int searcherTriggerColumn = 2;
 constexpr int searcherStepsColumn = 3;
 constexpr int searcherPhenomenonColumn = 4;
+
+QString getLuckyPowerText(u8 power)
+{
+    QStringList powers;
+
+    switch (PassPower5::getLuckyPower(power))
+    {
+    case PassPower5::Lucky1:
+        powers.append(WildSearcherModel5::tr("Lucky Power ↑"));
+        break;
+    case PassPower5::Lucky2:
+        powers.append(WildSearcherModel5::tr("Lucky Power ↑↑"));
+        break;
+    case PassPower5::Lucky3:
+        powers.append(WildSearcherModel5::tr("Lucky Power ↑↑↑/S"));
+        break;
+    default:
+        break;
+    }
+
+    switch (PassPower5::getEncounterPower(power))
+    {
+    case 1:
+        powers.append(WildSearcherModel5::tr("Encounter Power ↑"));
+        break;
+    case 2:
+        powers.append(WildSearcherModel5::tr("Encounter Power ↑↑"));
+        break;
+    case 3:
+        powers.append(WildSearcherModel5::tr("Encounter Power ↑↑↑"));
+        break;
+    default:
+        break;
+    }
+
+    if (powers.empty())
+    {
+        return WildSearcherModel5::tr("None");
+    }
+
+    return powers.join(QStringLiteral(" & "));
+}
 
 int mapGeneratorColumn(int column, bool showMovingTrigger, bool showPhenomenon)
 {
@@ -46,8 +91,13 @@ int mapGeneratorColumn(int column, bool showMovingTrigger, bool showPhenomenon)
     return column;
 }
 
-int mapSearcherColumn(int column, bool showMovingTrigger, bool showPhenomenon)
+int mapSearcherColumn(int column, bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
 {
+    if (showPassPower && column > searcherPassPowerColumn)
+    {
+        column--;
+    }
+
     if (showMovingTrigger && column >= searcherTriggerColumn)
     {
         column++;
@@ -63,6 +113,17 @@ int mapSearcherColumn(int column, bool showMovingTrigger, bool showPhenomenon)
     }
 
     return column;
+}
+
+int mapSearcherHeaderColumn(int column, bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
+{
+    if (showPassPower && column == searcherPassPowerColumn)
+    {
+        return searcherPassPowerColumn;
+    }
+
+    int mappedColumn = mapSearcherColumn(column, showPassPower, showMovingTrigger, showPhenomenon);
+    return mappedColumn == 0 ? 0 : mappedColumn + 1;
 }
 }
 
@@ -236,13 +297,14 @@ void WildGeneratorModel5::setShowMovingTrigger(bool flag)
     }
 }
 
-WildSearcherModel5::WildSearcherModel5(QObject *parent) : TableModel(parent), showStats(false), showMovingTrigger(false), showPhenomenon(false)
+WildSearcherModel5::WildSearcherModel5(QObject *parent) :
+    TableModel(parent), showStats(false), showMovingTrigger(false), showPhenomenon(false), showPassPower(false)
 {
 }
 
 int WildSearcherModel5::columnCount(const QModelIndex &parent) const
 {
-    return header.size() - (showMovingTrigger ? 1 : 2) - (showPhenomenon ? 0 : 1);
+    return header.size() - (showPassPower ? 0 : 1) - (showMovingTrigger ? 1 : 2) - (showPhenomenon ? 0 : 1);
 }
 
 QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
@@ -251,8 +313,13 @@ QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
     {
         const auto &display = model[index.row()];
         const auto &state = display.getState();
-        int column = mapSearcherColumn(index.column(), showMovingTrigger, showPhenomenon);
+        int column = mapSearcherColumn(index.column(), showPassPower, showMovingTrigger, showPhenomenon);
         bool item = state.getPhenomenonItem();
+
+        if (showPassPower && column == searcherPassPowerColumn)
+        {
+            return getLuckyPowerText(state.getPassPower());
+        }
 
         switch (column)
         {
@@ -375,7 +442,7 @@ QVariant WildSearcherModel5::headerData(int section, Qt::Orientation orientation
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
-        return header[mapSearcherColumn(section, showMovingTrigger, showPhenomenon)];
+        return header[mapSearcherHeaderColumn(section, showPassPower, showMovingTrigger, showPhenomenon)];
     }
     return QVariant();
 }
@@ -392,6 +459,16 @@ void WildSearcherModel5::setShowMovingTrigger(bool flag)
     {
         beginResetModel();
         showMovingTrigger = flag;
+        endResetModel();
+    }
+}
+
+void WildSearcherModel5::setShowPassPower(bool flag)
+{
+    if (showPassPower != flag)
+    {
+        beginResetModel();
+        showPassPower = flag;
         endResetModel();
     }
 }

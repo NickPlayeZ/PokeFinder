@@ -34,6 +34,7 @@
 #include <Core/Parents/ProfileLoader.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Form/Controls/Controls.hpp>
+#include <Form/Controls/ComboMenu.hpp>
 #include <Form/Controls/Filter.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
@@ -45,9 +46,11 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QSignalBlocker>
 #include <QThread>
 #include <QTimer>
 #include <algorithm>
+#include <vector>
 
 template <size_t size>
 static bool hasUnchecked(const std::array<bool, size> &values, size_t count = size)
@@ -96,6 +99,224 @@ static bool supportsMovingTrigger(Encounter encounter, const Profile5 *profile)
 }
 
 static const QString settingPrefix = QStringLiteral("static5");
+
+static std::vector<u8> getCheckedUChars(const ComboMenu *comboMenu)
+{
+    auto data = comboMenu->getCheckedData();
+    std::vector<u8> values;
+    values.reserve(data.size());
+    for (int value : data)
+    {
+        values.emplace_back(value);
+    }
+    return values;
+}
+
+static bool hasPassPower(const std::vector<u8> &powers)
+{
+    return std::ranges::find_if(powers, [](u8 power) { return power != PassPower5::None; }) != powers.end();
+}
+
+static bool isLuckyPower(u8 passPower)
+{
+    u8 luckyPower = PassPower5::getLuckyPower(passPower);
+    return luckyPower == PassPower5::Lucky1 || luckyPower == PassPower5::Lucky2 || luckyPower == PassPower5::Lucky3;
+}
+
+static bool isEncounterPower(u8 passPower)
+{
+    u8 encounterPower = PassPower5::getEncounterPower(passPower);
+    return encounterPower == PassPower5::getEncounterPower(PassPower5::Encounter1)
+        || encounterPower == PassPower5::getEncounterPower(PassPower5::Encounter2)
+        || encounterPower == PassPower5::getEncounterPower(PassPower5::Encounter3);
+}
+
+static void addPassPowerOption(ComboMenu *comboMenu, const QString &text, u8 passPower)
+{
+    comboMenu->addAction(text, passPower);
+}
+
+static std::vector<int> getPassPowerMenuOptions(u8 passPower)
+{
+    if (passPower == PassPower5::None)
+    {
+        return { PassPower5::None };
+    }
+
+    std::vector<int> options;
+    if (PassPower5::getLuckyPower(passPower) != PassPower5::None)
+    {
+        options.emplace_back(PassPower5::getLuckyPower(passPower));
+    }
+    if (PassPower5::getEncounterPower(passPower) != PassPower5::None)
+    {
+        options.emplace_back(PassPower5::getEncounterPower(passPower) << PassPower5::EncounterShift);
+    }
+    return options;
+}
+
+static std::vector<u8> getPassPowers(const std::vector<u8> &powerOptions, bool searchMovingTrigger, bool bw)
+{
+    std::vector<u8> activeLuckyPowers;
+    std::vector<u8> activeEncounterPowers = { PassPower5::None };
+    for (u8 powerOption : powerOptions)
+    {
+        if (powerOption == PassPower5::None)
+        {
+            activeLuckyPowers.emplace_back(PassPower5::None);
+        }
+        else if (isLuckyPower(powerOption))
+        {
+            activeLuckyPowers.emplace_back(PassPower5::getLuckyPower(powerOption));
+        }
+        else if (searchMovingTrigger && isEncounterPower(powerOption))
+        {
+            activeEncounterPowers.emplace_back(PassPower5::getEncounterPower(powerOption));
+        }
+    }
+
+    if (activeLuckyPowers.empty())
+    {
+        activeLuckyPowers = { PassPower5::None };
+    }
+    else if (bw)
+    {
+        activeLuckyPowers.emplace_back(PassPower5::None);
+    }
+
+    std::ranges::sort(activeLuckyPowers);
+    activeLuckyPowers.erase(std::ranges::unique(activeLuckyPowers).begin(), activeLuckyPowers.end());
+    std::ranges::sort(activeEncounterPowers);
+    activeEncounterPowers.erase(std::ranges::unique(activeEncounterPowers).begin(), activeEncounterPowers.end());
+
+    std::vector<u8> passPowers;
+    for (u8 luckyPower : activeLuckyPowers)
+    {
+        for (u8 encounterPower : activeEncounterPowers)
+        {
+            passPowers.emplace_back(PassPower5::combine(luckyPower, encounterPower));
+        }
+    }
+    return passPowers;
+}
+
+static std::vector<int> getGeneratorPassPowerProperty(const ComboMenu *comboMenu)
+{
+    auto values = comboMenu->property("generatorPassPowerOptions").toList();
+    std::vector<int> powerOptions;
+    powerOptions.reserve(values.size());
+    for (const auto &value : values)
+    {
+        powerOptions.emplace_back(value.toInt());
+    }
+    return powerOptions;
+}
+
+static void setGeneratorPassPowerProperty(ComboMenu *comboMenu, const std::vector<int> &powerOptions)
+{
+    QVariantList values;
+    for (int powerOption : powerOptions)
+    {
+        values.emplace_back(powerOption);
+    }
+    comboMenu->setProperty("generatorPassPowerOptions", values);
+}
+
+static std::vector<int> normalizeGeneratorPassPowerOptions(const std::vector<int> &powerOptions, const std::vector<int> &previousPowerOptions)
+{
+    std::vector<int> luckyOptions;
+    std::vector<int> encounterOptions;
+    for (int powerOption : powerOptions)
+    {
+        if (isLuckyPower(powerOption))
+        {
+            luckyOptions.emplace_back(powerOption);
+        }
+        else if (isEncounterPower(powerOption))
+        {
+            encounterOptions.emplace_back(powerOption);
+        }
+    }
+
+    if (std::ranges::contains(powerOptions, static_cast<int>(PassPower5::None))
+        && !std::ranges::contains(previousPowerOptions, static_cast<int>(PassPower5::None)))
+    {
+        return { PassPower5::None };
+    }
+
+    u8 luckyPower = PassPower5::None;
+    u8 encounterPower = PassPower5::None;
+    for (int previousPowerOption : previousPowerOptions)
+    {
+        if (isLuckyPower(previousPowerOption) && std::ranges::contains(luckyOptions, previousPowerOption))
+        {
+            luckyPower = PassPower5::getLuckyPower(previousPowerOption);
+        }
+        else if (isEncounterPower(previousPowerOption) && std::ranges::contains(encounterOptions, previousPowerOption))
+        {
+            encounterPower = PassPower5::getEncounterPower(previousPowerOption);
+        }
+    }
+
+    if (luckyPower == PassPower5::None && !std::ranges::any_of(previousPowerOptions, isLuckyPower) && !luckyOptions.empty())
+    {
+        luckyPower = PassPower5::getLuckyPower(luckyOptions.front());
+    }
+
+    if (encounterPower == PassPower5::None && !std::ranges::any_of(previousPowerOptions, isEncounterPower) && !encounterOptions.empty())
+    {
+        encounterPower = PassPower5::getEncounterPower(encounterOptions.front());
+    }
+
+    std::vector<int> normalized;
+    if (luckyPower != PassPower5::None)
+    {
+        normalized.emplace_back(luckyPower);
+    }
+    if (encounterPower != PassPower5::None)
+    {
+        normalized.emplace_back(encounterPower << PassPower5::EncounterShift);
+    }
+    if (normalized.empty())
+    {
+        normalized.emplace_back(PassPower5::None);
+    }
+    return normalized;
+}
+
+static u8 getGeneratorPassPower(const ComboMenu *comboMenu)
+{
+    auto powerOptions = normalizeGeneratorPassPowerOptions(comboMenu->getRawCheckedData(), getGeneratorPassPowerProperty(comboMenu));
+    u8 luckyPower = PassPower5::None;
+    u8 encounterPower = PassPower5::None;
+    for (int powerOption : powerOptions)
+    {
+        if (isLuckyPower(powerOption))
+        {
+            luckyPower = PassPower5::getLuckyPower(powerOption);
+        }
+        else if (isEncounterPower(powerOption))
+        {
+            encounterPower = PassPower5::getEncounterPower(powerOption);
+        }
+    }
+    return PassPower5::combine(luckyPower, encounterPower);
+}
+
+static void updateGeneratorPassPowerActions(ComboMenu *comboMenu, bool bw)
+{
+    auto powerOptions = normalizeGeneratorPassPowerOptions(comboMenu->getRawCheckedData(), getGeneratorPassPowerProperty(comboMenu));
+    if (bw)
+    {
+        std::erase_if(powerOptions, [](int powerOption) { return isLuckyPower(powerOption); });
+        if (powerOptions.empty())
+        {
+            powerOptions.emplace_back(PassPower5::None);
+        }
+    }
+    setGeneratorPassPowerProperty(comboMenu, powerOptions);
+    comboMenu->setCheckedData(powerOptions);
+}
 
 Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(nullptr), shaCache(nullptr)
 {
@@ -169,10 +390,27 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     ui->comboBoxGeneratorLocation->enableAutoComplete();
     ui->comboBoxSearcherLocation->enableAutoComplete();
 
-    ui->comboBoxGeneratorLuckyPower->setup({ PassPower5::None, PassPower5::Lucky1, PassPower5::Lucky2, PassPower5::Lucky3,
-                                             PassPower5::Encounter1, PassPower5::Encounter2, PassPower5::Encounter3 });
-    ui->comboBoxSearcherLuckyPower->setup({ PassPower5::None, PassPower5::Lucky1, PassPower5::Lucky2, PassPower5::Lucky3,
-                                            PassPower5::Encounter1, PassPower5::Encounter2, PassPower5::Encounter3 });
+    addPassPowerOption(ui->comboBoxGeneratorLuckyPower, tr("None"), PassPower5::None);
+    addPassPowerOption(ui->comboBoxGeneratorLuckyPower, tr("Lucky Power ↑"), PassPower5::Lucky1);
+    addPassPowerOption(ui->comboBoxGeneratorLuckyPower, tr("Lucky Power ↑↑"), PassPower5::Lucky2);
+    addPassPowerOption(ui->comboBoxGeneratorLuckyPower, tr("Lucky Power ↑↑↑/S"), PassPower5::Lucky3);
+    addPassPowerOption(ui->comboBoxGeneratorLuckyPower, tr("Encounter Power ↑"), PassPower5::Encounter1);
+    addPassPowerOption(ui->comboBoxGeneratorLuckyPower, tr("Encounter Power ↑↑"), PassPower5::Encounter2);
+    addPassPowerOption(ui->comboBoxGeneratorLuckyPower, tr("Encounter Power ↑↑↑"), PassPower5::Encounter3);
+    ui->comboBoxGeneratorLuckyPower->setMultiSelect(true);
+    ui->comboBoxGeneratorLuckyPower->setCheckedData({ PassPower5::None });
+    ui->comboBoxGeneratorLuckyPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+
+    ui->comboBoxSearcherLuckyPower->setMultiSelect(true);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("None"), PassPower5::None);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑"), PassPower5::Lucky1);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑↑"), PassPower5::Lucky2);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑↑↑/S"), PassPower5::Lucky3);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Encounter Power ↑"), PassPower5::Encounter1);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Encounter Power ↑↑"), PassPower5::Encounter2);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("Encounter Power ↑↑↑"), PassPower5::Encounter3);
+    ui->comboBoxSearcherLuckyPower->setCheckedData({ PassPower5::None });
+    ui->comboBoxSearcherLuckyPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
     connect(advanceFinder, &QAction::triggered, this, &Wild5::openAdvanceFinder);
@@ -206,6 +444,11 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
         }
     });
     connect(ui->checkBoxSearcherMovingTrigger, &QCheckBox::toggled, searcherModel, &WildSearcherModel5::setShowMovingTrigger);
+    connect(ui->comboBoxGeneratorLuckyPower, &ComboMenu::checkedDataChanged, this, [this] {
+        QSignalBlocker blocker(ui->comboBoxGeneratorLuckyPower);
+        bool bw = (currentProfile->getVersion() & Game::BW) != Game::None;
+        updateGeneratorPassPowerActions(ui->comboBoxGeneratorLuckyPower, bw);
+    });
     connect(ui->filterSearcher, &Filter::ivsChanged, this, &Wild5::searcherFastSearchChanged);
     connect(ui->textBoxSearcherInitialIVAdvances, &TextBox::textChanged, this, &Wild5::searcherFastSearchChanged);
     connect(ui->textBoxSearcherMaxIVAdvances, &TextBox::textChanged, this, &Wild5::searcherFastSearchChanged);
@@ -296,11 +539,15 @@ void Wild5::generate()
     u32 maxAdvances = ui->textBoxGeneratorMaxAdvances->getUInt();
     u32 offset = ui->textBoxGeneratorOffset->getUInt();
     auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
-    u8 luckyPower = ui->comboBoxGeneratorLuckyPower->getCurrentUChar();
+    u8 passPower = getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower);
     bool searchMovingTrigger = ui->checkBoxGeneratorMovingTrigger->isChecked() && (currentProfile->getVersion() & Game::Gen5) != Game::None;
+    if (!searchMovingTrigger)
+    {
+        passPower = PassPower5::combine(PassPower5::getLuckyPower(passPower), PassPower5::None);
+    }
 
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
-    WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, searchMovingTrigger, false,
+    WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, passPower, searchMovingTrigger, false,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
 
     auto states = generator.generate(seed, ivAdvances, 0);
@@ -449,13 +696,14 @@ void Wild5::profileChanged(const Profile5 &profile)
         ui->dateEditSearcherEndDate->clearDateRange();
     }
 
-    bool flag = (currentProfile->getVersion() & Game::BW2) != Game::None;
+    bool flag = (currentProfile->getVersion() & Game::Gen5) != Game::None;
 
     ui->labelGeneratorLuckyPower->setVisible(flag);
     ui->comboBoxGeneratorLuckyPower->setVisible(flag);
 
     ui->labelSearcherLuckyPower->setVisible(flag);
     ui->comboBoxSearcherLuckyPower->setVisible(flag);
+    updateGeneratorPassPowerActions(ui->comboBoxGeneratorLuckyPower, (currentProfile->getVersion() & Game::BW) != Game::None);
 
     generatorEncounterIndexChanged(0);
     searcherEncounterIndexChanged(0);
@@ -489,13 +737,15 @@ void Wild5::search()
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
     auto lead = ui->comboMenuSearcherLead->getEnum<Lead>();
-    u8 luckyPower = ui->comboBoxSearcherLuckyPower->getCurrentUChar();
     bool searchMovingTrigger
         = ui->checkBoxSearcherMovingTrigger->isChecked() && supportsMovingTrigger(ui->comboBoxSearcherEncounter->getEnum<Encounter>(), currentProfile);
+    auto passPowers = getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), searchMovingTrigger,
+                                    (currentProfile->getVersion() & Game::BW) != Game::None);
+    searcherModel->setShowPassPower(hasPassPower(passPowers));
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
-    WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, lead, luckyPower, searchMovingTrigger, searchMovingTrigger,
-                             encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter);
+    WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, lead, passPowers, searchMovingTrigger, searchMovingTrigger,
+                             encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter, true);
 
     SearcherBase5<WildGenerator5, WildState5> *searcher;
     if (fastSearchEnabled())
@@ -686,6 +936,7 @@ void Wild5::transferSettings(int index)
         ui->comboBoxSearcherSeason->setCurrentIndex(ui->comboBoxGeneratorSeason->currentIndex());
         ui->checkBoxSearcherMovingTrigger->setChecked(ui->checkBoxGeneratorMovingTrigger->isChecked());
         ui->checkBoxSearcherSwarm->setChecked(ui->checkBoxGeneratorSwarm->isChecked());
+        ui->comboBoxSearcherLuckyPower->setCheckedData(getPassPowerMenuOptions(getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower)));
     }
     else
     {
@@ -695,5 +946,9 @@ void Wild5::transferSettings(int index)
         ui->comboBoxGeneratorSeason->setCurrentIndex(ui->comboBoxSearcherSeason->currentIndex());
         ui->checkBoxGeneratorMovingTrigger->setChecked(ui->checkBoxSearcherMovingTrigger->isChecked());
         ui->checkBoxGeneratorSwarm->setChecked(ui->checkBoxSearcherSwarm->isChecked());
+        auto passPowers = getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), ui->checkBoxSearcherMovingTrigger->isChecked(),
+                                        (currentProfile->getVersion() & Game::BW) != Game::None);
+        ui->comboBoxGeneratorLuckyPower->setCheckedData(getPassPowerMenuOptions(passPowers.empty() ? PassPower5::None : passPowers.front()));
+        updateGeneratorPassPowerActions(ui->comboBoxGeneratorLuckyPower, (currentProfile->getVersion() & Game::BW) != Game::None);
     }
 }
