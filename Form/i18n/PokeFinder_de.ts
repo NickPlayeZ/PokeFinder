@@ -9934,7 +9934,7 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Kein Item</translation>
+        <translation>Nicht vorhanden</translation>
     </message>
     <message>
         <source>Pokémon</source>
@@ -10490,6 +10490,12 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     <message>
         <source>Lucky Power ↑↑↑/S</source>
         <translation>Beschwörungskraft +++/S</translation>
+    </message>
+    <message>
+        <location filename="../Gen5/Wild5.ui" line="229"/>
+        <location filename="../Gen5/Wild5.ui" line="534"/>
+        <source>Swarm</source>
+        <translation>Schwarm</translation>
     </message>
 </context>
 <context>

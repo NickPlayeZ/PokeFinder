@@ -1,3 +1,50 @@
+# Nick’s fork of PokéFinder
+
+
+This is a fork of the program “PokeFinder” by AdmiralFish. More on it down below.
+
+Please report any bugs either via opening an issue on this repository or by @ing me (username nickplayez) on I'm a Blisys RNG manipulation Discord server (whatdon't DM me I literally never check DMs and will ignore them for weeks).
+
+
+This fork includes the following new features and quality of life additions:
+
+
+Gen 3 Emerald
+-added multi lead search so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once
+
+Gen 4
+-added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)
+-added items to HGSS Rock Smash generator
+-PokeFinder now shows all Advances advance number, Chatot Pitch and Call Letter, even those that do not yield an encounter for things like Fishing or Rock Smash RNG, so that users can easier track what Advance they're on at all times 
+-added multi lead search, so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once
+
+Gen 5
+-added Pickup RNG support
+-added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)
+-expanded / finished Phenomena RNG support
+-added Wild Swarm RNG support
+-Hidden Grotto item searcher now lets you search for multiple items within the selected Advance range; very useful for PP Max farming
+-PokeFinder now shows all Advances advance number, Chatot Pitch and Call Letter, even those that do not yield an encounter for things like Fishing or Grotto RNG, so that users can easier track what Advance they're on at all times 
+-added multi lead search, so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once
+-added multi pass power search, so user don’t have to search using at most 1 pass power / level at a time, but can now select any number of pass powers / levels of the same pass power to search with at once
+-fixed a bug where Grotto Power did not work correctly
+-added “N’s Pokémon released” checkbox to BW2 profiles with memory link, as releasing them impacts the generation of Wild encounters
+
+
+Most of these will eventually be brought into the main PokeFinder, though that will take some time and not all of these features may make it, so for the time being I will try to keep this fork updated with any new changes AdmiralFish makes to the main PokeFinder. I will keep a list of all that’s been brought over right below.
+
+
+Features that have already been brought over to the main PokeFinder:
+-Added Advance Finder for Gens 4 and 5, so users can easier find the Advance they’re on after losing track
+-Added Save Needle display for Advances in Gen 5
+-Added Delay and Hour output to relevant Gen 4 searcher tabs
+-Added level searcher, so users can search for Pokemon that have a specific level; mostly useful for Surfing and Fishing RNG, as those can have a range levels within the same encounter slot
+-Added Suction Cups / Sticky Hold lead for Gen 5 Fishing
+-Added correct Characteristic names based on Generation and language; previously PokeFinder used the Gen 6+ Characteristic names which was wrong for Gens 4 and 5
+-Expanded Gen 4 Seed to Time Coin Flip / Call searcher window to display the results within the small popup window instead of users always having to close them to see what they hit
+-PokeFinder now returns an error message if the user is trying to get a Hidden Ability offspring with a parent combination that cannot produce a Hidden Ability offspring in Gens 5 and 8
+
+
 # PokéFinder
 
 Join the PokéFinder Discord server to talk about development and contribute.
