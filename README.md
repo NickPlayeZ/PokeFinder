@@ -3,6 +3,10 @@
 
 This is a fork of the program “PokeFinder” by AdmiralFish. More on it down below.
 
+[Latest Official Release](https://github.com/NickPlayeZ/PokeFinder/releases/latest)
+
+[Latest Nightly Build](https://github.com/NickPlayeZ/PokeFinder/actions)
+
 Please report any bugs either via opening an issue on this repository or by @ing me (username nickplayez) on I'm a Blisys RNG manipulation Discord server (whatdon't DM me I literally never check DMs and will ignore them for weeks).
 
 
