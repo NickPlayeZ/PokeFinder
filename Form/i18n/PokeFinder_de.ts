@@ -9421,7 +9421,7 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     <message>
         <location filename="../Gen4/Wild4.cpp" line="85"/>
         <source>Item Modifier</source>
-        <translation>Item Modifizierer</translation>
+        <translation>Item Modifikator</translation>
     </message>
     <message>
         <location filename="../Gen4/Wild4.cpp" line="86"/>
@@ -9556,7 +9556,7 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <location filename="../Gen4/Wild4.cpp" line="79"/>
         <location filename="../Gen4/Wild4.cpp" line="97"/>
         <source>Encounter Modifier</source>
-        <translation>Encounter Modifizierer</translation>
+        <translation>Encounter Modifikator</translation>
     </message>
     <message>
         <location filename="../Gen4/Wild4.cpp" line="80"/>
@@ -9890,10 +9890,6 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <translation>In sehr hohem Grass gehen / laufen</translation>
     </message>
     <message>
-        <source>Step Modifier</source>
-        <translation>Schritt Modifikator</translation>
-    </message>
-    <message>
         <source>Levels</source>
         <translation>Level</translation>
     </message>
@@ -10118,7 +10114,7 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     </message>
     <message>
         <source>Level Modifier</source>
-        <translation>Level Modifizierer</translation>
+        <translation>Level Modifikator</translation>
     </message>
     <message>
         <source>Hustle</source>
@@ -10134,7 +10130,7 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     </message>
     <message>
         <source>Slot Modifier</source>
-        <translation>Slot Modifizierer</translation>
+        <translation>Slot Modifikator</translation>
     </message>
     <message>
         <source>Magnet Pull</source>
@@ -10187,7 +10183,7 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     <name>Wild5</name>
     <message>
         <source>Encounter Modifier</source>
-        <translation>Encounter Modifizierer</translation>
+        <translation>Encounter Modifikator</translation>
     </message>
     <message>
         <source>Sticky Hold</source>
@@ -10388,7 +10384,7 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <location filename="../Gen5/Wild5.cpp" line="90"/>
         <location filename="../Gen5/Wild5.cpp" line="102"/>
         <source>Level Modifier</source>
-        <translation>Level Modifizierer</translation>
+        <translation>Level Modifikator</translation>
     </message>
     <message>
         <location filename="../Gen5/Wild5.cpp" line="91"/>
@@ -11303,6 +11299,11 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <source>Gender</source>
         <translation>Geschlecht</translation>
     </message>
+    <message>
+        <location filename="../../Model/Gen3/WildModel3.cpp" line="90"/>
+        <source>Level Modifier</source>
+        <translation>Level Modifikator</translation>
+    </message>
 </context>
 <context>
     <name>WildSearcherModel4</name>
@@ -11486,6 +11487,16 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <source>Lullaby</source>
         <translation>Schlaflied</translation>
     </message>
+    <message>
+        <location filename="../../Model/Gen4/WildModel4.cpp" line="93"/>
+        <source>Level Modifier</source>
+        <translation>Level Modifikator</translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen4/WildModel4.cpp" line="101"/>
+        <source>Encounter Modifier</source>
+        <translation>Encounter Modifikator</translation>
+    </message>
 </context>
 <context>
     <name>WildSearcherModel5</name>
@@ -11639,6 +11650,16 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
     <message>
         <source>Pass Power</source>
         <translation>Transferkraft</translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.cpp" line="82"/>
+        <source>Level Modifier</source>
+        <translation>Level Modifikator</translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.cpp" line="90"/>
+        <source>Encounter Modifier</source>
+        <translation>Encounter Modifikator</translation>
     </message>
 </context>
  <context>

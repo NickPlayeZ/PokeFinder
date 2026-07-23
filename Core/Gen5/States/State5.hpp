@@ -58,7 +58,12 @@ public:
 
     void addLead(Lead newLead)
     {
-        if (lead != Lead::None)
+        if (lead == Lead::None && newLead != Lead::None)
+        {
+            lead = newLead;
+            leadFlags = getLeadFlag(newLead);
+        }
+        else if (lead != Lead::None)
         {
             leadFlags |= getLeadFlag(newLead);
         }

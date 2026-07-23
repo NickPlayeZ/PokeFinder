@@ -44,7 +44,6 @@ struct WildStateKey
     u32 pid;
     u16 item;
     u16 specie;
-    u8 passPower;
     u8 ability;
     u8 gender;
     u8 level;
@@ -79,7 +78,6 @@ struct WildStateKeyHash
         combine(key.pid);
         combine(key.item);
         combine(key.specie);
-        combine(key.passPower);
         combine(key.ability);
         combine(key.gender);
         combine(key.level);
@@ -154,7 +152,6 @@ static WildStateKey getStateKey(const WildState5 &state, bool normalizeNature)
              state.getPID(),
              state.getItem(),
              state.getSpecie(),
-             state.getPassPower(),
              state.getAbility(),
              state.getGender(),
              state.getLevel(),
@@ -253,7 +250,8 @@ static u16 getStepEncounterModifier(Lead lead, u8 passPower)
 
 static u8 getMovingTrigger(BWRNG &rng, bool bw, Lead lead, Encounter encounter)
 {
-    if (lead != Lead::None && lead != Lead::CompoundEyes && lead != Lead::SuctionCups && !(bw && isStepModifier(lead)))
+    if (lead != Lead::None && lead > Lead::SynchronizeEnd && lead != Lead::CompoundEyes && lead != Lead::SuctionCups
+        && !(bw && isStepModifier(lead)))
     {
         if (lead == Lead::CuteCharmM || lead == Lead::CuteCharmF)
         {
@@ -513,12 +511,17 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             bool normalizeNature = activeLead <= Lead::SynchronizeEnd && filter.allowsAllNatures();
             for (auto state : leadStates)
             {
+                if (requireMovingTrigger && !state.isValid())
+                {
+                    continue;
+                }
+
                 if (normalizeNature)
                 {
                     state.setVariableNature(true);
                 }
 
-                if (state.isValid() && !state.getPhenomenonItem() && !filter.compareState(static_cast<const WildState &>(state)))
+                if (!state.getPhenomenonItem() && !filter.compareState(static_cast<const WildState &>(state)))
                 {
                     continue;
                 }
@@ -581,7 +584,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         {
             triggerOffset = isStepModifier(lead) ? 0 : 1;
         }
-        else if (bw && lead == Lead::None)
+        else if (bw && (lead == Lead::None || lead <= Lead::SynchronizeEnd))
         {
             triggerOffset = 1;
         }
@@ -616,8 +619,17 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         = profile.getMemoryLink() && profile.getNsPokemonReleased() && usesNsPokemonReleasedOffset(area.getEncounter());
     for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
     {
-        BWRNG rowRng(searchMovingTrigger ? encounterRNG : rng, jump);
         BWRNG payloadRng(searchMovingTrigger ? encounterRNG : rng);
+        if (searchMovingTrigger && bw && start + cnt > 0)
+        {
+            payloadRng = BWRNG(seed, start + cnt - 1);
+        }
+        else if (!searchMovingTrigger && area.getEncounter() != Encounter::SuperRodRippling && canTriggerPhenomenon(area.getEncounter())
+            && !canYieldPhenomenonItem(area.getEncounter()))
+        {
+            payloadRng.next();
+        }
+
         if (nsPokemonReleasedOffset)
         {
             payloadRng.next();
@@ -641,12 +653,9 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             phenomenonItem = getPercentRand(go, bw) >= battleRate;
         }
 
-        if (searchMovingTrigger && bw2 && lead == Lead::None)
-        {
-            getPercentRand(go, bw);
-            getPercentRand(go, bw);
-        }
-        else if (searchMovingTrigger && bw && lead == Lead::None)
+        if (searchMovingTrigger && bw
+            && (lead == Lead::None || lead <= Lead::SynchronizeEnd || isStepModifier(lead) || lead == Lead::CompoundEyes
+                || lead == Lead::SuctionCups))
         {
             getPercentRand(go, bw);
         }
@@ -678,7 +687,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                 }
             }
         }
-        else if (!phenomenonItem && !skipsLeadCheck(area.getEncounter(), lead) && (!searchMovingTrigger || !(bw && isStepModifier(lead))))
+        else if (!phenomenonItem && !skipsLeadCheck(area.getEncounter(), lead) && (!searchMovingTrigger || !isStepModifier(lead)))
         {
             // Failed cute charm continues to check for other leads
             if ((lead == Lead::CuteCharmM || lead == Lead::CuteCharmF) && getPercentRand(go, bw) < 67)
@@ -688,15 +697,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             else
             {
                 bool flag;
-                if (nsPokemonReleasedOffset && lead <= Lead::SynchronizeEnd)
-                {
-                    flag = getPercentRand(rowRng, bw) >= 50;
-                    getPercentRand(go, bw);
-                }
-                else
-                {
-                    flag = getPercentRand(go, bw) >= 50;
-                }
+                flag = getPercentRand(go, bw) >= 50;
 
                 if (lead == Lead::MagnetPull || lead == Lead::Static)
                 {
@@ -809,11 +810,6 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
         bool phenomenon = canTriggerPhenomenon(area.getEncounter()) && BWRNG(rng).nextUInt(1000) < getPhenomenonRate(area.getEncounter());
         u32 prng = rng.nextUInt();
-        if (passPower != PassPower5::None && initialAdvances + cnt < 4)
-        {
-            valid = false;
-        }
-
         if (searchMovingTrigger)
         {
             encounterRNG.next();

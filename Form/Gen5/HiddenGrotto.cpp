@@ -463,7 +463,8 @@ void HiddenGrotto::grottoSearch()
     u32 initialAdvances = ui->textBoxGrottoSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxGrottoSearcherMaxAdvances->getUInt();
     auto powerLevels = getCheckedUChars(ui->comboBoxGrottoSearcherGrottoPower);
-    grottoSearcherModel->setShowPassPower(hasGrottoPower(powerLevels));
+    bool showPassPower = hasGrottoPower(powerLevels);
+    grottoSearcherModel->setShowPassPower(showPassPower);
     bool itemTarget = ui->radioButtonGrottoSearcherItems->isChecked();
     u16 item = itemTarget ? ui->comboBoxGrottoSearcherItems->getCurrentUShort() : 0;
     u8 itemAmount = itemTarget ? static_cast<u8>(ui->spinBoxGrottoSearcherItemAmount->value()) : 1;
@@ -491,6 +492,10 @@ void HiddenGrotto::grottoSearch()
     auto *timer = new QTimer();
     connect(timer, &QTimer::timeout, this, [=] {
         grottoSearcherModel->addItems(searcher->getResults());
+        if (showPassPower)
+        {
+            ui->tableViewGrottoSearcher->resizeColumnToContents(1);
+        }
         ui->progressBarGrotto->setValue(searcher->getProgress());
     });
 
@@ -500,6 +505,10 @@ void HiddenGrotto::grottoSearch()
         ui->pushButtonGrottoSearch->setEnabled(true);
         ui->pushButtonGrottoCancel->setEnabled(false);
         grottoSearcherModel->addItems(searcher->getResults());
+        if (showPassPower)
+        {
+            ui->tableViewGrottoSearcher->resizeColumnToContents(1);
+        }
         ui->progressBarGrotto->setValue(searcher->getProgress());
         delete searcher;
     });

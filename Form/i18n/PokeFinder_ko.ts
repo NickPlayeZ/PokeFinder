@@ -9889,10 +9889,6 @@ Profile is missing or has an incompatible SHA cache.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Step Modifier</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Levels</source>
         <translation type="unfinished"></translation>
     </message>
@@ -11300,6 +11296,11 @@ Profile is missing or has an incompatible SHA cache.</source>
         <source>Gender</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../Model/Gen3/WildModel3.cpp" line="90"/>
+        <source>Level Modifier</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>WildSearcherModel4</name>
@@ -11483,6 +11484,16 @@ Profile is missing or has an incompatible SHA cache.</source>
         <source>Lullaby</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../Model/Gen4/WildModel4.cpp" line="93"/>
+        <source>Level Modifier</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen4/WildModel4.cpp" line="101"/>
+        <source>Encounter Modifier</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>WildSearcherModel5</name>
@@ -11635,6 +11646,16 @@ Profile is missing or has an incompatible SHA cache.</source>
     </message>
     <message>
         <source>Pass Power</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.cpp" line="82"/>
+        <source>Level Modifier</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.cpp" line="90"/>
+        <source>Encounter Modifier</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

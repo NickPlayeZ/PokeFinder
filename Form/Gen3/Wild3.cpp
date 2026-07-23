@@ -120,7 +120,7 @@ Wild3::Wild3(QWidget *parent) : QWidget(parent), ui(new Ui::Wild3)
                                          { tr("Vital Spirit"), toInt(Lead::VitalSpirit) } });
     ui->comboMenuSearcherLead->addMenu(tr("Slot Modifier"),
                                        { { tr("Magnet Pull"), toInt(Lead::MagnetPull) }, { tr("Static"), toInt(Lead::Static) } });
-    ui->comboMenuSearcherLead->addAction(tr("Synchronize"), toInt(Lead::Synchronize));
+    ui->comboMenuSearcherLead->addMenu(tr("Synchronize"), Translator::getNatures());
     ui->comboMenuSearcherLead->setMultiSelect(true);
     ui->comboMenuSearcherLead->setCheckedData({ toInt(Lead::None) });
     ui->comboMenuSearcherLead->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
@@ -385,7 +385,7 @@ void Wild3::search()
     {
         maxProgress *= max[i] - min[i] + 1;
     }
-    searcher->setMaxProgress(maxProgress);
+    searcher->setMaxProgress(maxProgress * static_cast<int>(leads.size()));
 
     auto *thread = QThread::create([=] { searcher->startSearch(min, max); });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);

@@ -23,6 +23,8 @@
 #include <Core/Global.hpp>
 #include <QComboBox>
 #include <QString>
+#include <algorithm>
+#include <array>
 
 class CheckListProxyModel;
 class QListView;
@@ -109,7 +111,8 @@ public:
     {
         auto checked = getChecked();
         std::array<bool, size> array;
-        std::ranges::copy(checked, array.begin());
+        array.fill(full);
+        std::ranges::copy_n(checked.begin(), std::min(checked.size(), array.size()), array.begin());
         return array;
     }
 

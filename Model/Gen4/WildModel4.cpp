@@ -90,7 +90,7 @@ QString getLeadName4(Lead lead, Lead synchronizeLead, u32 synchronizeFlags, u8 f
         }
         if ((flags & (1 << 5)) != 0)
         {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Hustle / Pressure / Vital Spirit"));
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Level Modifier"));
         }
         if ((flags & (1 << 6)) != 0)
         {
@@ -98,7 +98,7 @@ QString getLeadName4(Lead lead, Lead synchronizeLead, u32 synchronizeFlags, u8 f
         }
         if ((flags & (1 << 7)) != 0)
         {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Arena Trap / Illuminate / No Guard"));
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Encounter Modifier"));
         }
 
         return leads.join(" / ");
@@ -122,9 +122,9 @@ QString getLeadName4(Lead lead, Lead synchronizeLead, u32 synchronizeFlags, u8 f
     case Lead::Static:
         return QCoreApplication::translate("WildSearcherModel4", "Static");
     case Lead::Pressure:
-        return QCoreApplication::translate("WildSearcherModel4", "Hustle / Pressure / Vital Spirit");
+        return QCoreApplication::translate("WildSearcherModel4", "Level Modifier");
     case Lead::ArenaTrap:
-        return QCoreApplication::translate("WildSearcherModel4", "Arena Trap / Illuminate / No Guard");
+        return QCoreApplication::translate("WildSearcherModel4", "Encounter Modifier");
     case Lead::SuctionCups:
         return QCoreApplication::translate("WildSearcherModel4", "Sticky Hold / Suction Cups");
     default:
@@ -405,16 +405,11 @@ QVariant WildSearcherModel4::headerData(int section, Qt::Orientation orientation
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
-        if (section > 3)
-        {
-            section--;
-        }
-
-        if (!showStepEncounter && section >= 4)
+        if (!showStepEncounter && section >= 5)
         {
             section += 3;
         }
-        else if (showStepEncounter && !showStepMovement && section >= 5)
+        else if (showStepEncounter && !showStepMovement && section >= 6)
         {
             section++;
         }

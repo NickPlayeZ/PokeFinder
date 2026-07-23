@@ -87,7 +87,7 @@ QString getLeadName3(Lead lead, Lead synchronizeLead, u32 synchronizeFlags, u8 f
         }
         if ((flags & (1 << 5)) != 0)
         {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel3", "Hustle / Pressure / Vital Spirit"));
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel3", "Level Modifier"));
         }
 
         return leads.join(" / ");
@@ -109,7 +109,7 @@ QString getLeadName3(Lead lead, Lead synchronizeLead, u32 synchronizeFlags, u8 f
     case Lead::Static:
         return QCoreApplication::translate("WildSearcherModel3", "Static");
     case Lead::Pressure:
-        return QCoreApplication::translate("WildSearcherModel3", "Hustle / Pressure / Vital Spirit");
+        return QCoreApplication::translate("WildSearcherModel3", "Level Modifier");
     default:
         return QString();
     }

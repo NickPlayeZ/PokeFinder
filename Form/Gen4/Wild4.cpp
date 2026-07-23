@@ -204,7 +204,7 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
                                           { tr("Vital Spirit"), toInt(Lead::VitalSpirit) } });
     ui->comboMenuGeneratorLead->addMenu(tr("Slot Modifier"),
                                         { { tr("Magnet Pull"), toInt(Lead::MagnetPull) }, { tr("Static"), toInt(Lead::Static) } });
-    ui->comboMenuGeneratorLead->addMenu(tr("Step Modifier"),
+    ui->comboMenuGeneratorLead->addMenu(tr("Encounter Modifier"),
                                         { { tr("Arena Trap"), toInt(Lead::ArenaTrap) },
                                           { tr("Illuminate"), toInt(Lead::Illuminate) },
                                           { tr("No Guard"), toInt(Lead::NoGuard) } });
@@ -223,11 +223,11 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
                                          { tr("Vital Spirit"), toInt(Lead::VitalSpirit) } });
     ui->comboMenuSearcherLead->addMenu(tr("Slot Modifier"),
                                        { { tr("Magnet Pull"), toInt(Lead::MagnetPull) }, { tr("Static"), toInt(Lead::Static) } });
-    ui->comboMenuSearcherLead->addMenu(tr("Step Modifier"),
+    ui->comboMenuSearcherLead->addMenu(tr("Encounter Modifier"),
                                        { { tr("Arena Trap"), toInt(Lead::ArenaTrap) },
                                          { tr("Illuminate"), toInt(Lead::Illuminate) },
                                          { tr("No Guard"), toInt(Lead::NoGuard) } });
-    ui->comboMenuSearcherLead->addAction(tr("Synchronize"), toInt(Lead::Synchronize));
+    ui->comboMenuSearcherLead->addMenu(tr("Synchronize"), Translator::getNatures());
     ui->comboMenuSearcherLead->setMultiSelect(true);
     ui->comboMenuSearcherLead->setCheckedData({ toInt(Lead::None) });
     ui->comboMenuSearcherLead->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
@@ -1133,7 +1133,7 @@ void Wild4::search()
     {
         maxProgress *= max[i] - min[i] + 1;
     }
-    searcher->setMaxProgress(maxProgress);
+    searcher->setMaxProgress(maxProgress * static_cast<int>(leads.size()));
 
     auto *thread = QThread::create([=] { searcher->startSearch(min, max, fixedSlot); });
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);

@@ -164,7 +164,7 @@ void Filter::copyFrom(const Filter *other)
     ui->comboBoxShiny->setCurrentIndex(other->ui->comboBoxShiny->currentIndex());
     ui->spinBoxWeightMin->setValue(other->ui->spinBoxWeightMin->value());
     ui->spinBoxWeightMax->setValue(other->ui->spinBoxWeightMax->value());
-    ui->checkBoxDisableFilters->setChecked(other->ui->checkBoxDisableFilters->isChecked());
+    ui->checkBoxDisableFilters->setChecked(!ui->checkBoxDisableFilters->isHidden() && other->ui->checkBoxDisableFilters->isChecked());
 }
 
 void Filter::disableControls(Controls control)
@@ -177,6 +177,7 @@ void Filter::disableControls(Controls control)
 
     if ((control & Controls::DisableFilter) != Controls::None)
     {
+        ui->checkBoxDisableFilters->setChecked(false);
         ui->checkBoxDisableFilters->hide();
     }
 
@@ -274,7 +275,7 @@ u8 Filter::getAbility() const
 
 bool Filter::getDisableFilters() const
 {
-    return ui->checkBoxDisableFilters->isChecked();
+    return !ui->checkBoxDisableFilters->isHidden() && ui->checkBoxDisableFilters->isChecked();
 }
 
 bool Filter::hasActiveFilters(u8 encounterSlots) const
@@ -393,7 +394,7 @@ u8 Filter::getShiny() const
 
 bool Filter::isValid() const
 {
-    if (ui->checkBoxDisableFilters->isChecked())
+    if (getDisableFilters())
     {
         return true;
     }
@@ -466,7 +467,7 @@ bool Filter::isValid() const
 
 bool Filter::isValid(u32 min, u32 max) const
 {
-    if (ui->checkBoxDisableFilters->isChecked())
+    if (getDisableFilters())
     {
         return true;
     }

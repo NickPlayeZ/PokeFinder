@@ -9891,10 +9891,6 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Step Modifier</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Levels</source>
         <translation>Livelli</translation>
     </message>
@@ -11303,6 +11299,11 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <source>Gender</source>
         <translation>Sesso</translation>
     </message>
+    <message>
+        <location filename="../../Model/Gen3/WildModel3.cpp" line="90"/>
+        <source>Level Modifier</source>
+        <translation>Modificatore Livello</translation>
+    </message>
 </context>
 <context>
     <name>WildSearcherModel4</name>
@@ -11486,6 +11487,16 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <source>Lullaby</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../../Model/Gen4/WildModel4.cpp" line="93"/>
+        <source>Level Modifier</source>
+        <translation>Modificatore Livello</translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen4/WildModel4.cpp" line="101"/>
+        <source>Encounter Modifier</source>
+        <translation>Modificatore Incontro</translation>
+    </message>
 </context>
 <context>
     <name>WildSearcherModel5</name>
@@ -11639,6 +11650,16 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     <message>
         <source>Pass Power</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.cpp" line="82"/>
+        <source>Level Modifier</source>
+        <translation>Modificatore Livello</translation>
+    </message>
+    <message>
+        <location filename="../../Model/Gen5/WildModel5.cpp" line="90"/>
+        <source>Encounter Modifier</source>
+        <translation>Modificatore Incontro</translation>
     </message>
 </context>
  <context>

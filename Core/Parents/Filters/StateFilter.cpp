@@ -276,7 +276,7 @@ bool WildStateFilter::compareState(const WildSearcherState &state) const
 
 bool WildStateFilter::compareState(const WildState &state) const
 {
-    return StateFilter::compareState(static_cast<const State &>(state)) && encounterSlots[state.getEncounterSlot()];
+    return StateFilter::compareState(static_cast<const State &>(state)) && compareEncounterSlot(state.getEncounterSlot());
 }
 
 

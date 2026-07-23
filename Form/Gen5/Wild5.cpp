@@ -343,7 +343,7 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
                                           { tr("Vital Spirit"), toInt(Lead::VitalSpirit) } });
     ui->comboMenuGeneratorLead->addMenu(tr("Slot Modifier"),
                                         { { tr("Magnet Pull"), toInt(Lead::MagnetPull) }, { tr("Static"), toInt(Lead::Static) } });
-    ui->comboMenuGeneratorLead->addMenu(tr("Step Modifier"),
+    ui->comboMenuGeneratorLead->addMenu(tr("Encounter Modifier"),
                                         { { tr("Arena Trap"), toInt(Lead::ArenaTrap) },
                                           { tr("Illuminate"), toInt(Lead::Illuminate) },
                                           { tr("No Guard"), toInt(Lead::NoGuard) } });
@@ -361,7 +361,7 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
                                          { tr("Vital Spirit"), toInt(Lead::VitalSpirit) } });
     ui->comboMenuSearcherLead->addMenu(tr("Slot Modifier"),
                                        { { tr("Magnet Pull"), toInt(Lead::MagnetPull) }, { tr("Static"), toInt(Lead::Static) } });
-    ui->comboMenuSearcherLead->addMenu(tr("Step Modifier"),
+    ui->comboMenuSearcherLead->addMenu(tr("Encounter Modifier"),
                                        { { tr("Arena Trap"), toInt(Lead::ArenaTrap) },
                                          { tr("Illuminate"), toInt(Lead::Illuminate) },
                                          { tr("No Guard"), toInt(Lead::NoGuard) } });
@@ -723,7 +723,8 @@ void Wild5::search()
         = ui->checkBoxSearcherMovingTrigger->isChecked() && supportsMovingTrigger(ui->comboBoxSearcherEncounter->getEnum<Encounter>(), currentProfile);
     auto passPowers = getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), searchMovingTrigger,
                                     (currentProfile->getVersion() & Game::BW) != Game::None);
-    searcherModel->setShowPassPower(hasPassPower(passPowers));
+    bool showPassPower = hasPassPower(passPowers);
+    searcherModel->setShowPassPower(showPassPower);
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
     WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, leads, passPowers, searchMovingTrigger, searchMovingTrigger,
@@ -761,6 +762,10 @@ void Wild5::search()
     auto *timer = new QTimer();
     connect(timer, &QTimer::timeout, this, [=] {
         searcherModel->addItems(searcher->getResults());
+        if (showPassPower)
+        {
+            ui->tableViewSearcher->resizeColumnToContents(2);
+        }
         ui->progressBar->setValue(searcher->getProgress());
     });
     connect(thread, &QThread::finished, timer, &QTimer::stop);
@@ -769,6 +774,10 @@ void Wild5::search()
         ui->pushButtonSearch->setEnabled(true);
         ui->pushButtonCancel->setEnabled(false);
         searcherModel->addItems(searcher->getResults());
+        if (showPassPower)
+        {
+            ui->tableViewSearcher->resizeColumnToContents(2);
+        }
         ui->progressBar->setValue(searcher->getProgress());
         delete searcher;
     });

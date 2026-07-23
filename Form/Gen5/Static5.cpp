@@ -420,7 +420,8 @@ void Static5::search()
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
     auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     auto luckyPowers = getCheckedUChars(ui->comboBoxSearcherLuckyPower);
-    searcherModel->setShowPassPower((currentProfile->getVersion() & Game::BW2) != Game::None && hasPassPower(luckyPowers));
+    bool showPassPower = (currentProfile->getVersion() & Game::BW2) != Game::None && hasPassPower(luckyPowers);
+    searcherModel->setShowPassPower(showPassPower);
 
     const StaticTemplate5 *staticTemplate
         = Encounters5::getStaticEncounter(ui->comboBoxSearcherCategory->currentIndex(), ui->comboBoxSearcherPokemon->getCurrentInt());
@@ -462,6 +463,10 @@ void Static5::search()
     auto *timer = new QTimer();
     connect(timer, &QTimer::timeout, this, [=] {
         searcherModel->addItems(searcher->getResults());
+        if (showPassPower)
+        {
+            ui->tableViewSearcher->resizeColumnToContents(2);
+        }
         ui->progressBar->setValue(searcher->getProgress());
     });
     connect(thread, &QThread::finished, timer, &QTimer::stop);
@@ -470,6 +475,10 @@ void Static5::search()
         ui->pushButtonSearch->setEnabled(true);
         ui->pushButtonCancel->setEnabled(false);
         searcherModel->addItems(searcher->getResults());
+        if (showPassPower)
+        {
+            ui->tableViewSearcher->resizeColumnToContents(2);
+        }
         ui->progressBar->setValue(searcher->getProgress());
         delete searcher;
     });

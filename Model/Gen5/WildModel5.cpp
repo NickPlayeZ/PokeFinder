@@ -26,16 +26,26 @@
 #include <QColor>
 #include <QFont>
 #include <QStringList>
+#include <vector>
 
 namespace
 {
 constexpr int generatorStepsColumn = 3;
 constexpr int generatorPhenomenonColumn = 4;
 constexpr int searcherPassPowerColumn = 1;
-constexpr int searcherDataTriggerColumn = 2;
+constexpr int searcherDataPassPowerColumn = -1;
+constexpr int searcherDataAdvancesColumn = 1;
+constexpr int searcherDataStepsColumn = 3;
 constexpr int searcherDataPhenomenonColumn = 4;
-constexpr int searcherHeaderTriggerColumn = 3;
+constexpr int searcherDataIVAdvancesColumn = 5;
+constexpr int searcherDataFirstPayloadColumn = 6;
+constexpr int searcherHeaderAdvancesColumn = 2;
+constexpr int searcherHeaderStepsColumn = 4;
 constexpr int searcherHeaderPhenomenonColumn = 5;
+constexpr int searcherHeaderIVAdvancesColumn = 6;
+constexpr int searcherHeaderFirstPayloadColumn = 7;
+constexpr int searcherDataLastColumn = 25;
+constexpr int searcherHeaderLastColumn = 26;
 
 QString getLeadName(Lead lead, u8 flags)
 {
@@ -77,7 +87,7 @@ QString getLeadName(Lead lead, u8 flags)
         }
         if ((flags & (1 << 5)) != 0)
         {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Hustle / Pressure / Vital Spirit"));
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Level Modifier"));
         }
         if ((flags & (1 << 6)) != 0)
         {
@@ -85,7 +95,7 @@ QString getLeadName(Lead lead, u8 flags)
         }
         if ((flags & (1 << 7)) != 0)
         {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Encounter / Step Modifier"));
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Encounter Modifier"));
         }
 
         return leads.join(" / ");
@@ -109,11 +119,11 @@ QString getLeadName(Lead lead, u8 flags)
     case Lead::Static:
         return QCoreApplication::translate("WildSearcherModel5", "Static");
     case Lead::Pressure:
-        return QCoreApplication::translate("WildSearcherModel5", "Hustle / Pressure / Vital Spirit");
+        return QCoreApplication::translate("WildSearcherModel5", "Level Modifier");
     case Lead::SuctionCups:
         return QCoreApplication::translate("WildSearcherModel5", "Sticky Hold / Suction Cups");
     case Lead::ArenaTrap:
-        return QCoreApplication::translate("WildSearcherModel5", "Arena Trap / Illuminate / No Guard");
+        return QCoreApplication::translate("WildSearcherModel5", "Encounter Modifier");
     default:
         return QString();
     }
@@ -176,52 +186,56 @@ int mapGeneratorColumn(int column, bool showMovingTrigger, bool showPhenomenon)
     return column;
 }
 
-int mapSearcherColumn(int column, bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
+std::vector<int> getSearcherColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
 {
-    if (showPassPower && column > searcherPassPowerColumn)
+    std::vector<int> columns { 0 };
+    if (showPassPower)
     {
-        column--;
+        columns.emplace_back(searcherDataPassPowerColumn);
+    }
+    columns.emplace_back(searcherDataAdvancesColumn);
+    columns.emplace_back(searcherDataIVAdvancesColumn);
+    if (showMovingTrigger)
+    {
+        columns.emplace_back(searcherDataStepsColumn);
+    }
+    if (showPhenomenon)
+    {
+        columns.emplace_back(searcherDataPhenomenonColumn);
     }
 
-    if (showMovingTrigger && column >= searcherDataTriggerColumn)
+    for (int column = searcherDataFirstPayloadColumn; column <= searcherDataLastColumn; column++)
     {
-        column++;
-    }
-    else if (!showMovingTrigger && column >= searcherDataTriggerColumn)
-    {
-        column += 2;
+        columns.emplace_back(column);
     }
 
-    if (!showPhenomenon && column >= searcherDataPhenomenonColumn)
-    {
-        column++;
-    }
-
-    return column;
+    return columns;
 }
 
-int mapSearcherHeaderColumn(int column, bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
+std::vector<int> getSearcherHeaderColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
 {
-    if (!showPassPower && column >= searcherPassPowerColumn)
+    std::vector<int> columns { 0 };
+    if (showPassPower)
     {
-        column++;
+        columns.emplace_back(searcherPassPowerColumn);
+    }
+    columns.emplace_back(searcherHeaderAdvancesColumn);
+    columns.emplace_back(searcherHeaderIVAdvancesColumn);
+    if (showMovingTrigger)
+    {
+        columns.emplace_back(searcherHeaderStepsColumn);
+    }
+    if (showPhenomenon)
+    {
+        columns.emplace_back(searcherHeaderPhenomenonColumn);
     }
 
-    if (showMovingTrigger && column >= searcherHeaderTriggerColumn)
+    for (int column = searcherHeaderFirstPayloadColumn; column <= searcherHeaderLastColumn; column++)
     {
-        column++;
-    }
-    else if (!showMovingTrigger && column >= searcherHeaderTriggerColumn)
-    {
-        column += 2;
+        columns.emplace_back(column);
     }
 
-    if (!showPhenomenon && column >= searcherHeaderPhenomenonColumn)
-    {
-        column++;
-    }
-
-    return column;
+    return columns;
 }
 }
 
@@ -402,7 +416,7 @@ WildSearcherModel5::WildSearcherModel5(QObject *parent) :
 
 int WildSearcherModel5::columnCount(const QModelIndex &parent) const
 {
-    return header.size() - (showPassPower ? 0 : 1) - (showMovingTrigger ? 1 : 2) - (showPhenomenon ? 0 : 1) + 1;
+    return static_cast<int>(getSearcherColumns(showPassPower, showMovingTrigger, showPhenomenon).size()) + 1;
 }
 
 QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
@@ -416,13 +430,12 @@ QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
             return getLeadName(state.getLead(), state.getLeadFlags());
         }
 
-        int column = index.column() > 1 ? index.column() - 1 : index.column();
-        if (showPassPower && column == searcherPassPowerColumn)
+        auto columns = getSearcherColumns(showPassPower, showMovingTrigger, showPhenomenon);
+        int column = columns[index.column() > 1 ? index.column() - 1 : index.column()];
+        if (column == searcherDataPassPowerColumn)
         {
             return getLuckyPowerText(state.getPassPower());
         }
-
-        column = mapSearcherColumn(column, showPassPower, showMovingTrigger, showPhenomenon);
         bool item = state.getPhenomenonItem();
 
         switch (column)
@@ -554,7 +567,9 @@ QVariant WildSearcherModel5::headerData(int section, Qt::Orientation orientation
         {
             return tr("Lead");
         }
-        return header[mapSearcherHeaderColumn(section > 1 ? section - 1 : section, showPassPower, showMovingTrigger, showPhenomenon)];
+
+        auto columns = getSearcherHeaderColumns(showPassPower, showMovingTrigger, showPhenomenon);
+        return header[columns[section > 1 ? section - 1 : section]];
     }
     return QVariant();
 }

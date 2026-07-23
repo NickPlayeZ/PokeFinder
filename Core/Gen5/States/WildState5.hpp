@@ -123,10 +123,10 @@ public:
 
     void addLead(Lead newLead)
     {
-        if (newLead == Lead::None)
+        if (lead == Lead::None && newLead != Lead::None)
         {
-            lead = Lead::None;
-            leadFlags = 0;
+            lead = newLead;
+            leadFlags = getLeadFlag(newLead);
         }
         else if (lead != Lead::None)
         {

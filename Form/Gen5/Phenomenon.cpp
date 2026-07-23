@@ -664,7 +664,8 @@ void Phenomenon::search()
     auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     auto luckyPowers = getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower),
                                       (currentProfile->getVersion() & Game::BW) != Game::None);
-    searcherModel->setShowPassPower(hasPassPower(luckyPowers));
+    bool showPassPower = hasPassPower(luckyPowers);
+    searcherModel->setShowPassPower(showPassPower);
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
     WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, leads, luckyPowers, false, false,
@@ -707,6 +708,10 @@ void Phenomenon::search()
             return removeBySearcherFilters(state);
         });
         searcherModel->addItems(results);
+        if (showPassPower)
+        {
+            ui->tableViewSearcher->resizeColumnToContents(2);
+        }
         ui->progressBar->setValue(searcher->getProgress());
     });
     connect(thread, &QThread::finished, timer, &QTimer::stop);
@@ -720,6 +725,10 @@ void Phenomenon::search()
             return removeBySearcherFilters(state);
         });
         searcherModel->addItems(results);
+        if (showPassPower)
+        {
+            ui->tableViewSearcher->resizeColumnToContents(2);
+        }
         ui->progressBar->setValue(searcher->getProgress());
         delete searcher;
     });

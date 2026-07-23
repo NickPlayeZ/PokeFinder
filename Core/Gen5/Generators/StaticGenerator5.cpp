@@ -385,11 +385,6 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
         }
 
         u32 prng = rng.nextUInt();
-        if (luckyPower != 0 && initialAdvances + cnt < 4)
-        {
-            continue;
-        }
-
         for (const auto &iv : ivs)
         {
             State5 state(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, staticTemplate.getLevel(),

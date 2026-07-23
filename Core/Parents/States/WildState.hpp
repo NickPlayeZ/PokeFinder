@@ -239,6 +239,12 @@ public:
 
     void addLead(Lead newLead)
     {
+        if (lead == Lead::None && newLead != Lead::None)
+        {
+            setLead(newLead);
+            return;
+        }
+
         if (lead != Lead::None)
         {
             if (isSynchronizeLead(newLead))

@@ -30,24 +30,22 @@
 #include <Core/RNG/RNGList.hpp>
 #include <Core/Util/Utilities.hpp>
 #include <algorithm>
+#include <array>
 #include <vector>
 
-// clang-format off
-// See EncounterSlot.cpp computeTable() with { 1, 5, 20, 21, 25, 35, 60, 61, 65, 75, 100 }
-constexpr u8 encounterTable[100] = {
-    0,
-    1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    3,
-    4, 4, 4, 4,
-    5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-    7,
-    8, 8, 8, 8,
-    9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
-};
-// clang-format on
+constexpr std::array<u8, 10> encounterThresholds = { 1, 5, 20, 21, 25, 35, 60, 61, 65, 75 };
+
+static u8 getEncounterSlot(u8 rand, u8 slot)
+{
+    for (u8 i = 0; i < encounterThresholds.size(); i++)
+    {
+        if (rand < encounterThresholds[i])
+        {
+            return i;
+        }
+    }
+    return slot;
+}
 
 static u8 gen(MT &rng)
 {
@@ -118,10 +116,6 @@ std::vector<HiddenGrottoState> HiddenGrottoSlotGenerator::generate(u64 seed, u8 
     {
         BWRNG go(rng, jump);
         u32 prng = rng.nextUInt();
-        if (powerLevel != 5 && initialAdvances + cnt < 4)
-        {
-            continue;
-        }
 
         if (go.nextUInt(100) < powerLevel)
         {
@@ -130,7 +124,7 @@ std::vector<HiddenGrottoState> HiddenGrottoSlotGenerator::generate(u64 seed, u8 
             u8 rolls = powerLevel == 5 ? 1 : 3;
             for (u8 i = 0; i < rolls; i++)
             {
-                slot = encounterTable[go.nextUInt(100)];
+                slot = getEncounterSlot(go.nextUInt(100), slot);
                 if (slot < 3)
                 {
                     break;
