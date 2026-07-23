@@ -20,6 +20,7 @@
 #ifndef WILDGENERATOR5_HPP
 #define WILDGENERATOR5_HPP
 
+#include <Core/Enum/Lead.hpp>
 #include <Core/Gen5/EncounterArea5.hpp>
 #include <Core/Gen5/Profile5.hpp>
 #include <Core/Parents/Filters/StateFilter.hpp>
@@ -82,6 +83,26 @@ public:
                    const WildStateFilter &filter, bool requirePassPowerIVAdvance = false);
 
     /**
+     * @brief Construct a new WildGenerator5 object
+     *
+     * @param initialAdvances Initial number of advances
+     * @param maxAdvances Maximum number of advances
+     * @param offset Number of advances to offset
+     * @param method Encounter method
+     * @param leads Encounter leads
+     * @param luckyPower Lucky power level
+     * @param area Wild pokemon info
+     * @param profile Profile Information
+     * @param filter State filter
+     */
+    WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads, u8 luckyPower,
+                   const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter);
+
+    WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
+                   const std::vector<u8> &passPowers, bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area,
+                   const Profile5 &profile, const WildStateFilter &filter, bool requirePassPowerIVAdvance = false);
+
+    /**
      * @brief Generates states for the \p encounterArea
      *
      * @param seed Starting PRNG state
@@ -104,11 +125,12 @@ public:
 
 private:
     std::vector<u8> passPowers;
+    std::vector<Lead> leads;
     bool searchMovingTrigger;
     bool requireMovingTrigger;
     bool requirePassPowerIVAdvance;
 
-    std::vector<WildState5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower) const;
+    std::vector<WildState5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower, Lead lead) const;
 };
 
 #endif // WILDGENERATOR5_HPP

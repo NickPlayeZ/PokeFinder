@@ -47,6 +47,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QSignalBlocker>
+#include <QSizePolicy>
 #include <QThread>
 #include <QTimer>
 #include <algorithm>
@@ -56,6 +57,25 @@ static bool supportsMovingTrigger(Encounter encounter, const Profile5 *profile)
 {
     return profile != nullptr && (profile->getVersion() & Game::Gen5) != Game::None
         && (encounter == Encounter::Grass || encounter == Encounter::GrassDark || encounter == Encounter::Surfing);
+}
+
+static std::vector<Lead> getSearcherLeads(ComboMenu *comboMenu)
+{
+    auto data = comboMenu->getCheckedData();
+    std::vector<Lead> leads;
+    for (int lead : data)
+    {
+        Lead value = static_cast<Lead>(lead);
+        if (!std::ranges::contains(leads, value))
+        {
+            leads.emplace_back(value);
+        }
+    }
+    if (leads.empty())
+    {
+        leads.emplace_back(Lead::None);
+    }
+    return leads;
 }
 
 static const QString settingPrefix = QStringLiteral("static5");
@@ -346,6 +366,9 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
                                          { tr("Illuminate"), toInt(Lead::Illuminate) },
                                          { tr("No Guard"), toInt(Lead::NoGuard) } });
     ui->comboMenuSearcherLead->addMenu(tr("Synchronize"), Translator::getNatures());
+    ui->comboMenuSearcherLead->setMultiSelect(true);
+    ui->comboMenuSearcherLead->setCheckedData({ toInt(Lead::None) });
+    ui->comboMenuSearcherLead->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     ui->comboBoxGeneratorLocation->enableAutoComplete();
     ui->comboBoxSearcherLocation->enableAutoComplete();
@@ -695,7 +718,7 @@ void Wild5::search()
     u32 maxIVAdvances = ui->textBoxSearcherMaxIVAdvances->getUInt();
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
-    auto lead = ui->comboMenuSearcherLead->getEnum<Lead>();
+    auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     bool searchMovingTrigger
         = ui->checkBoxSearcherMovingTrigger->isChecked() && supportsMovingTrigger(ui->comboBoxSearcherEncounter->getEnum<Encounter>(), currentProfile);
     auto passPowers = getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), searchMovingTrigger,
@@ -703,7 +726,7 @@ void Wild5::search()
     searcherModel->setShowPassPower(hasPassPower(passPowers));
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
-    WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, lead, passPowers, searchMovingTrigger, searchMovingTrigger,
+    WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, leads, passPowers, searchMovingTrigger, searchMovingTrigger,
                              encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter, true);
 
     SearcherBase5<WildGenerator5, WildState5> *searcher;

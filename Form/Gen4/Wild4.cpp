@@ -32,6 +32,7 @@
 #include <Core/Util/Nature.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Form/Controls/CheckList.hpp>
+#include <Form/Controls/ComboMenu.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Controls/Filter.hpp>
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
@@ -45,9 +46,11 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QSettings>
+#include <QSizePolicy>
 #include <QThread>
 #include <QTimer>
 #include <algorithm>
+#include <vector>
 
 enum Gen4Movement : u8
 {
@@ -107,6 +110,25 @@ static bool isBikeRestrictedLocation(Game version, Encounter encounter, u8 locat
 }
 
 static const QString settingPrefix = QStringLiteral("wild4");
+
+static std::vector<Lead> getSearcherLeads(ComboMenu *comboMenu)
+{
+    auto data = comboMenu->getCheckedData();
+    std::vector<Lead> leads;
+    for (int lead : data)
+    {
+        Lead value = static_cast<Lead>(lead);
+        if (!std::ranges::contains(leads, value))
+        {
+            leads.emplace_back(value);
+        }
+    }
+    if (leads.empty())
+    {
+        leads.emplace_back(Lead::None);
+    }
+    return leads;
+}
 
 Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
 {
@@ -206,6 +228,9 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
                                          { tr("Illuminate"), toInt(Lead::Illuminate) },
                                          { tr("No Guard"), toInt(Lead::NoGuard) } });
     ui->comboMenuSearcherLead->addAction(tr("Synchronize"), toInt(Lead::Synchronize));
+    ui->comboMenuSearcherLead->setMultiSelect(true);
+    ui->comboMenuSearcherLead->setCheckedData({ toInt(Lead::None) });
+    ui->comboMenuSearcherLead->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     ui->comboBoxGeneratorEncounter->setup({ toInt(Encounter::Grass), toInt(Encounter::HoneyTree), toInt(Encounter::RockSmash),
                                             toInt(Encounter::BugCatchingContest), toInt(Encounter::Headbutt), toInt(Encounter::HeadbuttAlt),
@@ -1091,7 +1116,7 @@ void Wild4::search()
     u32 maxAdvance = ui->textBoxSearcherMaxAdvance->getUInt();
     u32 minDelay = ui->textBoxSearcherMinDelay->getUInt();
     u32 maxDelay = ui->textBoxSearcherMaxDelay->getUInt();
-    auto lead = ui->comboMenuSearcherLead->getEnum<Lead>();
+    auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     bool feebas = ui->checkBoxSearcherFeebasTile->isChecked();
     bool shiny = ui->checkBoxSearcherPokeRadarShiny->isChecked();
     bool unownRadio = ui->checkBoxSearcherRadio->isChecked() && ui->comboBoxSearcherRadio->currentIndex() == 2;
@@ -1100,7 +1125,7 @@ void Wild4::search()
     u8 stepOptions = searchStepEncounter ? getSearcherStepOptions() : 0;
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
-    auto *searcher = new WildSearcher4(minAdvance, maxAdvance, minDelay, maxDelay, method, lead, feebas, shiny, unownRadio, happiness,
+    auto *searcher = new WildSearcher4(minAdvance, maxAdvance, minDelay, maxDelay, method, leads, feebas, shiny, unownRadio, happiness,
                                        searchStepEncounter, stepOptions, area, *currentProfile, filter);
 
     int maxProgress = 1;

@@ -74,6 +74,26 @@ namespace
         return values;
     }
 
+    std::vector<Lead> getSearcherLeads(const ComboMenu *comboMenu)
+    {
+        auto data = comboMenu->getCheckedData();
+        std::vector<Lead> leads;
+        leads.reserve(data.size());
+        for (int value : data)
+        {
+            leads.emplace_back(static_cast<Lead>(value));
+        }
+
+        if (leads.empty())
+        {
+            leads.emplace_back(Lead::None);
+        }
+
+        std::ranges::sort(leads);
+        leads.erase(std::ranges::unique(leads).begin(), leads.end());
+        return leads;
+    }
+
     bool hasPassPower(const std::vector<u8> &powers)
     {
         return std::ranges::find_if(powers, [](u8 power) { return power != PassPower5::None; }) != powers.end();
@@ -219,6 +239,9 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     ui->comboMenuSearcherLead->addMenu(tr("Slot Modifier"),
                                        { { tr("Magnet Pull"), toInt(Lead::MagnetPull) }, { tr("Static"), toInt(Lead::Static) } });
     ui->comboMenuSearcherLead->addMenu(tr("Synchronize"), Translator::getNatures());
+    ui->comboMenuSearcherLead->setMultiSelect(true);
+    ui->comboMenuSearcherLead->setCheckedData({ toInt(Lead::None) });
+    ui->comboMenuSearcherLead->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     ui->comboBoxGeneratorLocation->enableAutoComplete();
     ui->comboBoxSearcherLocation->enableAutoComplete();
@@ -638,13 +661,13 @@ void Phenomenon::search()
     u32 maxIVAdvances = ui->textBoxSearcherMaxIVAdvances->getUInt();
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
-    auto lead = ui->comboMenuSearcherLead->getEnum<Lead>();
+    auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     auto luckyPowers = getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower),
                                       (currentProfile->getVersion() & Game::BW) != Game::None);
     searcherModel->setShowPassPower(hasPassPower(luckyPowers));
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
-    WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, lead, luckyPowers, false, false,
+    WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, leads, luckyPowers, false, false,
                              encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter, true);
 
     SearcherBase5<WildGenerator5, WildState5> *searcher;

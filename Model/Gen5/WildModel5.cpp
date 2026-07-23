@@ -18,9 +18,11 @@
  */
 
 #include "WildModel5.hpp"
+#include <Core/Enum/Lead.hpp>
 #include <Core/Gen5/Generators/WildGenerator5.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <QCoreApplication>
 #include <QColor>
 #include <QFont>
 #include <QStringList>
@@ -30,9 +32,92 @@ namespace
 constexpr int generatorStepsColumn = 3;
 constexpr int generatorPhenomenonColumn = 4;
 constexpr int searcherPassPowerColumn = 1;
-constexpr int searcherTriggerColumn = 2;
-constexpr int searcherStepsColumn = 3;
-constexpr int searcherPhenomenonColumn = 4;
+constexpr int searcherDataTriggerColumn = 2;
+constexpr int searcherDataPhenomenonColumn = 4;
+constexpr int searcherHeaderTriggerColumn = 3;
+constexpr int searcherHeaderPhenomenonColumn = 5;
+
+QString getLeadName(Lead lead, u8 flags)
+{
+    if (lead == Lead::None)
+    {
+        return QCoreApplication::translate("WildSearcherModel5", "None");
+    }
+
+    if (flags != 0)
+    {
+        QStringList leads;
+        if ((flags & (1 << 0)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Synchronize"));
+        }
+
+        bool cuteCharmM = (flags & (1 << 1)) != 0;
+        bool cuteCharmF = (flags & (1 << 2)) != 0;
+        if (cuteCharmM && cuteCharmF)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ or ♀ Lead"));
+        }
+        else if (cuteCharmM)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ Lead"));
+        }
+        else if (cuteCharmF)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♀ Lead"));
+        }
+
+        if ((flags & (1 << 3)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Magnet Pull"));
+        }
+        if ((flags & (1 << 4)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Static"));
+        }
+        if ((flags & (1 << 5)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Hustle / Pressure / Vital Spirit"));
+        }
+        if ((flags & (1 << 6)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Compound Eyes"));
+        }
+        if ((flags & (1 << 7)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Encounter / Step Modifier"));
+        }
+
+        return leads.join(" / ");
+    }
+
+    if (lead <= Lead::SynchronizeEnd)
+    {
+        return QCoreApplication::translate("WildSearcherModel5", "Synchronize");
+    }
+
+    switch (lead)
+    {
+    case Lead::CompoundEyes:
+        return QCoreApplication::translate("WildSearcherModel5", "Compound Eyes");
+    case Lead::CuteCharmM:
+        return QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ Lead");
+    case Lead::CuteCharmF:
+        return QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♀ Lead");
+    case Lead::MagnetPull:
+        return QCoreApplication::translate("WildSearcherModel5", "Magnet Pull");
+    case Lead::Static:
+        return QCoreApplication::translate("WildSearcherModel5", "Static");
+    case Lead::Pressure:
+        return QCoreApplication::translate("WildSearcherModel5", "Hustle / Pressure / Vital Spirit");
+    case Lead::SuctionCups:
+        return QCoreApplication::translate("WildSearcherModel5", "Sticky Hold / Suction Cups");
+    case Lead::ArenaTrap:
+        return QCoreApplication::translate("WildSearcherModel5", "Arena Trap / Illuminate / No Guard");
+    default:
+        return QString();
+    }
+}
 
 QString getLuckyPowerText(u8 power)
 {
@@ -98,16 +183,16 @@ int mapSearcherColumn(int column, bool showPassPower, bool showMovingTrigger, bo
         column--;
     }
 
-    if (showMovingTrigger && column >= searcherTriggerColumn)
+    if (showMovingTrigger && column >= searcherDataTriggerColumn)
     {
         column++;
     }
-    else if (!showMovingTrigger && column >= searcherTriggerColumn)
+    else if (!showMovingTrigger && column >= searcherDataTriggerColumn)
     {
         column += 2;
     }
 
-    if (!showPhenomenon && column >= searcherPhenomenonColumn)
+    if (!showPhenomenon && column >= searcherDataPhenomenonColumn)
     {
         column++;
     }
@@ -117,13 +202,26 @@ int mapSearcherColumn(int column, bool showPassPower, bool showMovingTrigger, bo
 
 int mapSearcherHeaderColumn(int column, bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
 {
-    if (showPassPower && column == searcherPassPowerColumn)
+    if (!showPassPower && column >= searcherPassPowerColumn)
     {
-        return searcherPassPowerColumn;
+        column++;
     }
 
-    int mappedColumn = mapSearcherColumn(column, showPassPower, showMovingTrigger, showPhenomenon);
-    return mappedColumn == 0 ? 0 : mappedColumn + 1;
+    if (showMovingTrigger && column >= searcherHeaderTriggerColumn)
+    {
+        column++;
+    }
+    else if (!showMovingTrigger && column >= searcherHeaderTriggerColumn)
+    {
+        column += 2;
+    }
+
+    if (!showPhenomenon && column >= searcherHeaderPhenomenonColumn)
+    {
+        column++;
+    }
+
+    return column;
 }
 }
 
@@ -304,7 +402,7 @@ WildSearcherModel5::WildSearcherModel5(QObject *parent) :
 
 int WildSearcherModel5::columnCount(const QModelIndex &parent) const
 {
-    return header.size() - (showPassPower ? 0 : 1) - (showMovingTrigger ? 1 : 2) - (showPhenomenon ? 0 : 1);
+    return header.size() - (showPassPower ? 0 : 1) - (showMovingTrigger ? 1 : 2) - (showPhenomenon ? 0 : 1) + 1;
 }
 
 QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
@@ -313,13 +411,19 @@ QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
     {
         const auto &display = model[index.row()];
         const auto &state = display.getState();
-        int column = mapSearcherColumn(index.column(), showPassPower, showMovingTrigger, showPhenomenon);
-        bool item = state.getPhenomenonItem();
+        if (index.column() == 1)
+        {
+            return getLeadName(state.getLead(), state.getLeadFlags());
+        }
 
+        int column = index.column() > 1 ? index.column() - 1 : index.column();
         if (showPassPower && column == searcherPassPowerColumn)
         {
             return getLuckyPowerText(state.getPassPower());
         }
+
+        column = mapSearcherColumn(column, showPassPower, showMovingTrigger, showPhenomenon);
+        bool item = state.getPhenomenonItem();
 
         switch (column)
         {
@@ -374,6 +478,10 @@ QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
             if (item)
             {
                 return "-";
+            }
+            if (state.getVariableNature())
+            {
+                return tr("Sync");
             }
             return QString::fromStdString(Translator::getNature(state.getNature()));
         case 12:
@@ -442,7 +550,11 @@ QVariant WildSearcherModel5::headerData(int section, Qt::Orientation orientation
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
-        return header[mapSearcherHeaderColumn(section, showPassPower, showMovingTrigger, showPhenomenon)];
+        if (section == 1)
+        {
+            return tr("Lead");
+        }
+        return header[mapSearcherHeaderColumn(section > 1 ? section - 1 : section, showPassPower, showMovingTrigger, showPhenomenon)];
     }
     return QVariant();
 }

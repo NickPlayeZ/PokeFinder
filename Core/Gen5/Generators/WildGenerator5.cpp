@@ -32,6 +32,157 @@
 #include <algorithm>
 #include <array>
 #include <iterator>
+#include <unordered_map>
+
+struct WildStateKey
+{
+    std::array<u8, 6> ivs;
+    u32 advances;
+    u32 ivAdvances;
+    u32 movingTrigger;
+    u32 movingSteps;
+    u32 pid;
+    u16 item;
+    u16 specie;
+    u8 passPower;
+    u8 ability;
+    u8 gender;
+    u8 level;
+    u8 nature;
+    u8 shiny;
+    u8 encounterSlot;
+    u8 form;
+    bool phenomenon;
+    bool phenomenonItem;
+    bool valid;
+
+    bool operator==(const WildStateKey &other) const = default;
+};
+
+struct WildStateKeyHash
+{
+    size_t operator()(const WildStateKey &key) const
+    {
+        size_t hash = 0;
+        auto combine = [&hash](auto value) {
+            hash ^= static_cast<size_t>(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+        };
+
+        for (u8 iv : key.ivs)
+        {
+            combine(iv);
+        }
+        combine(key.advances);
+        combine(key.ivAdvances);
+        combine(key.movingTrigger);
+        combine(key.movingSteps);
+        combine(key.pid);
+        combine(key.item);
+        combine(key.specie);
+        combine(key.passPower);
+        combine(key.ability);
+        combine(key.gender);
+        combine(key.level);
+        combine(key.nature);
+        combine(key.shiny);
+        combine(key.encounterSlot);
+        combine(key.form);
+        combine(key.phenomenon);
+        combine(key.phenomenonItem);
+        combine(key.valid);
+
+        return hash;
+    }
+};
+
+struct WildTargetKey
+{
+    std::array<u8, 6> ivs;
+    u32 advances;
+    u32 ivAdvances;
+    u32 pid;
+    u16 item;
+    u16 specie;
+    u8 ability;
+    u8 gender;
+    u8 level;
+    u8 nature;
+    u8 shiny;
+    u8 encounterSlot;
+    u8 form;
+
+    bool operator==(const WildTargetKey &other) const = default;
+};
+
+struct WildTargetKeyHash
+{
+    size_t operator()(const WildTargetKey &key) const
+    {
+        size_t hash = 0;
+        auto combine = [&hash](auto value) {
+            hash ^= static_cast<size_t>(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+        };
+
+        for (u8 iv : key.ivs)
+        {
+            combine(iv);
+        }
+        combine(key.advances);
+        combine(key.ivAdvances);
+        combine(key.pid);
+        combine(key.item);
+        combine(key.specie);
+        combine(key.ability);
+        combine(key.gender);
+        combine(key.level);
+        combine(key.nature);
+        combine(key.shiny);
+        combine(key.encounterSlot);
+        combine(key.form);
+
+        return hash;
+    }
+};
+
+static WildStateKey getStateKey(const WildState5 &state, bool normalizeNature)
+{
+    return { { state.getIV(0), state.getIV(1), state.getIV(2), state.getIV(3), state.getIV(4), state.getIV(5) },
+             state.getAdvances(),
+             state.getIVAdvances(),
+             state.getMovingTrigger(),
+             state.getMovingSteps(),
+             state.getPID(),
+             state.getItem(),
+             state.getSpecie(),
+             state.getPassPower(),
+             state.getAbility(),
+             state.getGender(),
+             state.getLevel(),
+             normalizeNature ? static_cast<u8>(255) : state.getNature(),
+             state.getShiny(),
+             state.getEncounterSlot(),
+             state.getForm(),
+             state.getPhenomenon(),
+             state.getPhenomenonItem(),
+             state.isValid() };
+}
+
+static WildTargetKey getTargetKey(const WildState5 &state, u32 advances)
+{
+    return { { state.getIV(0), state.getIV(1), state.getIV(2), state.getIV(3), state.getIV(4), state.getIV(5) },
+             advances,
+             state.getIVAdvances(),
+             state.getPID(),
+             state.getItem(),
+             state.getSpecie(),
+             state.getAbility(),
+             state.getGender(),
+             state.getLevel(),
+             state.getNature(),
+             state.getShiny(),
+             state.getEncounterSlot(),
+             state.getForm() };
+}
 
 static u8 gen(MT &rng)
 {
@@ -263,8 +414,24 @@ WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset,
 WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, const std::vector<u8> &passPowers,
                                bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area, const Profile5 &profile,
                                const WildStateFilter &filter, bool requirePassPowerIVAdvance) :
-    WildGenerator(initialAdvances, maxAdvances, offset, method, lead, area, profile, filter),
+    WildGenerator5(initialAdvances, maxAdvances, offset, method, std::vector<Lead> { lead }, passPowers, searchMovingTrigger, requireMovingTrigger,
+                   area, profile, filter, requirePassPowerIVAdvance)
+{
+}
+
+WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads, u8 luckyPower,
+                               const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter) :
+    WildGenerator5(initialAdvances, maxAdvances, offset, method, leads, std::vector<u8> { luckyPower }, false, false, area, profile, filter)
+{
+}
+
+WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
+                               const std::vector<u8> &passPowers, bool searchMovingTrigger, bool requireMovingTrigger,
+                               const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter,
+                               bool requirePassPowerIVAdvance) :
+    WildGenerator(initialAdvances, maxAdvances, offset, method, leads.empty() ? Lead::None : leads.front(), area, profile, filter),
     passPowers(passPowers),
+    leads(leads.empty() ? std::vector<Lead> { Lead::None } : leads),
     searchMovingTrigger(searchMovingTrigger),
     requireMovingTrigger(requireMovingTrigger),
     requirePassPowerIVAdvance(requirePassPowerIVAdvance)
@@ -291,6 +458,9 @@ WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset,
     }
     std::ranges::sort(this->passPowers);
     this->passPowers.erase(std::ranges::unique(this->passPowers).begin(), this->passPowers.end());
+
+    std::ranges::sort(this->leads);
+    this->leads.erase(std::ranges::unique(this->leads).begin(), this->leads.end());
 }
 
 std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, u32 maxAdvances) const
@@ -322,19 +492,8 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, 
 
 std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const
 {
-    if (passPowers.size() == 1)
-    {
-        if (requirePassPowerIVAdvance && passPowers[0] != PassPower5::None)
-        {
-            auto powerIVs = ivs;
-            std::erase_if(powerIVs, [](const auto &iv) { return iv.first < 2; });
-            return powerIVs.empty() ? std::vector<WildState5>() : generate(seed, powerIVs, passPowers[0]);
-        }
-
-        return generate(seed, ivs, passPowers[0]);
-    }
-
     std::vector<WildState5> states;
+    std::unordered_map<WildStateKey, size_t, WildStateKeyHash> seen;
     for (u8 activePassPower : passPowers)
     {
         auto powerIVs = ivs;
@@ -347,29 +506,66 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             continue;
         }
 
-        auto powerStates = generate(seed, powerIVs, activePassPower);
-        states.reserve(states.size() + powerStates.size());
-        for (const auto &state : powerStates)
+        for (Lead activeLead : leads)
         {
-            auto duplicate = std::ranges::find_if(states, [&state](const WildState5 &other) {
-                return state.getAdvances() == other.getAdvances() && state.getIVAdvances() == other.getIVAdvances()
-                    && state.getMovingTrigger() == other.getMovingTrigger() && state.getMovingSteps() == other.getMovingSteps()
-                    && state.getItem() == other.getItem() && state.getEncounterSlot() == other.getEncounterSlot()
-                    && state.getSpecie() == other.getSpecie() && state.getForm() == other.getForm() && state.getLevel() == other.getLevel()
-                    && state.getPID() == other.getPID() && state.getShiny() == other.getShiny() && state.getNature() == other.getNature()
-                    && state.getAbility() == other.getAbility() && state.getIVs() == other.getIVs()
-                    && state.getGender() == other.getGender() && state.isValid() == other.isValid();
-            });
-            if (duplicate == states.end())
+            auto leadStates = generate(seed, powerIVs, activePassPower, activeLead);
+            states.reserve(states.size() + leadStates.size());
+            bool normalizeNature = activeLead <= Lead::SynchronizeEnd && filter.allowsAllNatures();
+            for (auto state : leadStates)
             {
-                states.emplace_back(state);
+                if (normalizeNature)
+                {
+                    state.setVariableNature(true);
+                }
+
+                if (state.isValid() && !state.getPhenomenonItem() && !filter.compareState(static_cast<const WildState &>(state)))
+                {
+                    continue;
+                }
+
+                auto key = getStateKey(state, normalizeNature);
+                auto entry = seen.find(key);
+                if (entry == seen.end())
+                {
+                    states.emplace_back(state);
+                    seen.emplace(key, states.size() - 1);
+                }
+                else
+                {
+                    states[entry->second].addLead(state.getLead());
+                }
             }
         }
     }
+
+    std::unordered_map<WildTargetKey, bool, WildTargetKeyHash> noneTargets;
+    for (const auto &state : states)
+    {
+        if (state.getLead() == Lead::None)
+        {
+            noneTargets.emplace(getTargetKey(state, state.getAdvances()), true);
+        }
+    }
+
+    if (!noneTargets.empty())
+    {
+        std::vector<WildState5> filtered;
+        filtered.reserve(states.size());
+        for (const auto &state : states)
+        {
+            if (state.getLead() == Lead::None || !noneTargets.contains(getTargetKey(state, state.getAdvances() + 1)))
+            {
+                filtered.emplace_back(state);
+            }
+        }
+        return filtered;
+    }
+
     return states;
 }
 
-std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower) const
+std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower,
+                                                 Lead lead) const
 {
     u8 luckyPower = getLuckyPower(passPower);
     u32 advances = Utilities5::initialAdvances(seed, profile);
@@ -627,7 +823,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         {
             WildState5 state(prng, movingTrigger, movingSteps, phenomenon, phenomenonItem, advances + initialAdvances + cnt, iv.first, pid,
                              iv.second, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(), slot.getForm(), info, valid,
-                             passPower);
+                             passPower, lead);
             if (!valid || phenomenonItem || filter.compareState(static_cast<const WildState &>(state)))
             {
                 states.emplace_back(state);

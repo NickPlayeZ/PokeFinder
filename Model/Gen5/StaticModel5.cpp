@@ -18,8 +18,62 @@
  */
 
 #include "StaticModel5.hpp"
+#include <Core/Enum/Lead.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <QCoreApplication>
+#include <QStringList>
+
+namespace
+{
+QString getLeadNameStatic5(Lead lead, u8 flags)
+{
+    if (lead == Lead::None)
+    {
+        return QCoreApplication::translate("StaticSearcherModel5", "None");
+    }
+
+    if (flags != 0)
+    {
+        QStringList leads;
+        if ((flags & (1 << 0)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("StaticSearcherModel5", "Synchronize"));
+        }
+
+        bool cuteCharmM = (flags & (1 << 1)) != 0;
+        bool cuteCharmF = (flags & (1 << 2)) != 0;
+        if (cuteCharmM && cuteCharmF)
+        {
+            leads.emplace_back(QCoreApplication::translate("StaticSearcherModel5", "Cute Charm: ♂ or ♀ Lead"));
+        }
+        else if (cuteCharmM)
+        {
+            leads.emplace_back(QCoreApplication::translate("StaticSearcherModel5", "Cute Charm: ♂ Lead"));
+        }
+        else if (cuteCharmF)
+        {
+            leads.emplace_back(QCoreApplication::translate("StaticSearcherModel5", "Cute Charm: ♀ Lead"));
+        }
+
+        return leads.join(" / ");
+    }
+
+    if (lead <= Lead::SynchronizeEnd)
+    {
+        return QCoreApplication::translate("StaticSearcherModel5", "Synchronize");
+    }
+
+    switch (lead)
+    {
+    case Lead::CuteCharmM:
+        return QCoreApplication::translate("StaticSearcherModel5", "Cute Charm: ♂ Lead");
+    case Lead::CuteCharmF:
+        return QCoreApplication::translate("StaticSearcherModel5", "Cute Charm: ♀ Lead");
+    default:
+        return QString();
+    }
+}
 
 static QString getLuckyPowerText(u8 power)
 {
@@ -30,6 +84,7 @@ static QString getLuckyPowerText(u8 power)
     default:
         return StaticSearcherModel5::tr("None");
     }
+}
 }
 
 StaticGeneratorModel5::StaticGeneratorModel5(QObject *parent) : TableModel(parent), showStats(false)
@@ -117,7 +172,7 @@ StaticSearcherModel5::StaticSearcherModel5(QObject *parent) : TableModel(parent)
 
 int StaticSearcherModel5::columnCount(const QModelIndex &parent) const
 {
-    return 20 + (showPassPower ? 1 : 0);
+    return 21 + (showPassPower ? 1 : 0);
 }
 
 QVariant StaticSearcherModel5::data(const QModelIndex &index, int role) const
@@ -127,13 +182,18 @@ QVariant StaticSearcherModel5::data(const QModelIndex &index, int role) const
         const auto &display = model[index.row()];
         const auto &state = display.getState();
         int column = index.column();
+        if (column == 1)
+        {
+            return getLeadNameStatic5(state.getLead(), state.getLeadFlags());
+        }
+
         if (showPassPower)
         {
-            if (column == 1)
+            if (column == 2)
             {
                 return getLuckyPowerText(state.getPassPower());
             }
-            else if (column > 1)
+            else if (column > 2)
             {
                 column--;
             }
@@ -142,20 +202,20 @@ QVariant StaticSearcherModel5::data(const QModelIndex &index, int role) const
         {
         case 0:
             return QString::number(display.getInitialSeed(), 16).toUpper().rightJustified(16, '0');
-        case 1:
-            return state.getAdvances();
         case 2:
-            return state.getIVAdvances();
+            return state.getAdvances();
         case 3:
-            return QString::number(state.getPID(), 16).toUpper().rightJustified(8, '0');
+            return state.getIVAdvances();
         case 4:
+            return QString::number(state.getPID(), 16).toUpper().rightJustified(8, '0');
+        case 5:
         {
             u8 shiny = state.getShiny();
             return shiny == 2 ? tr("Square") : shiny == 1 ? tr("Star") : tr("No");
         }
-        case 5:
-            return QString::fromStdString(Translator::getNature(state.getNature()));
         case 6:
+            return QString::fromStdString(Translator::getNature(state.getNature()));
+        case 7:
             if (state.getAbility() == 0 || state.getAbility() == 1)
             {
                 return QString("%1: %2")
@@ -166,26 +226,26 @@ QVariant StaticSearcherModel5::data(const QModelIndex &index, int role) const
             {
                 return QString("H (%2)").arg(QString::fromStdString(Translator::getAbility(state.getAbilityIndex())));
             }
-        case 7:
         case 8:
         case 9:
         case 10:
         case 11:
         case 12:
-            return showStats ? state.getStat(column - 7) : state.getIV(column - 7);
         case 13:
-            return QString::fromStdString(Translator::getHiddenPower(state.getHiddenPower()));
+            return showStats ? state.getStat(column - 8) : state.getIV(column - 8);
         case 14:
-            return state.getHiddenPowerStrength();
+            return QString::fromStdString(Translator::getHiddenPower(state.getHiddenPower()));
         case 15:
-            return QString::fromStdString(Translator::getGender(state.getGender()));
+            return state.getHiddenPowerStrength();
         case 16:
-            return QString::fromStdString(Translator::getCharacteristic(state.getCharacteristic(), CharacteristicGeneration::Gen5));
+            return QString::fromStdString(Translator::getGender(state.getGender()));
         case 17:
-            return QString::fromStdString(display.getDateTime().toString());
+            return QString::fromStdString(Translator::getCharacteristic(state.getCharacteristic(), CharacteristicGeneration::Gen5));
         case 18:
-            return QString::number(display.getTimer0(), 16).toUpper();
+            return QString::fromStdString(display.getDateTime().toString());
         case 19:
+            return QString::number(display.getTimer0(), 16).toUpper();
+        case 20:
             return QString::fromStdString(Translator::getKeypresses(display.getButtons()));
         }
     }
@@ -197,7 +257,7 @@ QVariant StaticSearcherModel5::headerData(int section, Qt::Orientation orientati
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
-        if (!showPassPower && section >= 1)
+        if (!showPassPower && section >= 2)
         {
             section++;
         }
@@ -210,7 +270,7 @@ void StaticSearcherModel5::setShowStats(bool flag)
 {
     showStats = flag;
     int offset = showPassPower ? 1 : 0;
-    emit dataChanged(index(0, 7 + offset), index(rowCount() - 1, 12 + offset), { Qt::DisplayRole });
+    emit dataChanged(index(0, 8 + offset), index(rowCount() - 1, 13 + offset), { Qt::DisplayRole });
 }
 
 void StaticSearcherModel5::setShowPassPower(bool flag)

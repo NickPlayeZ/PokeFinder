@@ -19,11 +19,119 @@
 
 #include "WildModel4.hpp"
 #include <Core/Enum/Game.hpp>
+#include <Core/Enum/Lead.hpp>
 #include <Core/Enum/Method.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <QCoreApplication>
 #include <QColor>
 #include <QFont>
+#include <QStringList>
+
+namespace
+{
+QString getSynchronizeLeadName4(Lead lead, u32 flags, u8 targetNature)
+{
+    constexpr u32 allNatures = (1 << 25) - 1;
+    u32 nonTargetNatures = allNatures & ~(1 << targetNature);
+    if ((flags & allNatures) == allNatures || (flags & nonTargetNatures) != 0)
+    {
+        return QString("%1: %2").arg(QCoreApplication::translate("WildSearcherModel4", "Synchronize"),
+                                     QCoreApplication::translate("WildSearcherModel4", "Any Nature"));
+    }
+
+    if (lead <= Lead::SynchronizeEnd)
+    {
+        return QString("%1: %2")
+            .arg(QCoreApplication::translate("WildSearcherModel4", "Synchronize"),
+                 QString::fromStdString(Translator::getNature(toInt(lead))));
+    }
+
+    return QCoreApplication::translate("WildSearcherModel4", "Synchronize");
+}
+
+QString getLeadName4(Lead lead, Lead synchronizeLead, u32 synchronizeFlags, u8 flags, u8 targetNature)
+{
+    if (lead == Lead::None)
+    {
+        return QCoreApplication::translate("WildSearcherModel4", "None");
+    }
+
+    if (flags != 0)
+    {
+        QStringList leads;
+        if ((flags & (1 << 0)) != 0)
+        {
+            leads.emplace_back(getSynchronizeLeadName4(synchronizeLead, synchronizeFlags, targetNature));
+        }
+
+        bool cuteCharmM = (flags & (1 << 1)) != 0;
+        bool cuteCharmF = (flags & (1 << 2)) != 0;
+        if (cuteCharmM && cuteCharmF)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Cute Charm: ♂ or ♀ Lead"));
+        }
+        else if (cuteCharmM)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Cute Charm: ♂ Lead"));
+        }
+        else if (cuteCharmF)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Cute Charm: ♀ Lead"));
+        }
+
+        if ((flags & (1 << 3)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Magnet Pull"));
+        }
+        if ((flags & (1 << 4)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Static"));
+        }
+        if ((flags & (1 << 5)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Hustle / Pressure / Vital Spirit"));
+        }
+        if ((flags & (1 << 6)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Compound Eyes"));
+        }
+        if ((flags & (1 << 7)) != 0)
+        {
+            leads.emplace_back(QCoreApplication::translate("WildSearcherModel4", "Arena Trap / Illuminate / No Guard"));
+        }
+
+        return leads.join(" / ");
+    }
+
+    if (lead <= Lead::SynchronizeEnd)
+    {
+        return getSynchronizeLeadName4(lead, synchronizeFlags, targetNature);
+    }
+
+    switch (lead)
+    {
+    case Lead::CompoundEyes:
+        return QCoreApplication::translate("WildSearcherModel4", "Compound Eyes");
+    case Lead::CuteCharmM:
+        return QCoreApplication::translate("WildSearcherModel4", "Cute Charm: ♂ Lead");
+    case Lead::CuteCharmF:
+        return QCoreApplication::translate("WildSearcherModel4", "Cute Charm: ♀ Lead");
+    case Lead::MagnetPull:
+        return QCoreApplication::translate("WildSearcherModel4", "Magnet Pull");
+    case Lead::Static:
+        return QCoreApplication::translate("WildSearcherModel4", "Static");
+    case Lead::Pressure:
+        return QCoreApplication::translate("WildSearcherModel4", "Hustle / Pressure / Vital Spirit");
+    case Lead::ArenaTrap:
+        return QCoreApplication::translate("WildSearcherModel4", "Arena Trap / Illuminate / No Guard");
+    case Lead::SuctionCups:
+        return QCoreApplication::translate("WildSearcherModel4", "Sticky Hold / Suction Cups");
+    default:
+        return QString();
+    }
+}
+}
 
 WildGeneratorModel4::WildGeneratorModel4(QObject *parent) : TableModel(parent), dppt(true), showStats(false), showStepEncounter(false)
 {
@@ -176,7 +284,7 @@ WildSearcherModel4::WildSearcherModel4(QObject *parent) :
 
 int WildSearcherModel4::columnCount(const QModelIndex &parent) const
 {
-    return showStepEncounter ? showStepMovement ? 24 : 23 : 21;
+    return (showStepEncounter ? showStepMovement ? 24 : 23 : 21) + 1;
 }
 
 QVariant WildSearcherModel4::data(const QModelIndex &index, int role) const
@@ -185,6 +293,17 @@ QVariant WildSearcherModel4::data(const QModelIndex &index, int role) const
     {
         const auto &state = model[index.row()];
         int column = index.column();
+        if (column == 3)
+        {
+            return getLeadName4(state.getLead(), state.getSynchronizeLead(), state.getSynchronizeLeadFlags(), state.getLeadFlags(),
+                                state.getNature());
+        }
+
+        if (column > 3)
+        {
+            column--;
+        }
+
         if (!showStepEncounter && column >= 4)
         {
             column += 3;
@@ -286,6 +405,11 @@ QVariant WildSearcherModel4::headerData(int section, Qt::Orientation orientation
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
+        if (section > 3)
+        {
+            section--;
+        }
+
         if (!showStepEncounter && section >= 4)
         {
             section += 3;
@@ -309,7 +433,7 @@ void WildSearcherModel4::setMethod(Method method)
 void WildSearcherModel4::setShowStats(bool flag)
 {
     showStats = flag;
-    int hp = showStepEncounter ? showStepMovement ? 14 : 13 : 11;
+    int hp = showStepEncounter ? showStepMovement ? 15 : 14 : 12;
     emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 

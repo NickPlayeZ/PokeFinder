@@ -127,7 +127,8 @@ void ComboMenu::setCheckedData(const std::vector<int> &data)
 {
     for (auto *action : actionGroup->actions())
     {
-        action->setChecked(std::ranges::contains(data, action->data().toInt()));
+        bool checked = std::ranges::contains(data, action->data().toInt());
+        action->setChecked(checked);
     }
 
     if (multiSelect)

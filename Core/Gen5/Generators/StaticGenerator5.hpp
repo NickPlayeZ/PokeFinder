@@ -20,6 +20,7 @@
 #ifndef STATICGENERATOR5_HPP
 #define STATICGENERATOR5_HPP
 
+#include <Core/Enum/Lead.hpp>
 #include <Core/Gen5/Profile5.hpp>
 #include <Core/Gen5/StaticTemplate5.hpp>
 #include <Core/Parents/Filters/StateFilter.hpp>
@@ -53,6 +54,13 @@ public:
     StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, const std::vector<u8> &luckyPowers,
                      const StaticTemplate5 &staticTemplate, const Profile5 &profile, const StateFilter &filter);
 
+    StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads, u8 luckyPower,
+                     const StaticTemplate5 &staticTemplate, const Profile5 &profile, const StateFilter &filter);
+
+    StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
+                     const std::vector<u8> &luckyPowers, const StaticTemplate5 &staticTemplate, const Profile5 &profile,
+                     const StateFilter &filter);
+
     /**
      * @brief Generates states
      *
@@ -76,6 +84,7 @@ public:
 
 private:
     std::vector<u8> luckyPowers;
+    std::vector<Lead> leads;
 
     /**
      * @brief Generates states
@@ -96,7 +105,8 @@ private:
      * @return Vector of computed states
      */
     std::vector<State5> generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const;
-    std::vector<State5> generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 luckyPower) const;
+
+    std::vector<State5> generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 luckyPower, Lead lead) const;
 };
 
 #endif // STATICGENERATOR5_HPP

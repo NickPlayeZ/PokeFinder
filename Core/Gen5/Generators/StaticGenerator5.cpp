@@ -27,6 +27,64 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
+#include <unordered_map>
+
+struct StaticStateKey
+{
+    std::array<u8, 6> ivs;
+    u32 advances;
+    u32 ivAdvances;
+    u32 pid;
+    u8 luckyPower;
+    u8 ability;
+    u8 gender;
+    u8 level;
+    u8 nature;
+    u8 shiny;
+
+    bool operator==(const StaticStateKey &other) const = default;
+};
+
+struct StaticStateKeyHash
+{
+    size_t operator()(const StaticStateKey &key) const
+    {
+        size_t hash = 0;
+        auto combine = [&hash](auto value) {
+            hash ^= static_cast<size_t>(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+        };
+
+        for (u8 iv : key.ivs)
+        {
+            combine(iv);
+        }
+        combine(key.advances);
+        combine(key.ivAdvances);
+        combine(key.pid);
+        combine(key.luckyPower);
+        combine(key.ability);
+        combine(key.gender);
+        combine(key.level);
+        combine(key.nature);
+        combine(key.shiny);
+
+        return hash;
+    }
+};
+
+static StaticStateKey getStateKey(const State5 &state)
+{
+    return { { state.getIV(0), state.getIV(1), state.getIV(2), state.getIV(3), state.getIV(4), state.getIV(5) },
+             state.getAdvances(),
+             state.getIVAdvances(),
+             state.getPID(),
+             state.getPassPower(),
+             state.getAbility(),
+             state.getGender(),
+             state.getLevel(),
+             state.getNature(),
+             state.getShiny() };
+}
 
 static u8 gen(MT &rng)
 {
@@ -53,8 +111,23 @@ StaticGenerator5::StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 off
 
 StaticGenerator5::StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, const std::vector<u8> &luckyPowers,
                                    const StaticTemplate5 &staticTemplate, const Profile5 &profile, const StateFilter &filter) :
-    StaticGenerator(initialAdvances, maxAdvances, offset, method, lead, staticTemplate, profile, filter),
-    luckyPowers((profile.getVersion() & Game::BW) != Game::None ? std::vector<u8> { 0 } : luckyPowers)
+    StaticGenerator5(initialAdvances, maxAdvances, offset, method, std::vector<Lead> { lead }, luckyPowers, staticTemplate, profile, filter)
+{
+}
+
+StaticGenerator5::StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
+                                   u8 luckyPower, const StaticTemplate5 &staticTemplate, const Profile5 &profile,
+                                   const StateFilter &filter) :
+    StaticGenerator5(initialAdvances, maxAdvances, offset, method, leads, std::vector<u8> { luckyPower }, staticTemplate, profile, filter)
+{
+}
+
+StaticGenerator5::StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
+                                   const std::vector<u8> &luckyPowers, const StaticTemplate5 &staticTemplate, const Profile5 &profile,
+                                   const StateFilter &filter) :
+    StaticGenerator(initialAdvances, maxAdvances, offset, method, leads.empty() ? Lead::None : leads.front(), staticTemplate, profile, filter),
+    luckyPowers((profile.getVersion() & Game::BW) != Game::None ? std::vector<u8> { 0 } : luckyPowers),
+    leads(leads.empty() ? std::vector<Lead> { Lead::None } : leads)
 {
     if (this->luckyPowers.empty())
     {
@@ -62,6 +135,9 @@ StaticGenerator5::StaticGenerator5(u32 initialAdvances, u32 maxAdvances, u32 off
     }
     std::ranges::sort(this->luckyPowers);
     this->luckyPowers.erase(std::ranges::unique(this->luckyPowers).begin(), this->luckyPowers.end());
+
+    std::ranges::sort(this->leads);
+    this->leads.erase(std::ranges::unique(this->leads).begin(), this->leads.end());
 
     if (staticTemplate.getCurtis())
     {
@@ -182,6 +258,7 @@ std::vector<State5> StaticGenerator5::generateNonWild(u64 seed, const std::vecto
 std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const
 {
     std::vector<State5> states;
+    std::unordered_map<StaticStateKey, size_t, StaticStateKeyHash> seen;
     for (u8 activeLuckyPower : luckyPowers)
     {
         std::vector<std::pair<u32, std::array<u8, 6>>> powerIVs;
@@ -194,26 +271,42 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
             std::ranges::copy_if(ivs, std::back_inserter(powerIVs), [](const auto &iv) { return iv.first >= 2; });
         }
 
-        auto powerStates = generateWild(seed, powerIVs, activeLuckyPower);
-        states.reserve(states.size() + powerStates.size());
-        for (const auto &state : powerStates)
+        if (powerIVs.empty())
         {
-            auto duplicate = std::ranges::find_if(states, [&state](const State5 &other) {
-                return state.getAdvances() == other.getAdvances() && state.getIVAdvances() == other.getIVAdvances()
-                    && state.getPID() == other.getPID() && state.getShiny() == other.getShiny() && state.getNature() == other.getNature()
-                    && state.getAbility() == other.getAbility() && state.getIVs() == other.getIVs()
-                    && state.getGender() == other.getGender() && state.getLevel() == other.getLevel();
-            });
-            if (duplicate == states.end())
+            continue;
+        }
+
+        for (Lead activeLead : leads)
+        {
+            auto leadStates = generateWild(seed, powerIVs, activeLuckyPower, activeLead);
+            states.reserve(states.size() + leadStates.size());
+            for (auto state : leadStates)
             {
-                states.emplace_back(state);
+                if (!filter.compareState(static_cast<const State &>(state)))
+                {
+                    continue;
+                }
+
+                auto key = getStateKey(state);
+                auto entry = seen.find(key);
+                if (entry == seen.end())
+                {
+                    states.emplace_back(state);
+                    seen.emplace(key, states.size() - 1);
+                }
+                else
+                {
+                    states[entry->second].addLead(state.getLead());
+                }
             }
         }
     }
+
     return states;
 }
 
-std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 luckyPower) const
+std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 luckyPower,
+                                                   Lead lead) const
 {
     u32 advances = Utilities5::initialAdvances(seed, profile);
     BWRNG rng(seed, advances + initialAdvances);
@@ -300,7 +393,7 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
         for (const auto &iv : ivs)
         {
             State5 state(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, staticTemplate.getLevel(),
-                         nature, shiny, info, luckyPower);
+                         nature, shiny, info, luckyPower, lead);
             if (filter.compareState(static_cast<const State &>(state)))
             {
                 states.emplace_back(state);

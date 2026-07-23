@@ -20,6 +20,7 @@
 #ifndef STATE5_HPP
 #define STATE5_HPP
 
+#include <Core/Enum/Lead.hpp>
 #include <Core/Parents/States/State.hpp>
 
 /**
@@ -44,13 +45,23 @@ public:
      * @param info Pokemon information
      */
     State5(u32 prng, u32 advances, u32 ivAdvances, u32 pid, const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny,
-           const PersonalInfo *info, u8 passPower = 0) :
+           const PersonalInfo *info, u8 passPower = 0, Lead lead = Lead::None) :
         GeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, info),
         ivAdvances(ivAdvances),
         passPower(passPower),
         chatot(static_cast<u8>(((static_cast<u64>(prng) * 0x1fff) >> 32) / 82)),
-        needle(static_cast<u8>((static_cast<u64>(prng) * 8) >> 32))
+        needle(static_cast<u8>((static_cast<u64>(prng) * 8) >> 32)),
+        lead(lead),
+        leadFlags(getLeadFlag(lead))
     {
+    }
+
+    void addLead(Lead newLead)
+    {
+        if (lead != Lead::None)
+        {
+            leadFlags |= getLeadFlag(newLead);
+        }
     }
 
     /**
@@ -93,11 +104,41 @@ public:
         return passPower;
     }
 
+    Lead getLead() const
+    {
+        return lead;
+    }
+
+    u8 getLeadFlags() const
+    {
+        return leadFlags;
+    }
+
 private:
     u32 ivAdvances;
     u8 passPower;
     u8 chatot;
     u8 needle;
+    Lead lead;
+    u8 leadFlags;
+
+    static constexpr u8 getLeadFlag(Lead lead)
+    {
+        if (lead <= Lead::SynchronizeEnd)
+        {
+            return 1 << 0;
+        }
+
+        switch (lead)
+        {
+        case Lead::CuteCharmM:
+            return 1 << 1;
+        case Lead::CuteCharmF:
+            return 1 << 2;
+        default:
+            return 0;
+        }
+    }
 };
 
 #endif // STATE5_HPP

@@ -20,6 +20,7 @@
 #ifndef WILDSTATE5_HPP
 #define WILDSTATE5_HPP
 
+#include <Core/Enum/Lead.hpp>
 #include <Core/Parents/States/WildState.hpp>
 
 /**
@@ -48,7 +49,7 @@ public:
      */
     WildState5(u32 prng, u8 movingTrigger, u8 movingSteps, bool phenomenon, bool phenomenonItem, u32 advances, u32 ivAdvances, u32 pid,
                const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie,
-               u8 form, const PersonalInfo *info, bool valid = true, u8 passPower = 0) :
+               u8 form, const PersonalInfo *info, bool valid = true, u8 passPower = 0, Lead lead = Lead::None) :
         WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info, valid),
         ivAdvances(ivAdvances),
         passPower(passPower),
@@ -58,104 +59,121 @@ public:
         phenomenonItem(phenomenonItem),
         valid(valid),
         chatot(static_cast<u8>(((static_cast<u64>(prng) * 0x1fff) >> 32) / 82)),
-        needle(static_cast<u8>((static_cast<u64>(prng) * 8) >> 32))
+        needle(static_cast<u8>((static_cast<u64>(prng) * 8) >> 32)),
+        lead(lead),
+        leadFlags(getLeadFlag(lead)),
+        variableNature(false)
     {
     }
 
-    /**
-     * @brief Returns the chatot pitch
-     *
-     * @return Chatot pitch
-     */
     u8 getChatot() const
     {
         return chatot;
     }
 
-    /**
-     * @brief Returns the IV advances of the state
-     *
-     * @return State IV advances
-     */
     u32 getIVAdvances() const
     {
         return ivAdvances;
     }
 
-    /**
-     * @brief Returns the moving battle trigger ratio
-     *
-     * @return Moving battle trigger ratio
-     */
     u8 getMovingTrigger() const
     {
         return movingTrigger;
     }
 
-    /**
-     * @brief Returns movement steps needed to trigger an encounter
-     *
-     * @return Movement steps needed to trigger an encounter
-     */
     u8 getMovingSteps() const
     {
         return movingSteps;
     }
 
-    /**
-     * @brief Determines if the state can be hit
-     *
-     * @return true State can be hit
-     * @return false State cannot be hit
-     */
     bool isValid() const
     {
         return valid;
     }
 
-    /**
-     * @brief Returns whether the frame triggers a phenomenon on the 20th step
-     *
-     * @return true if the phenomenon triggers
-     * @return false if the phenomenon does not trigger
-     */
     bool getPhenomenon() const
     {
         return phenomenon;
     }
 
-    /**
-     * @brief Returns whether the state is a phenomenon item instead of a Pokemon
-     *
-     * @return true if the state is an item
-     * @return false if the state is a Pokemon
-     */
     bool getPhenomenonItem() const
     {
         return phenomenonItem;
     }
 
-    /**
-     * @brief Returns the needle value
-     *
-     * @return Needle value
-     */
     u8 getNeedle() const
     {
         return needle;
     }
 
-    /**
-     * @brief Returns the pass power of the state
-     *
-     * @return Pass power
-     */
     u8 getPassPower() const
     {
         return passPower;
     }
 
+    Lead getLead() const
+    {
+        return lead;
+    }
+
+    u8 getLeadFlags() const
+    {
+        return leadFlags;
+    }
+
+    void addLead(Lead newLead)
+    {
+        if (newLead == Lead::None)
+        {
+            lead = Lead::None;
+            leadFlags = 0;
+        }
+        else if (lead != Lead::None)
+        {
+            leadFlags |= getLeadFlag(newLead);
+        }
+    }
+
+    void setVariableNature(bool flag)
+    {
+        variableNature = flag;
+    }
+
+    bool getVariableNature() const
+    {
+        return variableNature;
+    }
+
 private:
+    static constexpr u8 getLeadFlag(Lead lead)
+    {
+        if (lead <= Lead::SynchronizeEnd)
+        {
+            return 1 << 0;
+        }
+
+        switch (lead)
+        {
+        case Lead::CuteCharmM:
+            return 1 << 1;
+        case Lead::CuteCharmF:
+            return 1 << 2;
+        case Lead::MagnetPull:
+            return 1 << 3;
+        case Lead::Static:
+            return 1 << 4;
+        case Lead::Pressure:
+            return 1 << 5;
+        case Lead::CompoundEyes:
+            return 1 << 6;
+        case Lead::SuctionCups:
+        case Lead::ArenaTrap:
+            return 1 << 7;
+        default:
+            return 0;
+        }
+    }
+
     u32 ivAdvances;
     u8 passPower;
     u8 movingTrigger;
@@ -165,6 +183,9 @@ private:
     bool valid;
     u8 chatot;
     u8 needle;
+    Lead lead;
+    u8 leadFlags;
+    bool variableNature;
 };
 
 #endif // WILDSTATE5_HPP
