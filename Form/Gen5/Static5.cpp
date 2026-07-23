@@ -256,7 +256,7 @@ void Static5::generate()
     u32 maxAdvances = ui->textBoxGeneratorMaxAdvances->getUInt();
     u32 offset = ui->textBoxGeneratorOffset->getUInt();
     auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
-    u8 luckyPower = ui->comboBoxGeneratorLuckyPower->getCurrentUChar();
+    u8 luckyPower = (currentProfile->getVersion() & Game::BW2) != Game::None ? ui->comboBoxGeneratorLuckyPower->getCurrentUChar() : 0;
 
     const StaticTemplate5 *staticTemplate
         = Encounters5::getStaticEncounter(ui->comboBoxGeneratorCategory->currentIndex(), ui->comboBoxGeneratorPokemon->getCurrentInt());
@@ -365,11 +365,17 @@ void Static5::profileChanged(const Profile5 &profile)
     }
 
     bool bw = (currentProfile->getVersion() & Game::BW) != Game::None;
+    bool bw2 = (currentProfile->getVersion() & Game::BW2) != Game::None;
 
-    ui->labelGeneratorLuckyPower->setHidden(!bw);
-    ui->labelSearcherLuckyPower->setHidden(!bw);
-    ui->comboBoxGeneratorLuckyPower->setHidden(!bw);
-    ui->comboBoxSearcherLuckyPower->setHidden(!bw);
+    ui->labelGeneratorLuckyPower->setHidden(!bw2);
+    ui->labelSearcherLuckyPower->setHidden(!bw2);
+    ui->comboBoxGeneratorLuckyPower->setHidden(!bw2);
+    ui->comboBoxSearcherLuckyPower->setHidden(!bw2);
+    if (!bw2)
+    {
+        ui->comboBoxGeneratorLuckyPower->setCurrentIndex(0);
+        ui->comboBoxSearcherLuckyPower->setCheckedData({ 0 });
+    }
 
     // Event
     ui->comboBoxGeneratorCategory->setItemHidden(5, !bw);
@@ -419,7 +425,7 @@ void Static5::search()
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
     auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
-    auto luckyPowers = getCheckedUChars(ui->comboBoxSearcherLuckyPower);
+    auto luckyPowers = (currentProfile->getVersion() & Game::BW2) != Game::None ? getCheckedUChars(ui->comboBoxSearcherLuckyPower) : std::vector<u8> { 0 };
     bool showPassPower = (currentProfile->getVersion() & Game::BW2) != Game::None && hasPassPower(luckyPowers);
     searcherModel->setShowPassPower(showPassPower);
 

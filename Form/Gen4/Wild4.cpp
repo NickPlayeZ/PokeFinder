@@ -189,6 +189,10 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->comboMenuGeneratorLead->addMenu(tr("Cute Charm"),
                                         { { tr("♂ Lead"), toInt(Lead::CuteCharmM) }, { tr("♀ Lead"), toInt(Lead::CuteCharmF) } });
     ui->comboMenuGeneratorLead->addMenu(tr("Encounter Modifier"),
+                                        { { tr("Arena Trap"), toInt(Lead::ArenaTrap) },
+                                          { tr("Illuminate"), toInt(Lead::Illuminate) },
+                                          { tr("No Guard"), toInt(Lead::NoGuard) } });
+    ui->comboMenuGeneratorLead->addMenu(tr("Fishing Modifier"),
                                         { { tr("Sticky Hold"), toInt(Lead::StickyHold) },
                                           { tr("Suction Cups"), toInt(Lead::SuctionCups) } });
     ui->comboMenuGeneratorLead->addMenu(tr("Item Modifier"),
@@ -204,10 +208,6 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
                                           { tr("Vital Spirit"), toInt(Lead::VitalSpirit) } });
     ui->comboMenuGeneratorLead->addMenu(tr("Slot Modifier"),
                                         { { tr("Magnet Pull"), toInt(Lead::MagnetPull) }, { tr("Static"), toInt(Lead::Static) } });
-    ui->comboMenuGeneratorLead->addMenu(tr("Encounter Modifier"),
-                                        { { tr("Arena Trap"), toInt(Lead::ArenaTrap) },
-                                          { tr("Illuminate"), toInt(Lead::Illuminate) },
-                                          { tr("No Guard"), toInt(Lead::NoGuard) } });
     ui->comboMenuGeneratorLead->addMenu(tr("Synchronize"), Translator::getNatures());
 
     ui->comboMenuSearcherLead->addAction(tr("None"), toInt(Lead::None));
@@ -215,6 +215,10 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->comboMenuSearcherLead->addMenu(tr("Cute Charm"),
                                        { { tr("♂ Lead"), toInt(Lead::CuteCharmM) }, { tr("♀ Lead"), toInt(Lead::CuteCharmF) } });
     ui->comboMenuSearcherLead->addMenu(tr("Encounter Modifier"),
+                                       { { tr("Arena Trap"), toInt(Lead::ArenaTrap) },
+                                         { tr("Illuminate"), toInt(Lead::Illuminate) },
+                                         { tr("No Guard"), toInt(Lead::NoGuard) } });
+    ui->comboMenuSearcherLead->addMenu(tr("Fishing Modifier"),
                                        { { tr("Sticky Hold"), toInt(Lead::StickyHold) },
                                          { tr("Suction Cups"), toInt(Lead::SuctionCups) } });
     ui->comboMenuSearcherLead->addMenu(tr("Level Modifier"),
@@ -223,10 +227,6 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
                                          { tr("Vital Spirit"), toInt(Lead::VitalSpirit) } });
     ui->comboMenuSearcherLead->addMenu(tr("Slot Modifier"),
                                        { { tr("Magnet Pull"), toInt(Lead::MagnetPull) }, { tr("Static"), toInt(Lead::Static) } });
-    ui->comboMenuSearcherLead->addMenu(tr("Encounter Modifier"),
-                                       { { tr("Arena Trap"), toInt(Lead::ArenaTrap) },
-                                         { tr("Illuminate"), toInt(Lead::Illuminate) },
-                                         { tr("No Guard"), toInt(Lead::NoGuard) } });
     ui->comboMenuSearcherLead->addMenu(tr("Synchronize"), Translator::getNatures());
     ui->comboMenuSearcherLead->setMultiSelect(true);
     ui->comboMenuSearcherLead->setCheckedData({ toInt(Lead::None) });
@@ -811,9 +811,10 @@ void Wild4::generatorEncounterIndexChanged(int index)
         ui->labelGeneratorTime->setVisible((!hgss && grass) || hgss);
         ui->comboBoxGeneratorTime->setVisible((!hgss && grass) || hgss);
 
-        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::MagnetPull), bug || honey);
-        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Static), bug || honey);
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::MagnetPull), bug || honey || rock);
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Static), bug || honey || rock);
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Pressure), bug); // Also handles Hustle and Vital Spirit
+        ui->comboMenuGeneratorLead->hideAction(toInt(Lead::SuctionCups), !fish); // Also handles Sticky Hold
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashMagnetPull), !rock);
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashSuctionCups), !rock);
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashSuperLuck), !rock);
@@ -1015,7 +1016,6 @@ void Wild4::profileChanged(const Profile4 &profile)
     ui->comboBoxGeneratorEncounter->setItemHidden(ui->comboBoxGeneratorEncounter->findData(toInt(Encounter::HeadbuttAlt)), !hgss);
     ui->comboBoxGeneratorEncounter->setItemHidden(ui->comboBoxGeneratorEncounter->findData(toInt(Encounter::HeadbuttSpecial)), !hgss);
     ui->comboMenuGeneratorLead->hideAction(toInt(Lead::ArenaTrap), false); // Also handles Illuminate and No Guard
-    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::StickyHold), !hgss); // Also handles Suction Cups
     ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashMagnetPull), !hgss);
     ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashSuctionCups), !hgss);
     ui->comboMenuGeneratorLead->hideAction(toInt(Lead::RockSmashSuperLuck), !hgss);
@@ -1030,7 +1030,6 @@ void Wild4::profileChanged(const Profile4 &profile)
     ui->comboBoxSearcherEncounter->setItemHidden(ui->comboBoxSearcherEncounter->findData(toInt(Encounter::HeadbuttAlt)), !hgss);
     ui->comboBoxSearcherEncounter->setItemHidden(ui->comboBoxSearcherEncounter->findData(toInt(Encounter::HeadbuttSpecial)), !hgss);
     ui->comboMenuSearcherLead->hideAction(toInt(Lead::ArenaTrap), false); // Also handles Illuminate and No Guard
-    ui->comboMenuSearcherLead->hideAction(toInt(Lead::StickyHold), !hgss); // Also handles Suction Cups
 
     generatorEncounterIndexChanged(0);
     searcherEncounterIndexChanged(0);
@@ -1225,9 +1224,10 @@ void Wild4::searcherEncounterIndexChanged(int index)
             ui->checkBoxSearcherWhiteFlute->setChecked(false);
         }
 
-        ui->comboMenuSearcherLead->hideAction(toInt(Lead::MagnetPull), bug || honey);
-        ui->comboMenuSearcherLead->hideAction(toInt(Lead::Static), bug || honey);
+        ui->comboMenuSearcherLead->hideAction(toInt(Lead::MagnetPull), bug || honey || encounter == Encounter::RockSmash);
+        ui->comboMenuSearcherLead->hideAction(toInt(Lead::Static), bug || honey || encounter == Encounter::RockSmash);
         ui->comboMenuSearcherLead->hideAction(toInt(Lead::Pressure), bug); // Also handles Hustle and Vital Spirit
+        ui->comboMenuSearcherLead->hideAction(toInt(Lead::SuctionCups), !fish); // Also handles Sticky Hold
 
         updateEncounterSearcher();
 

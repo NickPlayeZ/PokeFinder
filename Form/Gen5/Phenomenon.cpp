@@ -442,7 +442,7 @@ void Phenomenon::generate()
     u32 maxAdvances = ui->textBoxGeneratorMaxAdvances->getUInt();
     u32 offset = ui->textBoxGeneratorOffset->getUInt();
     auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
-    u8 luckyPower = ui->comboBoxGeneratorLuckyPower->getCurrentUChar();
+    u8 luckyPower = (currentProfile->getVersion() & Game::BW2) != Game::None ? ui->comboBoxGeneratorLuckyPower->getCurrentUChar() : PassPower5::None;
 
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
     WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, false, false,
@@ -623,6 +623,11 @@ void Phenomenon::profileIndexChanged(int index)
 
         ui->labelSearcherLuckyPower->setVisible(flag);
         ui->comboBoxSearcherLuckyPower->setVisible(flag);
+        if (!flag)
+        {
+            ui->comboBoxGeneratorLuckyPower->setCurrentIndex(0);
+            ui->comboBoxSearcherLuckyPower->setCheckedData({ PassPower5::None });
+        }
 
         generatorEncounterIndexChanged(0);
         searcherEncounterIndexChanged(0);
@@ -662,8 +667,9 @@ void Phenomenon::search()
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
     auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
-    auto luckyPowers = getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower),
-                                      (currentProfile->getVersion() & Game::BW) != Game::None);
+    auto luckyPowers = (currentProfile->getVersion() & Game::BW2) != Game::None
+        ? getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), (currentProfile->getVersion() & Game::BW) != Game::None)
+        : std::vector<u8> { PassPower5::None };
     bool showPassPower = hasPassPower(luckyPowers);
     searcherModel->setShowPassPower(showPassPower);
 
@@ -868,8 +874,9 @@ void Phenomenon::transferSettings(int index)
         ui->comboBoxGeneratorLocation->setCurrentIndex(ui->comboBoxSearcherLocation->currentIndex());
         ui->comboBoxGeneratorPokemon->setCurrentIndex(ui->comboBoxSearcherPokemon->currentIndex());
         ui->comboBoxGeneratorSeason->setCurrentIndex(ui->comboBoxSearcherSeason->currentIndex());
-        auto luckyPowers = getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower),
-                                          (currentProfile->getVersion() & Game::BW) != Game::None);
+        auto luckyPowers = (currentProfile->getVersion() & Game::BW2) != Game::None
+            ? getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), (currentProfile->getVersion() & Game::BW) != Game::None)
+            : std::vector<u8> { PassPower5::None };
         ui->comboBoxGeneratorLuckyPower->setCurrentIndex(luckyPowers.empty() ? 0 : luckyPowers.front());
     }
 }

@@ -429,8 +429,8 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     connect(ui->checkBoxSearcherMovingTrigger, &QCheckBox::toggled, searcherModel, &WildSearcherModel5::setShowMovingTrigger);
     connect(ui->comboBoxGeneratorLuckyPower, &ComboMenu::checkedDataChanged, this, [this] {
         QSignalBlocker blocker(ui->comboBoxGeneratorLuckyPower);
-        bool bw = (currentProfile->getVersion() & Game::BW) != Game::None;
-        updateGeneratorPassPowerActions(ui->comboBoxGeneratorLuckyPower, bw);
+        bool bw1 = (currentProfile->getVersion() & Game::BW) != Game::None;
+        updateGeneratorPassPowerActions(ui->comboBoxGeneratorLuckyPower, bw1);
     });
     connect(ui->filterSearcher, &Filter::ivsChanged, this, &Wild5::searcherFastSearchChanged);
     connect(ui->textBoxSearcherInitialIVAdvances, &TextBox::textChanged, this, &Wild5::searcherFastSearchChanged);
@@ -522,7 +522,7 @@ void Wild5::generate()
     u32 maxAdvances = ui->textBoxGeneratorMaxAdvances->getUInt();
     u32 offset = ui->textBoxGeneratorOffset->getUInt();
     auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
-    u8 passPower = getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower);
+    u8 passPower = (currentProfile->getVersion() & Game::BW2) != Game::None ? getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower) : PassPower5::None;
     bool searchMovingTrigger = ui->checkBoxGeneratorMovingTrigger->isChecked() && (currentProfile->getVersion() & Game::Gen5) != Game::None;
     if (!searchMovingTrigger)
     {
@@ -678,13 +678,18 @@ void Wild5::profileChanged(const Profile5 &profile)
         ui->dateEditSearcherEndDate->clearDateRange();
     }
 
-    bool flag = (currentProfile->getVersion() & Game::Gen5) != Game::None;
+    bool flag = (currentProfile->getVersion() & Game::BW2) != Game::None;
 
     ui->labelGeneratorLuckyPower->setVisible(flag);
     ui->comboBoxGeneratorLuckyPower->setVisible(flag);
 
     ui->labelSearcherLuckyPower->setVisible(flag);
     ui->comboBoxSearcherLuckyPower->setVisible(flag);
+    if (!flag)
+    {
+        ui->comboBoxGeneratorLuckyPower->setCheckedData({ PassPower5::None });
+        ui->comboBoxSearcherLuckyPower->setCheckedData({ PassPower5::None });
+    }
     updateGeneratorPassPowerActions(ui->comboBoxGeneratorLuckyPower, (currentProfile->getVersion() & Game::BW) != Game::None);
 
     generatorEncounterIndexChanged(0);
@@ -721,8 +726,10 @@ void Wild5::search()
     auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     bool searchMovingTrigger
         = ui->checkBoxSearcherMovingTrigger->isChecked() && supportsMovingTrigger(ui->comboBoxSearcherEncounter->getEnum<Encounter>(), currentProfile);
-    auto passPowers = getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), searchMovingTrigger,
-                                    (currentProfile->getVersion() & Game::BW) != Game::None);
+    auto passPowers = (currentProfile->getVersion() & Game::BW2) != Game::None
+        ? getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), searchMovingTrigger,
+                        (currentProfile->getVersion() & Game::BW) != Game::None)
+        : std::vector<u8> { PassPower5::None };
     bool showPassPower = hasPassPower(passPowers);
     searcherModel->setShowPassPower(showPassPower);
 
@@ -937,8 +944,10 @@ void Wild5::transferSettings(int index)
         ui->comboBoxGeneratorSeason->setCurrentIndex(ui->comboBoxSearcherSeason->currentIndex());
         ui->checkBoxGeneratorMovingTrigger->setChecked(ui->checkBoxSearcherMovingTrigger->isChecked());
         ui->checkBoxGeneratorSwarm->setChecked(ui->checkBoxSearcherSwarm->isChecked());
-        auto passPowers = getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), ui->checkBoxSearcherMovingTrigger->isChecked(),
-                                        (currentProfile->getVersion() & Game::BW) != Game::None);
+        auto passPowers = (currentProfile->getVersion() & Game::BW2) != Game::None
+            ? getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), ui->checkBoxSearcherMovingTrigger->isChecked(),
+                            (currentProfile->getVersion() & Game::BW) != Game::None)
+            : std::vector<u8> { PassPower5::None };
         ui->comboBoxGeneratorLuckyPower->setCheckedData(getPassPowerMenuOptions(passPowers.empty() ? PassPower5::None : passPowers.front()));
         updateGeneratorPassPowerActions(ui->comboBoxGeneratorLuckyPower, (currentProfile->getVersion() & Game::BW) != Game::None);
     }
