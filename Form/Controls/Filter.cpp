@@ -333,7 +333,10 @@ bool Filter::hasActiveFilters(u8 encounterSlots) const
 
 std::array<bool, 13> Filter::getEncounterSlots() const
 {
-    return ui->checkListEncounterSlot->getCheckedArray<13>();
+    auto checked = ui->checkListEncounterSlot->getChecked();
+    std::array<bool, 13> array = {};
+    std::ranges::copy_n(checked.begin(), std::min(checked.size(), array.size()), array.begin());
+    return array;
 }
 
 u8 Filter::getGender() const

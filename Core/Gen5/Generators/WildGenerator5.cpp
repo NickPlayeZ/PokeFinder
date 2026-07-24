@@ -576,7 +576,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
     bool bw2 = (profile.getVersion() & Game::BW2) != Game::None;
     bool bw = (profile.getVersion() & Game::BW) != Game::None;
     BWRNG rng(seed, start);
-    BWRNG encounterRNG(seed, start + (searchMovingTrigger && bw2 ? 1 : 0));
+    BWRNG encounterRNG(seed, start);
     u32 triggerOffset = 0;
     if (searchMovingTrigger)
     {
@@ -630,10 +630,6 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             payloadRng.next();
         }
 
-        if (nsPokemonReleasedOffset)
-        {
-            payloadRng.next();
-        }
         BWRNG go(payloadRng, jump);
         bool valid = true;
 
@@ -726,7 +722,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         }
 
         BWRNG triggerGo(triggerRNG, jump);
-        u8 movingTrigger = searchMovingTrigger ? (bw2 ? getMovingTrigger(triggerGo) : getMovingTrigger(triggerGo, bw, lead, area.getEncounter()))
+        u8 movingTrigger = searchMovingTrigger ? (bw2 ? getMovingTrigger(go) : getMovingTrigger(triggerGo, bw, lead, area.getEncounter()))
                                                : StepEncounter5::impossible;
         u8 movingSteps = searchMovingTrigger
             ? StepEncounter5::getSteps(profile.getVersion(), area.getEncounter(), area.getRate(), movingTrigger,
@@ -741,6 +737,11 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         if (searchMovingTrigger && !bw2)
         {
             getMovingTrigger(go);
+        }
+
+        if (nsPokemonReleasedOffset)
+        {
+            go.advance(1);
         }
 
         u8 encounterSlot = 0;
