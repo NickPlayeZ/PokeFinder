@@ -83,11 +83,6 @@ bool StateFilter::compareNature(u8 nature) const
     return skip || natures[nature];
 }
 
-bool StateFilter::allowsAllNatures() const
-{
-    return skip || std::ranges::all_of(natures, [](bool nature) { return nature; });
-}
-
 bool StateFilter::compareShiny(u8 shiny) const
 {
     return skip || this->shiny == 255 || (this->shiny & shiny);

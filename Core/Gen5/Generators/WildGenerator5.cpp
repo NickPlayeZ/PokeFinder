@@ -142,7 +142,7 @@ struct WildTargetKeyHash
     }
 };
 
-static WildStateKey getStateKey(const WildState5 &state, bool normalizeNature)
+static WildStateKey getStateKey(const WildState5 &state)
 {
     return { { state.getIV(0), state.getIV(1), state.getIV(2), state.getIV(3), state.getIV(4), state.getIV(5) },
              state.getAdvances(),
@@ -155,7 +155,7 @@ static WildStateKey getStateKey(const WildState5 &state, bool normalizeNature)
              state.getAbility(),
              state.getGender(),
              state.getLevel(),
-             normalizeNature ? static_cast<u8>(255) : state.getNature(),
+             state.getVariableNature() ? static_cast<u8>(255) : state.getNature(),
              state.getShiny(),
              state.getEncounterSlot(),
              state.getForm(),
@@ -508,7 +508,6 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         {
             auto leadStates = generate(seed, powerIVs, activePassPower, activeLead);
             states.reserve(states.size() + leadStates.size());
-            bool normalizeNature = activeLead <= Lead::SynchronizeEnd && filter.allowsAllNatures();
             for (auto state : leadStates)
             {
                 if (requireMovingTrigger && !state.isValid())
@@ -516,9 +515,9 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                     continue;
                 }
 
-                if (normalizeNature)
+                if (state.getLead() != Lead::None && !state.getLeadRequired())
                 {
-                    state.setVariableNature(true);
+                    continue;
                 }
 
                 if (!state.getPhenomenonItem() && !filter.compareState(static_cast<const WildState &>(state)))
@@ -526,7 +525,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                     continue;
                 }
 
-                auto key = getStateKey(state, normalizeNature);
+                auto key = getStateKey(state);
                 auto entry = seen.find(key);
                 if (entry == seen.end())
                 {
@@ -799,10 +798,14 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         u8 shiny = Utilities::getShiny<true>(pid, tsv);
 
         u8 nature = go.nextUInt(25);
+        bool variableNature = sync;
         if (sync)
         {
             nature = toInt(lead);
         }
+
+        bool leadRequired = lead == Lead::None || cuteCharm || magnetStatic || pressure || sync || lead == Lead::CompoundEyes
+            || (lead == Lead::SuctionCups && area.getEncounter() == Encounter::SuperRod) || (lead == Lead::ArenaTrap && searchMovingTrigger);
 
         if (!phenomenonItem)
         {
@@ -820,7 +823,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         {
             WildState5 state(prng, movingTrigger, movingSteps, phenomenon, phenomenonItem, advances + initialAdvances + cnt, iv.first, pid,
                              iv.second, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(), slot.getForm(), info, valid,
-                             passPower, lead);
+                             passPower, lead, variableNature, leadRequired);
             if (!valid || phenomenonItem || filter.compareState(static_cast<const WildState &>(state)))
             {
                 states.emplace_back(state);
