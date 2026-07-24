@@ -26,6 +26,7 @@
 class AdjacentSeedsModel;
 class DateTime;
 class Profile5;
+class SortFilterProxyModel;
 enum class Buttons : u16;
 
 namespace Ui
@@ -87,6 +88,7 @@ private:
     Ui::AdjacentSeeds *ui;
 
     AdjacentSeedsModel *model;
+    SortFilterProxyModel *proxyModel;
     const Profile5 *currentProfile;
 
 private slots:

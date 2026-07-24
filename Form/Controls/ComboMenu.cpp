@@ -96,11 +96,12 @@ std::vector<int> ComboMenu::getCheckedData() const
         return data;
     }
 
-    int checked = std::ranges::count_if(actions, [](const QAction *action) { return action->isChecked(); });
-    bool all = checked == 0 || checked == actions.size();
+    int visible = std::ranges::count_if(actions, [](const QAction *action) { return action->isVisible(); });
+    int checked = std::ranges::count_if(actions, [](const QAction *action) { return action->isVisible() && action->isChecked(); });
+    bool all = checked == 0 || checked == visible;
     for (const auto *action : actions)
     {
-        if (all || action->isChecked())
+        if (action->isVisible() && (all || action->isChecked()))
         {
             data.emplace_back(action->data().toInt());
         }
@@ -268,7 +269,8 @@ void ComboMenu::actionChanged(QAction *action)
 void ComboMenu::updateMultiSelectText()
 {
     auto actions = actionGroup->actions();
-    int checked = std::ranges::count_if(actions, [](const QAction *action) { return action->isChecked(); });
+    int visible = std::ranges::count_if(actions, [](const QAction *action) { return action->isVisible(); });
+    int checked = std::ranges::count_if(actions, [](const QAction *action) { return action->isVisible() && action->isChecked(); });
 
     for (QObject *object : topMenu->children())
     {
@@ -284,7 +286,7 @@ void ComboMenu::updateMultiSelectText()
         }
     }
 
-    if (checked == 0 || checked == actions.size())
+    if (checked == 0 || checked == visible)
     {
         setText(tr("Any"));
         emit checkedDataChanged();
@@ -294,7 +296,7 @@ void ComboMenu::updateMultiSelectText()
     QStringList text;
     for (const auto *action : actions)
     {
-        if (action->isChecked())
+        if (action->isVisible() && action->isChecked())
         {
             auto *parent = qobject_cast<QMenu *>(action->parent());
             if (parent != nullptr && !parent->title().isEmpty())

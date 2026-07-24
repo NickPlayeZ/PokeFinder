@@ -28,6 +28,7 @@
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Util/IVCalculator.hpp>
 #include <Model/Gen5/AdjacentSeedsModel.hpp>
+#include <Model/SortFilterProxyModel.hpp>
 #include <QSettings>
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
@@ -60,7 +61,8 @@ AdjacentSeeds::AdjacentSeeds(QWidget *parent) : QWidget(parent), ui(new Ui::Adja
     ui->profileDisplay->setup(settingPrefix, Game::Gen5);
 
     model = new AdjacentSeedsModel(ui->tableView);
-    ui->tableView->setModel(model);
+    proxyModel = new SortFilterProxyModel(ui->tableView, model);
+    ui->tableView->setModel(proxyModel);
     ui->tableView->setItemDelegate(new TargetRowDelegate(ui->tableView));
 
     ui->checkListKeypresses->setFull(false);
@@ -119,6 +121,7 @@ void AdjacentSeeds::updateProfiles()
 
 void AdjacentSeeds::generate()
 {
+    ui->tableView->setSortingEnabled(false);
     model->clearModel();
 
     DateTime dateTime = ui->dateTimeEdit->getDateTime();
@@ -130,6 +133,7 @@ void AdjacentSeeds::generate()
 
     auto states = AdjacentSeedsCalculator::generate(initialIVAdvance, maxIVAdvance, seconds, roamer, buttons, dateTime, *currentProfile);
     model->addItems(states);
+    ui->tableView->setSortingEnabled(true);
 
     if (model->rowCount() > 0)
     {
@@ -143,7 +147,7 @@ void AdjacentSeeds::generate()
                 break;
             }
         }
-        ui->tableView->selectRow(targetRow);
+        ui->tableView->selectRow(proxyModel->mapFromSource(model->index(targetRow, 0)).row());
     }
 
     updatePreview();
@@ -178,6 +182,7 @@ void AdjacentSeeds::updatePreview()
         return;
     }
 
+    index = proxyModel->mapToSource(index);
     const auto &state = model->getItem(index.row());
     std::string preview = AdjacentSeedsCalculator::previewPRNG(state.getSeed(), state.getPIDAdvance(), previewCount,
                                                                ui->comboBoxPreviewMode->currentIndex() == chatotIndex);
