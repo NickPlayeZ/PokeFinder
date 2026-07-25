@@ -413,7 +413,7 @@ WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset,
                                bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area, const Profile5 &profile,
                                const WildStateFilter &filter, bool requirePassPowerIVAdvance) :
     WildGenerator5(initialAdvances, maxAdvances, offset, method, std::vector<Lead> { lead }, passPowers, searchMovingTrigger, requireMovingTrigger,
-                   area, profile, filter, requirePassPowerIVAdvance)
+                   area, profile, filter, requirePassPowerIVAdvance, false)
 {
 }
 
@@ -426,13 +426,14 @@ WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset,
 WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
                                const std::vector<u8> &passPowers, bool searchMovingTrigger, bool requireMovingTrigger,
                                const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter,
-                               bool requirePassPowerIVAdvance) :
+                               bool requirePassPowerIVAdvance, bool filterNonRequiredLeads) :
     WildGenerator(initialAdvances, maxAdvances, offset, method, leads.empty() ? Lead::None : leads.front(), area, profile, filter),
     passPowers(passPowers),
     leads(leads.empty() ? std::vector<Lead> { Lead::None } : leads),
     searchMovingTrigger(searchMovingTrigger),
     requireMovingTrigger(requireMovingTrigger),
-    requirePassPowerIVAdvance(requirePassPowerIVAdvance)
+    requirePassPowerIVAdvance(requirePassPowerIVAdvance),
+    filterNonRequiredLeads(filterNonRequiredLeads)
 {
     if ((profile.getVersion() & Game::BW) != Game::None)
     {
@@ -515,7 +516,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                     continue;
                 }
 
-                if (state.getLead() != Lead::None && !state.getLeadRequired())
+                if (filterNonRequiredLeads && state.getLead() != Lead::None && !state.getLeadRequired())
                 {
                     continue;
                 }

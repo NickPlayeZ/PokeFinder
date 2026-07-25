@@ -100,7 +100,8 @@ public:
 
     WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
                    const std::vector<u8> &passPowers, bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area,
-                   const Profile5 &profile, const WildStateFilter &filter, bool requirePassPowerIVAdvance = false);
+                   const Profile5 &profile, const WildStateFilter &filter, bool requirePassPowerIVAdvance = false,
+                   bool filterNonRequiredLeads = true);
 
     /**
      * @brief Generates states for the \p encounterArea
@@ -129,6 +130,7 @@ private:
     bool searchMovingTrigger;
     bool requireMovingTrigger;
     bool requirePassPowerIVAdvance;
+    bool filterNonRequiredLeads;
 
     std::vector<WildState5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower, Lead lead) const;
 };
