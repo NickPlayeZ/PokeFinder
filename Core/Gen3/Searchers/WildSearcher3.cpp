@@ -31,6 +31,7 @@
 #include <Core/RNG/LCRNGReverse.hpp>
 #include <Core/Util/EncounterSlot.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <algorithm>
 
 constexpr u8 feebasSlots[] = { 2, 3, 5 };
 
@@ -56,60 +57,48 @@ static u8 unownLetter(u32 pid)
     return (((pid & 0x3000000) >> 18) | ((pid & 0x30000) >> 12) | ((pid & 0x300) >> 6) | (pid & 0x3)) % 0x1c;
 }
 
-static constexpr bool isSynchronizeLead(Lead lead)
+static bool sameTarget(const WildSearcherState &left, const WildSearcherState &right)
 {
-    return lead <= Lead::SynchronizeEnd;
+    return left.getSeed() == right.getSeed() && left.getPID() == right.getPID() && left.getIVs() == right.getIVs()
+        && left.getAbility() == right.getAbility() && left.getGender() == right.getGender() && left.getLevel() == right.getLevel()
+        && left.getNature() == right.getNature() && left.getShiny() == right.getShiny() && left.getEncounterSlot() == right.getEncounterSlot()
+        && left.getItem() == right.getItem() && left.getSpecie() == right.getSpecie() && left.getForm() == right.getForm();
 }
 
-static std::vector<Lead> expandLegacySynchronizeLead(Lead lead)
+static void mergeLeadState(std::vector<WildSearcherState> &states, const WildSearcherState &newState)
 {
-    if (lead != Lead::Synchronize)
+    auto state = std::find_if(states.begin(), states.end(), [&newState](const auto &state) { return sameTarget(state, newState); });
+    if (state != states.end())
     {
-        return { lead };
+        state->setLeadMask(state->getLeadMask() | newState.getLeadMask());
     }
-
-    std::vector<Lead> leads;
-    leads.reserve(toInt(Lead::SynchronizeEnd) + 1);
-    for (u8 nature = 0; nature <= toInt(Lead::SynchronizeEnd); nature++)
+    else
     {
-        leads.emplace_back(static_cast<Lead>(nature));
+        states.emplace_back(newState);
     }
-
-    return leads;
 }
 
-static bool matches(const WildSearcherState &left, const WildSearcherState &right)
+static constexpr u64 synchronizeMask()
 {
-    return left.getSeed() == right.getSeed() && left.getPID() == right.getPID() && left.getItem() == right.getItem()
-        && left.getSpecie() == right.getSpecie() && left.getAbility() == right.getAbility() && left.getGender() == right.getGender()
-        && left.getLevel() == right.getLevel() && left.getNature() == right.getNature() && left.getShiny() == right.getShiny()
-        && left.getEncounterSlot() == right.getEncounterSlot() && left.getForm() == right.getForm() && left.getIVs() == right.getIVs();
-}
-
-static void addOrMerge(std::vector<WildSearcherState> &states, const WildSearcherState &state)
-{
-    for (auto &existing : states)
-    {
-        if (matches(existing, state))
-        {
-            existing.addLead(state.getLead());
-            return;
-        }
-    }
-
-    states.emplace_back(state);
+    return (1ULL << 25) - 1;
 }
 
 WildSearcher3::WildSearcher3(Method method, Lead lead, bool feebasTile, bool bike, Item item, const EncounterArea3 &area,
                              const Profile3 &profile, const WildStateFilter &filter) :
-    WildSearcher(method, lead, area, profile, filter),
+    WildSearcher3(method, std::vector<Lead> { lead }, feebasTile, bike, item, area, profile, filter)
+{
+}
+
+WildSearcher3::WildSearcher3(Method method, const std::vector<Lead> &leads, bool feebasTile, bool bike, Item item,
+                             const EncounterArea3 &area, const Profile3 &profile, const WildStateFilter &filter) :
+    WildSearcher(method, leads.empty() ? Lead::None : leads[0], area, profile, filter),
     rate(0),
     bike(bike),
     feebasTile(feebasTile),
     ivAdvance(method == Method::Method2),
     item(item),
-    modifiedSlots(area.getSlots(lead)),
-    leads(expandLegacySynchronizeLead(lead))
+    leads(leads.empty() ? std::vector<Lead> { Lead::None } : leads),
+    modifiedSlots(area.getSlots(leads.empty() ? Lead::None : leads[0]))
 {
     if ((profile.getVersion() & Game::RSE) != Game::None && area.getEncounter() == Encounter::RockSmash)
     {
@@ -133,13 +122,6 @@ WildSearcher3::WildSearcher3(Method method, Lead lead, bool feebasTile, bool bik
             rate += rate / 2;
         }
     }
-}
-
-WildSearcher3::WildSearcher3(Method method, const std::vector<Lead> &leads, bool feebasTile, bool bike, Item item,
-                             const EncounterArea3 &area, const Profile3 &profile, const WildStateFilter &filter) :
-    WildSearcher3(method, leads.front(), feebasTile, bike, item, area, profile, filter)
-{
-    this->leads = leads;
 }
 
 void WildSearcher3::startSearch(const std::array<u8, 6> &min, const std::array<u8, 6> &max)
@@ -169,25 +151,11 @@ void WildSearcher3::startSearch(const std::array<u8, 6> &min, const std::array<u
                                 return;
                             }
 
-                            std::vector<WildSearcherState> mergedStates;
-                            for (Lead activeLead : leads)
-                            {
-                                lead = activeLead;
-                                modifiedSlots = area.getSlots(activeLead);
-                                auto states = search(hp, atk, def, spa, spd, spe, feebas, safari, tanoby);
-                                for (auto &state : states)
-                                {
-                                    state.setLead(activeLead);
-                                    addOrMerge(mergedStates, state);
-                                }
+                            auto states = search(hp, atk, def, spa, spd, spe, feebas, safari, tanoby);
 
-                                progress++;
-                            }
-
-                            {
-                                std::lock_guard<std::mutex> guard(mutex);
-                                results.insert(results.end(), mergedStates.begin(), mergedStates.end());
-                            }
+                            std::lock_guard<std::mutex> guard(mutex);
+                            results.insert(results.end(), states.begin(), states.end());
+                            progress++;
                         }
                     }
                 }
@@ -237,15 +205,19 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
 
         do
         {
-            bool cuteCharmFlag = false;
-            u8 encounterSlot[4];
-            bool force = false;
-            u16 levelRand[2];
-            PokeRNGR test[4] = { rng, rng, rng, rng };
-            bool valid[4] = { false, false, false, false };
+            for (Lead currentLead : leads)
+            {
+                Lead lead = currentLead;
+                ModifiedSlots modifiedSlots = area.getSlots(lead);
+                bool cuteCharmFlag = false;
+                u8 encounterSlot[4];
+                bool force = false;
+                u16 levelRand[2];
+                PokeRNGR test[4] = { rng, rng, rng, rng };
+                bool valid[4] = { false, false, false, false };
+                u64 leadMask[4] = { getLeadFlag(lead), getLeadFlag(lead), getLeadFlag(lead), getLeadFlag(lead) };
 
-            Lead leadCategory = isSynchronizeLead(lead) ? Lead::Synchronize : lead;
-            switch (leadCategory)
+            switch (lead)
             {
             case Lead::None:
                 if (tanoby)
@@ -332,7 +304,7 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
                 }
                 break;
             case Lead::Synchronize:
-                if ((nextRNG & 1) == 0 && toInt(lead) == nature)
+                if ((nextRNG & 1) == 0)
                 {
                     levelRand[0] = safari ? test[0].nextUShort() : nextRNG2;
 
@@ -365,6 +337,8 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
                         encounterSlot[0] = EncounterSlot::hSlot(test[0].nextUShort(100), area.getEncounter());
                         valid[0] = filter.compareEncounterSlot(encounterSlot[0]);
                     }
+                    leadMask[0] = getLeadFlag(static_cast<Lead>(nature));
+                    leadMask[1] = getLeadFlag(static_cast<Lead>(nature));
                 }
 
                 if ((nextRNG2 & 1) == 1 && (nextRNG % 25) == nature)
@@ -405,6 +379,8 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
                         encounterSlot[2] = EncounterSlot::hSlot(test[2].nextUShort(100), area.getEncounter());
                         valid[2] = filter.compareEncounterSlot(encounterSlot[2]);
                     }
+                    leadMask[2] = synchronizeMask();
+                    leadMask[3] = synchronizeMask();
                 }
                 break;
             case Lead::MagnetPull:
@@ -488,12 +464,15 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
                         WildSearcherState state(test[i].next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
                                                 Utilities::getShiny<true>(pid, tsv), encounterSlot[i], 0, slot.getSpecie(), slot.getForm(),
                                                 info);
+                        state.setLeadMask(leadMask[i]);
                         if (filter.compareState(state))
                         {
-                            states.emplace_back(state);
+                            mergeLeadState(states, state);
                         }
                     }
                 }
+            }
+
             }
 
             if (tanoby)

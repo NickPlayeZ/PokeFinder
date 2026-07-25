@@ -76,6 +76,8 @@ add_library(PokeFinderModel STATIC
     TableModel.hpp
     Util/IVToPIDModel.cpp
     Util/IVToPIDModel.hpp
+    Util/LeadDisplay.cpp
+    Util/LeadDisplay.hpp
     Util/ResearcherModel.cpp
     Util/ResearcherModel.hpp
 )

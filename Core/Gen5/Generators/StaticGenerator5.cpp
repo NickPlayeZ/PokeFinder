@@ -27,63 +27,35 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
-#include <unordered_map>
 
-struct StaticStateKey
+static bool matches(const State5 &left, const State5 &right)
 {
-    std::array<u8, 6> ivs;
-    u32 advances;
-    u32 ivAdvances;
-    u32 pid;
-    u8 luckyPower;
-    u8 ability;
-    u8 gender;
-    u8 level;
-    u8 nature;
-    u8 shiny;
+    bool sameNature = left.getSynchronize() && right.getSynchronize() ? true : left.getNature() == right.getNature();
+    return left.getAdvances() == right.getAdvances() && left.getIVAdvances() == right.getIVAdvances()
+        && left.getPID() == right.getPID() && left.getPassPower() == right.getPassPower() && left.getAbility() == right.getAbility()
+        && left.getGender() == right.getGender() && left.getLevel() == right.getLevel() && sameNature
+        && left.getShiny() == right.getShiny() && left.getSynchronize() == right.getSynchronize()
+        && left.getIVs() == right.getIVs();
+}
 
-    bool operator==(const StaticStateKey &other) const = default;
-};
-
-struct StaticStateKeyHash
+static void addState(std::vector<State5> &states, const State5 &state, Lead lead)
 {
-    size_t operator()(const StaticStateKey &key) const
+    auto iter = std::ranges::find_if(states, [&state](const State5 &other) { return matches(state, other); });
+    if (iter != states.end())
     {
-        size_t hash = 0;
-        auto combine = [&hash](auto value) {
-            hash ^= static_cast<size_t>(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-        };
-
-        for (u8 iv : key.ivs)
+        if (lead == Lead::None)
         {
-            combine(iv);
+            iter->setLeadMask(getLeadFlag(Lead::None));
         }
-        combine(key.advances);
-        combine(key.ivAdvances);
-        combine(key.pid);
-        combine(key.luckyPower);
-        combine(key.ability);
-        combine(key.gender);
-        combine(key.level);
-        combine(key.nature);
-        combine(key.shiny);
-
-        return hash;
+        else if ((iter->getLeadMask() & getLeadFlag(Lead::None)) == 0)
+        {
+            iter->addLead(lead);
+        }
     }
-};
-
-static StaticStateKey getStateKey(const State5 &state)
-{
-    return { { state.getIV(0), state.getIV(1), state.getIV(2), state.getIV(3), state.getIV(4), state.getIV(5) },
-             state.getAdvances(),
-             state.getIVAdvances(),
-             state.getPID(),
-             state.getPassPower(),
-             state.getAbility(),
-             state.getGender(),
-             state.getLevel(),
-             state.getNature(),
-             state.getShiny() };
+    else
+    {
+        states.emplace_back(state);
+    }
 }
 
 static u8 gen(MT &rng)
@@ -258,7 +230,6 @@ std::vector<State5> StaticGenerator5::generateNonWild(u64 seed, const std::vecto
 std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const
 {
     std::vector<State5> states;
-    std::unordered_map<StaticStateKey, size_t, StaticStateKeyHash> seen;
     for (u8 activeLuckyPower : luckyPowers)
     {
         std::vector<std::pair<u32, std::array<u8, 6>>> powerIVs;
@@ -287,17 +258,7 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
                     continue;
                 }
 
-                auto key = getStateKey(state);
-                auto entry = seen.find(key);
-                if (entry == seen.end())
-                {
-                    states.emplace_back(state);
-                    seen.emplace(key, states.size() - 1);
-                }
-                else
-                {
-                    states[entry->second].addLead(state.getLead());
-                }
+                addState(states, state, activeLead);
             }
         }
     }
@@ -388,7 +349,7 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
         for (const auto &iv : ivs)
         {
             State5 state(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, staticTemplate.getLevel(),
-                         nature, shiny, info, luckyPower, lead);
+                         nature, shiny, info, luckyPower, lead, sync);
             if (filter.compareState(static_cast<const State &>(state)))
             {
                 states.emplace_back(state);

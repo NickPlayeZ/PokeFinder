@@ -21,6 +21,7 @@
 #include <Core/Enum/Lead.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <Model/Util/LeadDisplay.hpp>
 #include <QCoreApplication>
 #include <QStringList>
 
@@ -184,7 +185,7 @@ QVariant StaticSearcherModel5::data(const QModelIndex &index, int role) const
         int column = index.column();
         if (column == 1)
         {
-            return getLeadNameStatic5(state.getLead(), state.getLeadFlags());
+            return LeadDisplay::getLeadName(state.getLeadMask(), false);
         }
 
         if (showPassPower)
@@ -214,6 +215,10 @@ QVariant StaticSearcherModel5::data(const QModelIndex &index, int role) const
             return shiny == 2 ? tr("Square") : shiny == 1 ? tr("Star") : tr("No");
         }
         case 6:
+            if (state.getSynchronize())
+            {
+                return tr("Sync");
+            }
             return QString::fromStdString(Translator::getNature(state.getNature()));
         case 7:
             if (state.getAbility() == 0 || state.getAbility() == 1)

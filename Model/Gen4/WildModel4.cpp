@@ -23,6 +23,7 @@
 #include <Core/Enum/Method.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <Model/Util/LeadDisplay.hpp>
 #include <QCoreApplication>
 #include <QColor>
 #include <QFont>
@@ -295,8 +296,7 @@ QVariant WildSearcherModel4::data(const QModelIndex &index, int role) const
         int column = index.column();
         if (column == 3)
         {
-            return getLeadName4(state.getLead(), state.getSynchronizeLead(), state.getSynchronizeLeadFlags(), state.getLeadFlags(),
-                                state.getNature());
+            return LeadDisplay::getLeadName(state.getLeadMask());
         }
 
         if (column > 3)

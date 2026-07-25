@@ -22,6 +22,7 @@
 #include <Core/Gen5/Generators/WildGenerator5.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <Model/Util/LeadDisplay.hpp>
 #include <QCoreApplication>
 #include <QColor>
 #include <QFont>
@@ -427,7 +428,7 @@ QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
         const auto &state = display.getState();
         if (index.column() == 1)
         {
-            return getLeadName(state.getLead(), state.getLeadFlags());
+            return LeadDisplay::getLeadName(state.getLeadMask(), false);
         }
 
         auto columns = getSearcherColumns(showPassPower, showMovingTrigger, showPhenomenon);

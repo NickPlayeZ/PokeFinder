@@ -25,6 +25,58 @@
 #include <Core/Parents/PersonalInfo.hpp>
 #include <array>
 
+constexpr u64 getLeadFlag(Lead lead)
+{
+    if (lead == Lead::None)
+    {
+        return 1ULL << 63;
+    }
+    if (lead <= Lead::SynchronizeEnd)
+    {
+        return 1ULL << toInt(lead);
+    }
+
+    switch (lead)
+    {
+    case Lead::CuteCharmF:
+        return 1ULL << 25;
+    case Lead::CuteCharmM:
+        return 1ULL << 26;
+    case Lead::MagnetPull:
+        return 1ULL << 27;
+    case Lead::Static:
+        return 1ULL << 28;
+    case Lead::Harvest:
+        return 1ULL << 29;
+    case Lead::FlashFire:
+        return 1ULL << 30;
+    case Lead::StormDrain:
+        return 1ULL << 31;
+    case Lead::Pressure:
+        return 1ULL << 32;
+    case Lead::SuctionCups:
+        return 1ULL << 33;
+    case Lead::CompoundEyes:
+        return 1ULL << 34;
+    case Lead::ArenaTrap:
+        return 1ULL << 35;
+    case Lead::RockSmashMagnetPull:
+        return 1ULL << 36;
+    case Lead::RockSmashSuctionCups:
+        return 1ULL << 37;
+    case Lead::RockSmashSuperLuck:
+        return 1ULL << 38;
+    case Lead::KeenEye:
+        return 1ULL << 39;
+    case Lead::Intimidate:
+        return 1ULL << 40;
+    case Lead::SereneGrace:
+        return 1ULL << 41;
+    default:
+        return 0;
+    }
+}
+
 /**
  * @brief Parent state that contains all the common information for a Pokemon across each game
  */
@@ -281,8 +333,8 @@ public:
      * @param info Pokemon information
      */
     GeneratorState(u32 advances, u32 pid, const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny,
-                   const PersonalInfo *info) :
-        State(pid, ivs, ability, gender, level, nature, shiny, info), advances(advances)
+                   const PersonalInfo *info, Lead lead = Lead::None) :
+        State(pid, ivs, ability, gender, level, nature, shiny, info), advances(advances), lead(lead), leadMask(getLeadFlag(lead))
     {
     }
 
@@ -301,8 +353,8 @@ public:
      * @param info Pokemon information
      */
     GeneratorState(u32 advances, u32 ec, u32 pid, const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny,
-                   const PersonalInfo *info) :
-        State(ec, pid, ivs, ability, gender, level, nature, shiny, info), advances(advances)
+                   const PersonalInfo *info, Lead lead = Lead::None) :
+        State(ec, pid, ivs, ability, gender, level, nature, shiny, info), advances(advances), lead(lead), leadMask(getLeadFlag(lead))
     {
     }
 
@@ -316,8 +368,37 @@ public:
         return advances;
     }
 
+    Lead getLead() const
+    {
+        return lead;
+    }
+
+    u64 getLeadMask() const
+    {
+        return leadMask;
+    }
+
+    void addLead(Lead value)
+    {
+        if (lead == Lead::None || value == Lead::None)
+        {
+            lead = Lead::None;
+            leadMask = getLeadFlag(Lead::None);
+            return;
+        }
+
+        leadMask |= getLeadFlag(value);
+    }
+
+    void setLeadMask(u64 mask)
+    {
+        leadMask = mask;
+    }
+
 protected:
     u32 advances;
+    Lead lead;
+    u64 leadMask;
 };
 
 /**
@@ -339,32 +420,20 @@ public:
      */
     SearcherState(u32 seed, u32 pid, const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny,
                   const PersonalInfo *info, Lead lead = Lead::None) :
-        State(pid, ivs, ability, gender, level, nature, shiny, info),
-        seed(seed),
-        lead(lead),
-        synchronizeLead(isSynchronizeLead(lead) ? lead : Lead::None),
-        synchronizeLeadFlags(getSynchronizeLeadFlag(lead)),
-        leadFlags(getLeadFlag(lead))
+        State(pid, ivs, ability, gender, level, nature, shiny, info), seed(seed), lead(lead), leadMask(getLeadFlag(lead))
     {
     }
 
     void addLead(Lead newLead)
     {
-        if (lead == Lead::None && newLead != Lead::None)
+        if (lead == Lead::None || newLead == Lead::None)
         {
-            setLead(newLead);
+            lead = Lead::None;
+            leadMask = getLeadFlag(Lead::None);
             return;
         }
 
-        if (lead != Lead::None)
-        {
-            if (isSynchronizeLead(newLead))
-            {
-                synchronizeLead = newLead;
-                synchronizeLeadFlags |= getSynchronizeLeadFlag(newLead);
-            }
-            leadFlags |= getLeadFlag(newLead);
-        }
+        leadMask |= getLeadFlag(newLead);
     }
 
     Lead getLead() const
@@ -372,27 +441,20 @@ public:
         return lead;
     }
 
-    u8 getLeadFlags() const
+    u64 getLeadMask() const
     {
-        return leadFlags;
-    }
-
-    Lead getSynchronizeLead() const
-    {
-        return synchronizeLead;
-    }
-
-    u32 getSynchronizeLeadFlags() const
-    {
-        return synchronizeLeadFlags;
+        return leadMask;
     }
 
     void setLead(Lead newLead)
     {
         lead = newLead;
-        synchronizeLead = isSynchronizeLead(newLead) ? newLead : Lead::None;
-        synchronizeLeadFlags = getSynchronizeLeadFlag(newLead);
-        leadFlags = getLeadFlag(newLead);
+        leadMask = getLeadFlag(newLead);
+    }
+
+    void setLeadMask(u64 mask)
+    {
+        leadMask = mask;
     }
 
     /**
@@ -408,48 +470,7 @@ public:
 protected:
     u32 seed;
     Lead lead;
-    Lead synchronizeLead;
-    u32 synchronizeLeadFlags;
-    u8 leadFlags;
-
-private:
-    static constexpr bool isSynchronizeLead(Lead lead)
-    {
-        return lead <= Lead::SynchronizeEnd;
-    }
-
-    static constexpr u32 getSynchronizeLeadFlag(Lead lead)
-    {
-        return isSynchronizeLead(lead) ? (1 << toInt(lead)) : 0;
-    }
-
-    static constexpr u8 getLeadFlag(Lead lead)
-    {
-        if (isSynchronizeLead(lead))
-        {
-            return 1 << 0;
-        }
-
-        switch (lead)
-        {
-        case Lead::CuteCharmM:
-            return 1 << 1;
-        case Lead::CuteCharmF:
-            return 1 << 2;
-        case Lead::MagnetPull:
-            return 1 << 3;
-        case Lead::Static:
-            return 1 << 4;
-        case Lead::Pressure:
-            return 1 << 5;
-        case Lead::CompoundEyes:
-            return 1 << 6;
-        case Lead::ArenaTrap:
-            return 1 << 7;
-        default:
-            return 0;
-        }
-    }
+    u64 leadMask;
 };
 
 #endif // STATE_HPP

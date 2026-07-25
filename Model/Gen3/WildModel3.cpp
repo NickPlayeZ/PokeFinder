@@ -20,6 +20,7 @@
 #include "WildModel3.hpp"
 #include <Core/Enum/Lead.hpp>
 #include <Core/Util/Translator.hpp>
+#include <Model/Util/LeadDisplay.hpp>
 #include <QCoreApplication>
 #include <QColor>
 #include <QFont>
@@ -224,8 +225,7 @@ QVariant WildSearcherModel3::data(const QModelIndex &index, int role) const
         case 0:
             return QString::number(state.getSeed(), 16).toUpper().rightJustified(8, '0');
         case 1:
-            return getLeadName3(state.getLead(), state.getSynchronizeLead(), state.getSynchronizeLeadFlags(), state.getLeadFlags(),
-                                state.getNature());
+            return LeadDisplay::getLeadName(state.getLeadMask());
         case 2:
             return QString("%1: %2")
                 .arg(state.getEncounterSlot())

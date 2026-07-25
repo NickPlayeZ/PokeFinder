@@ -51,7 +51,7 @@ public:
                const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie,
                u8 form, const PersonalInfo *info, bool valid = true, u8 passPower = 0, Lead lead = Lead::None, bool variableNature = false,
                bool leadRequired = true) :
-        WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info, valid),
+        WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info, valid, lead),
         ivAdvances(ivAdvances),
         passPower(passPower),
         movingTrigger(movingTrigger),
@@ -61,8 +61,6 @@ public:
         valid(valid),
         chatot(static_cast<u8>(((static_cast<u64>(prng) * 0x1fff) >> 32) / 82)),
         needle(static_cast<u8>((static_cast<u64>(prng) * 8) >> 32)),
-        lead(lead),
-        leadFlags(getLeadFlag(lead)),
         variableNature(variableNature),
         leadRequired(leadRequired)
     {
@@ -113,29 +111,6 @@ public:
         return passPower;
     }
 
-    Lead getLead() const
-    {
-        return lead;
-    }
-
-    u8 getLeadFlags() const
-    {
-        return leadFlags;
-    }
-
-    void addLead(Lead newLead)
-    {
-        if (newLead == Lead::None)
-        {
-            lead = Lead::None;
-            leadFlags = getLeadFlag(Lead::None);
-        }
-        else if (lead != Lead::None)
-        {
-            leadFlags |= getLeadFlag(newLead);
-        }
-    }
-
     bool getVariableNature() const
     {
         return variableNature;
@@ -147,35 +122,6 @@ public:
     }
 
 private:
-    static constexpr u8 getLeadFlag(Lead lead)
-    {
-        if (lead <= Lead::SynchronizeEnd)
-        {
-            return 1 << 0;
-        }
-
-        switch (lead)
-        {
-        case Lead::CuteCharmM:
-            return 1 << 1;
-        case Lead::CuteCharmF:
-            return 1 << 2;
-        case Lead::MagnetPull:
-            return 1 << 3;
-        case Lead::Static:
-            return 1 << 4;
-        case Lead::Pressure:
-            return 1 << 5;
-        case Lead::CompoundEyes:
-            return 1 << 6;
-        case Lead::SuctionCups:
-        case Lead::ArenaTrap:
-            return 1 << 7;
-        default:
-            return 0;
-        }
-    }
-
     u32 ivAdvances;
     u8 passPower;
     u8 movingTrigger;
@@ -185,8 +131,6 @@ private:
     bool valid;
     u8 chatot;
     u8 needle;
-    Lead lead;
-    u8 leadFlags;
     bool variableNature;
     bool leadRequired;
 };

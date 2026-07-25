@@ -149,8 +149,12 @@ public:
      * @param info Pokemon information
      */
     WildGeneratorState(u32 advances, u32 pid, const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny,
-                       u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info, bool valid = true) :
-        WildState(pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info), advances(advances), valid(valid)
+                       u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info, bool valid = true, Lead lead = Lead::None) :
+        WildState(pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info),
+        advances(advances),
+        valid(valid),
+        lead(lead),
+        leadMask(getLeadFlag(lead))
     {
     }
 
@@ -173,8 +177,12 @@ public:
      * @param info Pokemon information
      */
     WildGeneratorState(u32 advances, u32 ec, u32 pid, const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny,
-                       u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info, bool valid = true) :
-        WildState(ec, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info), advances(advances), valid(valid)
+                       u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info, bool valid = true, Lead lead = Lead::None) :
+        WildState(ec, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info),
+        advances(advances),
+        valid(valid),
+        lead(lead),
+        leadMask(getLeadFlag(lead))
     {
     }
 
@@ -199,9 +207,38 @@ public:
         return valid;
     }
 
+    Lead getLead() const
+    {
+        return lead;
+    }
+
+    u64 getLeadMask() const
+    {
+        return leadMask;
+    }
+
+    void addLead(Lead value)
+    {
+        if (lead == Lead::None || value == Lead::None)
+        {
+            lead = Lead::None;
+            leadMask = getLeadFlag(Lead::None);
+            return;
+        }
+
+        leadMask |= getLeadFlag(value);
+    }
+
+    void setLeadMask(u64 mask)
+    {
+        leadMask = mask;
+    }
+
 protected:
     u32 advances;
     bool valid;
+    Lead lead;
+    u64 leadMask;
 };
 
 /**
@@ -229,31 +266,21 @@ public:
      */
     WildSearcherState(u32 seed, u32 pid, const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny,
                       u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info, Lead lead = Lead::None) :
-        WildState(pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info), seed(seed)
-        , lead(lead)
-        , synchronizeLead(isSynchronizeLead(lead) ? lead : Lead::None)
-        , synchronizeLeadFlags(getSynchronizeLeadFlag(lead))
-        , leadFlags(getLeadFlag(lead))
+        WildState(pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info), seed(seed), lead(lead),
+        leadMask(getLeadFlag(lead))
     {
     }
 
     void addLead(Lead newLead)
     {
-        if (lead == Lead::None && newLead != Lead::None)
+        if (lead == Lead::None || newLead == Lead::None)
         {
-            setLead(newLead);
+            lead = Lead::None;
+            leadMask = getLeadFlag(Lead::None);
             return;
         }
 
-        if (lead != Lead::None)
-        {
-            if (isSynchronizeLead(newLead))
-            {
-                synchronizeLead = newLead;
-                synchronizeLeadFlags |= getSynchronizeLeadFlag(newLead);
-            }
-            leadFlags |= getLeadFlag(newLead);
-        }
+        leadMask |= getLeadFlag(newLead);
     }
 
     Lead getLead() const
@@ -261,19 +288,9 @@ public:
         return lead;
     }
 
-    u8 getLeadFlags() const
+    u64 getLeadMask() const
     {
-        return leadFlags;
-    }
-
-    Lead getSynchronizeLead() const
-    {
-        return synchronizeLead;
-    }
-
-    u32 getSynchronizeLeadFlags() const
-    {
-        return synchronizeLeadFlags;
+        return leadMask;
     }
 
     /**
@@ -289,56 +306,18 @@ public:
     void setLead(Lead newLead)
     {
         lead = newLead;
-        synchronizeLead = isSynchronizeLead(newLead) ? newLead : Lead::None;
-        synchronizeLeadFlags = getSynchronizeLeadFlag(newLead);
-        leadFlags = getLeadFlag(newLead);
+        leadMask = getLeadFlag(newLead);
+    }
+
+    void setLeadMask(u64 mask)
+    {
+        leadMask = mask;
     }
 
 protected:
     u32 seed;
     Lead lead;
-    Lead synchronizeLead;
-    u32 synchronizeLeadFlags;
-    u8 leadFlags;
-
-private:
-    static constexpr bool isSynchronizeLead(Lead lead)
-    {
-        return lead <= Lead::SynchronizeEnd;
-    }
-
-    static constexpr u32 getSynchronizeLeadFlag(Lead lead)
-    {
-        return isSynchronizeLead(lead) ? (1 << toInt(lead)) : 0;
-    }
-
-    static constexpr u8 getLeadFlag(Lead lead)
-    {
-        if (isSynchronizeLead(lead))
-        {
-            return 1 << 0;
-        }
-
-        switch (lead)
-        {
-        case Lead::CuteCharmM:
-            return 1 << 1;
-        case Lead::CuteCharmF:
-            return 1 << 2;
-        case Lead::MagnetPull:
-            return 1 << 3;
-        case Lead::Static:
-            return 1 << 4;
-        case Lead::Pressure:
-            return 1 << 5;
-        case Lead::CompoundEyes:
-            return 1 << 6;
-        case Lead::ArenaTrap:
-            return 1 << 7;
-        default:
-            return 0;
-        }
-    }
+    u64 leadMask;
 };
 
 #endif // WILDSTATE_HPP

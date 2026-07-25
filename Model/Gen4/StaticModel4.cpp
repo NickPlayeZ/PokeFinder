@@ -22,6 +22,7 @@
 #include <Core/Enum/Lead.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <Model/Util/LeadDisplay.hpp>
 #include <QCoreApplication>
 #include <QStringList>
 
@@ -217,8 +218,7 @@ QVariant StaticSearcherModel4::data(const QModelIndex &index, int role) const
         case 2:
             return (state.getSeed() >> 16) & 0xff;
         case 3:
-            return getLeadNameStatic4(state.getLead(), state.getSynchronizeLead(), state.getSynchronizeLeadFlags(), state.getLeadFlags(),
-                                      state.getNature());
+            return LeadDisplay::getLeadName(state.getLeadMask());
         case 4:
             return state.getAdvances();
         case 5:

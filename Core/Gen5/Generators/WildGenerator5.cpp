@@ -34,65 +34,6 @@
 #include <iterator>
 #include <unordered_map>
 
-struct WildStateKey
-{
-    std::array<u8, 6> ivs;
-    u32 advances;
-    u32 ivAdvances;
-    u32 movingTrigger;
-    u32 movingSteps;
-    u32 pid;
-    u16 item;
-    u16 specie;
-    u8 ability;
-    u8 gender;
-    u8 level;
-    u8 nature;
-    u8 shiny;
-    u8 encounterSlot;
-    u8 form;
-    bool phenomenon;
-    bool phenomenonItem;
-    bool valid;
-
-    bool operator==(const WildStateKey &other) const = default;
-};
-
-struct WildStateKeyHash
-{
-    size_t operator()(const WildStateKey &key) const
-    {
-        size_t hash = 0;
-        auto combine = [&hash](auto value) {
-            hash ^= static_cast<size_t>(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-        };
-
-        for (u8 iv : key.ivs)
-        {
-            combine(iv);
-        }
-        combine(key.advances);
-        combine(key.ivAdvances);
-        combine(key.movingTrigger);
-        combine(key.movingSteps);
-        combine(key.pid);
-        combine(key.item);
-        combine(key.specie);
-        combine(key.ability);
-        combine(key.gender);
-        combine(key.level);
-        combine(key.nature);
-        combine(key.shiny);
-        combine(key.encounterSlot);
-        combine(key.form);
-        combine(key.phenomenon);
-        combine(key.phenomenonItem);
-        combine(key.valid);
-
-        return hash;
-    }
-};
-
 struct WildTargetKey
 {
     std::array<u8, 6> ivs;
@@ -142,28 +83,6 @@ struct WildTargetKeyHash
     }
 };
 
-static WildStateKey getStateKey(const WildState5 &state)
-{
-    return { { state.getIV(0), state.getIV(1), state.getIV(2), state.getIV(3), state.getIV(4), state.getIV(5) },
-             state.getAdvances(),
-             state.getIVAdvances(),
-             state.getMovingTrigger(),
-             state.getMovingSteps(),
-             state.getPID(),
-             state.getItem(),
-             state.getSpecie(),
-             state.getAbility(),
-             state.getGender(),
-             state.getLevel(),
-             state.getVariableNature() ? static_cast<u8>(255) : state.getNature(),
-             state.getShiny(),
-             state.getEncounterSlot(),
-             state.getForm(),
-             state.getPhenomenon(),
-             state.getPhenomenonItem(),
-             state.isValid() };
-}
-
 static WildTargetKey getTargetKey(const WildState5 &state, u32 advances)
 {
     return { { state.getIV(0), state.getIV(1), state.getIV(2), state.getIV(3), state.getIV(4), state.getIV(5) },
@@ -179,6 +98,39 @@ static WildTargetKey getTargetKey(const WildState5 &state, u32 advances)
              state.getShiny(),
              state.getEncounterSlot(),
              state.getForm() };
+}
+
+static bool matches(const WildState5 &left, const WildState5 &right)
+{
+    bool sameNature = left.getVariableNature() && right.getVariableNature() ? true : left.getNature() == right.getNature();
+    return left.getAdvances() == right.getAdvances() && left.getIVAdvances() == right.getIVAdvances()
+        && left.getMovingTrigger() == right.getMovingTrigger() && left.getMovingSteps() == right.getMovingSteps()
+        && left.getPID() == right.getPID() && left.getAbility() == right.getAbility() && left.getGender() == right.getGender()
+        && left.getLevel() == right.getLevel() && sameNature && left.getShiny() == right.getShiny() && left.getItem() == right.getItem()
+        && left.getSpecie() == right.getSpecie() && left.getForm() == right.getForm() && left.getEncounterSlot() == right.getEncounterSlot()
+        && left.getPhenomenon() == right.getPhenomenon() && left.getPhenomenonItem() == right.getPhenomenonItem()
+        && left.isValid() == right.isValid() && left.getVariableNature() == right.getVariableNature()
+        && left.getIVs() == right.getIVs();
+}
+
+static void addState(std::vector<WildState5> &states, const WildState5 &state, Lead lead)
+{
+    auto iter = std::ranges::find_if(states, [&state](const WildState5 &other) { return matches(state, other); });
+    if (iter != states.end())
+    {
+        if (lead == Lead::None)
+        {
+            iter->setLeadMask(getLeadFlag(Lead::None));
+        }
+        else if ((iter->getLeadMask() & getLeadFlag(Lead::None)) == 0)
+        {
+            iter->addLead(lead);
+        }
+    }
+    else
+    {
+        states.emplace_back(state);
+    }
 }
 
 static u8 gen(MT &rng)
@@ -492,7 +444,6 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, 
 std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const
 {
     std::vector<WildState5> states;
-    std::unordered_map<WildStateKey, size_t, WildStateKeyHash> seen;
     for (u8 activePassPower : passPowers)
     {
         auto powerIVs = ivs;
@@ -526,17 +477,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                     continue;
                 }
 
-                auto key = getStateKey(state);
-                auto entry = seen.find(key);
-                if (entry == seen.end())
-                {
-                    states.emplace_back(state);
-                    seen.emplace(key, states.size() - 1);
-                }
-                else
-                {
-                    states[entry->second].addLead(state.getLead());
-                }
+                addState(states, state, activeLead);
             }
         }
     }
@@ -556,7 +497,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         filtered.reserve(states.size());
         for (const auto &state : states)
         {
-            if (state.getLead() == Lead::None || !noneTargets.contains(getTargetKey(state, state.getAdvances() + 1)))
+            if (state.getLead() == Lead::None || !noneTargets.contains(getTargetKey(state, state.getAdvances())))
             {
                 filtered.emplace_back(state);
             }
@@ -805,8 +746,9 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             nature = toInt(lead);
         }
 
-        bool leadRequired = lead == Lead::None || cuteCharm || magnetStatic || pressure || sync || lead == Lead::CompoundEyes
-            || (lead == Lead::SuctionCups && area.getEncounter() == Encounter::SuperRod) || (lead == Lead::ArenaTrap && searchMovingTrigger);
+        bool leadRequired = lead == Lead::None || lead == Lead::CuteCharmF || lead == Lead::CuteCharmM || magnetStatic || pressure || sync
+            || lead == Lead::CompoundEyes || (lead == Lead::SuctionCups && area.getEncounter() == Encounter::SuperRod)
+            || (lead == Lead::ArenaTrap && searchMovingTrigger);
 
         if (!phenomenonItem)
         {
