@@ -7,7 +7,7 @@ This is a fork of the program “PokeFinder” by AdmiralFish. More on it down b
 
 [Latest Nightly Build](https://github.com/NickPlayeZ/PokeFinder/actions)
 
-Please report any bugs either via opening an issue on this repository or by @ing me (username nickplayez) on I'm a Blisys RNG manipulation Discord server (whatdon't DM me I literally never check DMs and will ignore them for weeks).
+Please report any bugs either via opening an issue on this repository or by @ing me (username nickplayez) on "I'm a Blisy"s RNG manipulation Discord server (don't DM me I literally never check DMs and will ignore them for weeks).
 
 
 This fork includes the following new features and quality of life additions:
