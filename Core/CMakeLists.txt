@@ -192,6 +192,10 @@ add_library(PokeFinderCore STATIC
     Gen5/PhenomenonArea.hpp
     Gen5/Profile5.cpp
     Gen5/Profile5.hpp
+    Gen5/Searchers/DreamRadarSearcher.hpp
+    Gen5/Searchers/EggSearcher5.hpp
+    Gen5/Searchers/EventSearcher5.hpp
+    Gen5/Searchers/HiddenGrottoSearcher.hpp
     Gen5/Searchers/IDSearcher5.cpp
     Gen5/Searchers/IDSearcher5.hpp
     Gen5/Searchers/IVCacheSearcher.cpp
@@ -206,6 +210,8 @@ add_library(PokeFinderCore STATIC
     Gen5/Searchers/SearcherBase5.hpp
     Gen5/Searchers/Searcher5.cpp
     Gen5/Searchers/Searcher5.hpp
+    Gen5/Searchers/StaticSearcher5.hpp
+    Gen5/Searchers/WildSearcher5.hpp
     Gen5/SHA1Cache.cpp
     Gen5/SHA1Cache.hpp
     Gen5/States/AdjacentSeedsState.hpp
