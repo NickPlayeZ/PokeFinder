@@ -39,7 +39,7 @@ namespace Ui
 /**
  * @brief Provides settings to calibrate nearby seeds
  */
-class AdjacentSeeds final : public QWidget
+class AdjacentSeeds : public QWidget
 {
     Q_OBJECT
 signals:
@@ -90,8 +90,8 @@ private:
     Ui::AdjacentSeeds *ui;
 
     AdjacentSeedsModel *model;
-    SortFilterProxyModel *proxyModel;
     const Profile5 *currentProfile;
+    SortFilterProxyModel *proxyModel;
 
 private slots:
     /**

@@ -23,6 +23,7 @@
 #include <Core/Parents/ProfileLoader.hpp>
 #include <Form/Gen4/Profile/ProfileEditor4.hpp>
 #include <Model/Gen4/ProfileModel4.hpp>
+#include <QAbstractItemView>
 #include <QMessageBox>
 #include <QSettings>
 
@@ -35,7 +36,6 @@ ProfileManager4::ProfileManager4(QWidget *parent) : QWidget(parent), ui(new Ui::
     model = new ProfileModel4(ui->tableView);
     model->addItems(ProfileLoader4::getProfiles(Game::Gen4));
     ui->tableView->setModel(model);
-
     ui->tableView->setAcceptDrops(true);
     ui->tableView->setDefaultDropAction(Qt::MoveAction);
     ui->tableView->setDragDropMode(QAbstractItemView::InternalMove);
@@ -43,7 +43,7 @@ ProfileManager4::ProfileManager4(QWidget *parent) : QWidget(parent), ui(new Ui::
     ui->tableView->setDragEnabled(true);
     ui->tableView->setDropIndicatorShown(true);
     ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     connect(ui->pushButtonNew, &QPushButton::clicked, this, &ProfileManager4::create);
     connect(ui->pushButtonEdit, &QPushButton::clicked, this, &ProfileManager4::edit);

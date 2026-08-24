@@ -131,8 +131,9 @@ public:
     bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent,
                   int destinationChild) override
     {
-        if (sourceParent.isValid() || destinationParent.isValid() || count != 1 || sourceRow < 0 || sourceRow >= rowCount()
-            || destinationChild < 0 || destinationChild > rowCount() || sourceRow == destinationChild || sourceRow == destinationChild - 1)
+        if (sourceParent.isValid() || destinationParent.isValid() || count <= 0 || sourceRow < 0 || sourceRow + count > rowCount()
+            || destinationChild < 0 || destinationChild > rowCount()
+            || (destinationChild >= sourceRow && destinationChild <= sourceRow + count))
         {
             return false;
         }
@@ -141,13 +142,11 @@ public:
 
         if (sourceRow < destinationChild)
         {
-            // Moving down: rotate items leftward between source and target
-            std::rotate(model.begin() + sourceRow, model.begin() + sourceRow + 1, model.begin() + destinationChild);
+            std::rotate(model.begin() + sourceRow, model.begin() + sourceRow + count, model.begin() + destinationChild);
         }
         else
         {
-            // Moving up: rotate items rightward between target and source
-            std::rotate(model.begin() + destinationChild, model.begin() + sourceRow, model.begin() + sourceRow + 1);
+            std::rotate(model.begin() + destinationChild, model.begin() + sourceRow, model.begin() + sourceRow + count);
         }
 
         endMoveRows();

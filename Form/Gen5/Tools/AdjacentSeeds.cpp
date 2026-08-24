@@ -29,13 +29,12 @@
 #include <Form/Util/IVCalculator.hpp>
 #include <Model/Gen5/AdjacentSeedsModel.hpp>
 #include <Model/SortFilterProxyModel.hpp>
-#include <QHeaderView>
 #include <QMessageBox>
 #include <QSettings>
 #include <QSpinBox>
+#include <QStringList>
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
-#include <QStringList>
 #include <algorithm>
 
 static const QString settingPrefix = QStringLiteral("adjacentSeeds");
@@ -85,7 +84,8 @@ AdjacentSeeds::AdjacentSeeds(QWidget *parent) : QWidget(parent), ui(new Ui::Adja
     connect(ui->pushButtonGenerate, &QPushButton::clicked, this, &AdjacentSeeds::generate);
     connect(ui->pushButtonResetIVs, &QPushButton::clicked, this, &AdjacentSeeds::resetIVs);
     connect(ui->comboBoxPreviewMode, &QComboBox::currentIndexChanged, this, &AdjacentSeeds::updatePreview);
-    connect(ui->tableView->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &AdjacentSeeds::updatePreview);
+    connect(ui->tableView->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
+            [=](const QModelIndex &, const QModelIndex &) { updatePreview(); });
 
     updateProfiles();
 }
@@ -141,7 +141,6 @@ void AdjacentSeeds::generate()
         }
     }
 
-    ui->tableView->setSortingEnabled(false);
     ui->tableView->horizontalHeader()->setSortIndicator(-1, Qt::AscendingOrder);
     proxyModel->sort(-1);
     model->clearModel();
@@ -157,8 +156,7 @@ void AdjacentSeeds::generate()
     std::erase_if(states, [=](const AdjacentSeedsState &state) {
         for (size_t i = 0; i < minIVWidgets.size(); i++)
         {
-            if (state.getIV(static_cast<u8>(i)) < minIVWidgets[i]->value()
-                || state.getIV(static_cast<u8>(i)) > maxIVWidgets[i]->value())
+            if (state.getIV(static_cast<u8>(i)) < minIVWidgets[i]->value() || state.getIV(static_cast<u8>(i)) > maxIVWidgets[i]->value())
             {
                 return true;
             }
@@ -166,7 +164,6 @@ void AdjacentSeeds::generate()
         return false;
     });
     model->addItems(states);
-    ui->tableView->setSortingEnabled(true);
 
     if (model->rowCount() > 0)
     {

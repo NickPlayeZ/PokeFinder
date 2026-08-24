@@ -20,6 +20,7 @@
 #include "StaticGenerator5Test.hpp"
 #include <Core/Enum/Game.hpp>
 #include <Core/Enum/Lead.hpp>
+#include <Core/Enum/PassPower.hpp>
 #include <Core/Gen5/Encounters5.hpp>
 #include <Core/Gen5/Generators/StaticGenerator5.hpp>
 #include <Core/Gen5/States/State5.hpp>
@@ -77,11 +78,11 @@ void StaticGenerator5Test::generateNonWild()
     powers.fill(true);
 
     Profile5 profile("-", version, 12345, 54321, "", "", 0, { false, false, false, false, false, false, false, false, false }, 0, 0, 0,
-                     false, 0, 0, false, false, false, DSType::DS, Language::English);
+                     false, 0, 0, false, false, DSType::DS, Language::English);
 
     const StaticTemplate5 *staticTemplate = Encounters5::getStaticEncounter(category, pokemon);
     StateFilter filter(255, 255, 255, 1, 100, 0, 255, 0, 255, false, min, max, natures, powers);
-    StaticGenerator5 generator(0, 9, 0, Method::Method5, Lead::None, PassPower::None, *staticTemplate, profile, filter);
+    StaticGenerator5 generator(0, 9, 0, Method::Method5, Lead::None, toInt(PassPower::None), *staticTemplate, profile, filter);
 
     auto states = generator.generate(seed, 0, 0);
     QCOMPARE(states.size(), j.size());
@@ -137,11 +138,11 @@ void StaticGenerator5Test::generateWild()
     powers.fill(true);
 
     Profile5 profile("-", version, 12345, 54321, "", "", 0, { false, false, false, false, false, false, false, false, false }, 0, 0, 0,
-                     false, 0, 0, false, false, false, DSType::DS, Language::English);
+                     false, 0, 0, false, false, DSType::DS, Language::English);
 
     const StaticTemplate5 *staticTemplate = Encounters5::getStaticEncounter(category, pokemon);
     StateFilter filter(255, 255, 255, 1, 100, 0, 255, 0, 255, false, min, max, natures, powers);
-    StaticGenerator5 generator(0, 9, 0, Method::Method5, lead, luckyPower, *staticTemplate, profile, filter);
+    StaticGenerator5 generator(0, 9, 0, Method::Method5, lead, toInt(luckyPower), *staticTemplate, profile, filter);
 
     auto states = generator.generate(seed, 0, 0);
     QCOMPARE(states.size(), j.size());

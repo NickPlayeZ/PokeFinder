@@ -20,6 +20,7 @@
 #include "PickupGenerator.hpp"
 #include <Core/Enum/Encounter.hpp>
 #include <Core/Enum/Game.hpp>
+#include <Core/Enum/PassPower.hpp>
 #include <Core/Enum/Shiny.hpp>
 #include <Core/Gen5/States/PickupState.hpp>
 #include <Core/RNG/LCRNG64.hpp>
@@ -138,7 +139,7 @@ static std::optional<WildState5> generateWild(BWRNG &go, u32 advances, u64 seed,
         doubleBattle = true;
     }
 
-    u8 encounterSlot = EncounterSlot::bwSlot(getPercentRand(go, bw), area.getEncounter(), 0);
+    u8 encounterSlot = EncounterSlot::bwSlot(getPercentRand(go, bw), area.getEncounter(), PassPower::None);
     u8 level = area.calculateLevel(encounterSlot, getPercentRand(go, bw), false);
 
     if (doubleBattle)

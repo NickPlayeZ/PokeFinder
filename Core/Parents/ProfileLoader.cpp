@@ -176,6 +176,18 @@ namespace ProfileLoader3
             | std::views::transform([](const json &j) { return getProfile(j); }) | std::ranges::to<std::vector>();
     }
 
+    void setProfiles(const std::vector<Profile3> &profiles)
+    {
+        json j = readJson();
+        auto &gen3 = j["gen3"];
+        gen3 = json::array();
+        for (const auto &profile : profiles)
+        {
+            gen3.emplace_back(getJson(profile));
+        }
+        writeJson(j);
+    }
+
     void removeProfile(const Profile3 &remove)
     {
         json j = readJson();
@@ -272,6 +284,18 @@ namespace ProfileLoader4
         json j = readJson();
         auto &gen4 = j["gen4"];
         gen4.emplace_back(getJson(profile));
+        writeJson(j);
+    }
+
+    void setProfiles(const std::vector<Profile4> &profiles)
+    {
+        json j = readJson();
+        auto &gen4 = j["gen4"];
+        gen4 = json::array();
+        for (const auto &profile : profiles)
+        {
+            gen4.emplace_back(getJson(profile));
+        }
         writeJson(j);
     }
 
@@ -411,6 +435,18 @@ namespace ProfileLoader5
             | std::views::transform([](const json &j) { return getProfile(j); }) | std::ranges::to<std::vector>();
     }
 
+    void setProfiles(const std::vector<Profile5> &profiles)
+    {
+        json j = readJson();
+        auto &gen5 = j["gen5"];
+        gen5 = json::array();
+        for (const auto &profile : profiles)
+        {
+            gen5.emplace_back(getJson(profile));
+        }
+        writeJson(j);
+    }
+
     void removeProfile(const Profile5 &remove)
     {
         json j = readJson();
@@ -505,6 +541,18 @@ namespace ProfileLoader8
         const auto &gen8 = j["gen8"];
         return gen8 | std::views::filter([version](const json &j) { return (j.value("version", Game::BD) & version) != Game::None; })
             | std::views::transform([](const json &j) { return getProfile(j); }) | std::ranges::to<std::vector>();
+    }
+
+    void setProfiles(const std::vector<Profile8> &profiles)
+    {
+        json j = readJson();
+        auto &gen8 = j["gen8"];
+        gen8 = json::array();
+        for (const auto &profile : profiles)
+        {
+            gen8.emplace_back(getJson(profile));
+        }
+        writeJson(j);
     }
 
     void removeProfile(const Profile8 &remove)

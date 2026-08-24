@@ -128,7 +128,7 @@ static u16 getRadarItem(u8 rand, Lead lead, const PersonalInfo *info)
 PokeRadarSearcher::PokeRadarSearcher(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 maxDelay, u32 minPatchDistance,
                                      u16 maxChain, u8 chainSlot, Lead lead, PokeRadarChainType chainType, PokeRadarResult result,
                                      const std::array<bool, 81> &grass,
-                                     const std::array<bool, 12> &encounterSlots, const EncounterArea4 &area, const Profile4 &profile,
+                                     const std::array<bool, 13> &encounterSlots, const EncounterArea4 &area, const Profile4 &profile,
                                      const WildStateFilter &filter, bool specificSynchronize) :
     Searcher(Method::PokeRadar, profile),
     minAdvance(minAdvance),

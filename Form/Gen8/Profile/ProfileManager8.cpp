@@ -23,6 +23,7 @@
 #include <Core/Parents/ProfileLoader.hpp>
 #include <Form/Gen8/Profile/ProfileEditor8.hpp>
 #include <Model/Gen8/ProfileModel8.hpp>
+#include <QAbstractItemView>
 #include <QMessageBox>
 #include <QSettings>
 
@@ -35,7 +36,6 @@ ProfileManager8::ProfileManager8(QWidget *parent) : QWidget(parent), ui(new Ui::
     model = new ProfileModel8(ui->tableView);
     model->addItems(ProfileLoader8::getProfiles(Game::Gen8));
     ui->tableView->setModel(model);
-
     ui->tableView->setAcceptDrops(true);
     ui->tableView->setDefaultDropAction(Qt::MoveAction);
     ui->tableView->setDragDropMode(QAbstractItemView::InternalMove);
@@ -43,7 +43,7 @@ ProfileManager8::ProfileManager8(QWidget *parent) : QWidget(parent), ui(new Ui::
     ui->tableView->setDragEnabled(true);
     ui->tableView->setDropIndicatorShown(true);
     ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     connect(ui->pushButtonNew, &QPushButton::clicked, this, &ProfileManager8::create);
     connect(ui->pushButtonEdit, &QPushButton::clicked, this, &ProfileManager8::edit);
