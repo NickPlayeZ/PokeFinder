@@ -18,6 +18,7 @@
  */
 
 #include "HiddenGrottoModel.hpp"
+#include <Core/Enum/PassPower.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
 #include <QColor>
@@ -46,17 +47,17 @@ namespace
     }
 }
 
-static QString getGrottoPowerText(u8 power)
+static QString getGrottoPowerText(PassPower power)
 {
     switch (power)
     {
-    case 15:
+    case PassPower::Level1:
         return HiddenGrottoSlotSearcherModel5::tr("Grotto Power ↑");
-    case 25:
+    case PassPower::Level2:
         return HiddenGrottoSlotSearcherModel5::tr("Grotto Power ↑↑");
-    case 35:
+    case PassPower::Level3:
         return HiddenGrottoSlotSearcherModel5::tr("Grotto Power ↑↑↑");
-    case 55:
+    case PassPower::LevelS:
         return HiddenGrottoSlotSearcherModel5::tr("Grotto Power S");
     default:
         return HiddenGrottoSlotSearcherModel5::tr("None");
@@ -205,7 +206,7 @@ QVariant HiddenGrottoSlotSearcherModel5::data(const QModelIndex &index, int role
         {
             if (column == 1)
             {
-                return state.getPassPower();
+                return toInt(state.getPassPower());
             }
             else if (column > 1)
             {

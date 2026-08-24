@@ -21,6 +21,7 @@
 #include "ui_HiddenGrotto.h"
 #include <Core/Enum/Game.hpp>
 #include <Core/Enum/Lead.hpp>
+#include <Core/Enum/PassPower.hpp>
 #include <Core/Gen5/Encounters5.hpp>
 #include <Core/Gen5/Generators/HiddenGrottoGenerator.hpp>
 #include <Core/Gen5/HiddenGrottoArea.hpp>
@@ -109,21 +110,21 @@ static std::vector<u8> getCheckedUChars(const CheckList *checkList)
     return values;
 }
 
-static std::vector<u8> getCheckedUChars(const ComboMenu *comboMenu)
+static std::vector<PassPower> getCheckedPassPowers(const ComboMenu *comboMenu)
 {
     auto data = comboMenu->getCheckedData();
-    std::vector<u8> values;
+    std::vector<PassPower> values;
     values.reserve(data.size());
     for (int value : data)
     {
-        values.emplace_back(value);
+        values.emplace_back(static_cast<PassPower>(value));
     }
     return values;
 }
 
-static bool hasGrottoPower(const std::vector<u8> &powers)
+static bool hasGrottoPower(const std::vector<PassPower> &powers)
 {
-    return std::ranges::find_if(powers, [](u8 power) { return power != 5; }) != powers.end();
+    return std::ranges::find_if(powers, [](PassPower power) { return power != PassPower::None; }) != powers.end();
 }
 
 HiddenGrotto::HiddenGrotto(QWidget *parent) :
@@ -151,15 +152,16 @@ HiddenGrotto::HiddenGrotto(QWidget *parent) :
     ui->textBoxGrottoSearcherInitialAdvances->setValues(InputType::Advance32Bit);
     ui->textBoxGrottoSearcherMaxAdvances->setValues(InputType::Advance32Bit);
 
-    ui->comboBoxGrottoGeneratorGrottoPower->setup({ 5, 15, 25, 35, 55 });
+    ui->comboBoxGrottoGeneratorGrottoPower->setup({ toInt(PassPower::None), toInt(PassPower::Level1), toInt(PassPower::Level2),
+                                                    toInt(PassPower::Level3), toInt(PassPower::LevelS) });
 
     ui->comboBoxGrottoSearcherGrottoPower->setMultiSelect(true);
-    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("None"), 5);
-    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("Grotto Power ↑"), 15);
-    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("Grotto Power ↑↑"), 25);
-    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("Grotto Power ↑↑↑"), 35);
-    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("Grotto Power S"), 55);
-    ui->comboBoxGrottoSearcherGrottoPower->setCheckedData({ 5 });
+    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("None"), toInt(PassPower::None));
+    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("Grotto Power ↑"), toInt(PassPower::Level1));
+    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("Grotto Power ↑↑"), toInt(PassPower::Level2));
+    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("Grotto Power ↑↑↑"), toInt(PassPower::Level3));
+    ui->comboBoxGrottoSearcherGrottoPower->addAction(tr("Grotto Power S"), toInt(PassPower::LevelS));
+    ui->comboBoxGrottoSearcherGrottoPower->setCheckedData({ toInt(PassPower::None) });
     ui->comboBoxGrottoSearcherGrottoPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     ui->comboBoxGrottoGeneratorLocation->enableAutoComplete();
@@ -354,12 +356,12 @@ void HiddenGrotto::grottoGenerate()
     u32 initialAdvances = ui->textBoxGrottoGeneratorInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxGrottoGeneratorMaxAdvances->getUInt();
     u32 offset = ui->textBoxGrottoGeneratorOffset->getUInt();
-    u8 powerLevel = ui->comboBoxGrottoGeneratorGrottoPower->currentData().toUInt();
+    auto grottoPower = ui->comboBoxGrottoGeneratorGrottoPower->getEnum<PassPower>();
 
     HiddenGrottoFilter filter(ui->checkListGrottoGeneratorSlot->getCheckedArray<11>(),
                               ui->checkListGrottoGeneratorGender->getCheckedArray<2>(),
                               ui->checkListGrottoGeneratorGroup->getCheckedArray<4>());
-    HiddenGrottoSlotGenerator generator(initialAdvances, maxAdvances, offset, powerLevel,
+    HiddenGrottoSlotGenerator generator(initialAdvances, maxAdvances, offset, grottoPower,
                                         encounter[ui->comboBoxGrottoGeneratorLocation->currentIndex()], *currentProfile, filter);
 
     auto states = generator.generate(seed);
@@ -462,8 +464,8 @@ void HiddenGrotto::grottoSearch()
 
     u32 initialAdvances = ui->textBoxGrottoSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxGrottoSearcherMaxAdvances->getUInt();
-    auto powerLevels = getCheckedUChars(ui->comboBoxGrottoSearcherGrottoPower);
-    bool showPassPower = hasGrottoPower(powerLevels);
+    auto grottoPowers = getCheckedPassPowers(ui->comboBoxGrottoSearcherGrottoPower);
+    bool showPassPower = hasGrottoPower(grottoPowers);
     grottoSearcherModel->setShowPassPower(showPassPower);
     bool itemTarget = ui->radioButtonGrottoSearcherItems->isChecked();
     u16 item = itemTarget ? ui->comboBoxGrottoSearcherItems->getCurrentUShort() : 0;
@@ -472,7 +474,7 @@ void HiddenGrotto::grottoSearch()
     HiddenGrottoFilter filter(ui->checkListGrottoSearcherSlot->getCheckedArray<11>(),
                               ui->checkListGrottoSearcherGender->getCheckedArray<2>(),
                               ui->checkListGrottoSearcherGroup->getCheckedArray<4>());
-    HiddenGrottoSlotGenerator generator(initialAdvances, maxAdvances, 0, powerLevels,
+    HiddenGrottoSlotGenerator generator(initialAdvances, maxAdvances, 0, grottoPowers,
                                         encounter[ui->comboBoxGrottoSearcherLocation->currentIndex()], *currentProfile, filter, item,
                                         itemAmount);
     auto *searcher = new Searcher5<HiddenGrottoSlotGenerator, HiddenGrottoState>(generator, *currentProfile);

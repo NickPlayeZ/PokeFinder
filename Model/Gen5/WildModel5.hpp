@@ -28,7 +28,7 @@
 /**
  * @brief Provides a table model implementation to show wild encounter information for Gen 5
  */
-class WildGeneratorModel5 : public TableModel<WildState5>, public IRNGProvider5
+class WildGeneratorModel5 final : public TableModel<WildState5>, public IRNGProvider5
 {
     Q_OBJECT
 public:
@@ -132,7 +132,7 @@ private:
 /**
  * @brief Provides a table model implementation to show wild encounter information for Gen 5
  */
-class WildSearcherModel5 : public TableModel<SearcherState5<WildState5>>
+class WildSearcherModel5 final : public TableModel<SearcherState5<WildState5>>
 {
     Q_OBJECT
 public:
