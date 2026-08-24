@@ -40,13 +40,6 @@
           <item row="0" column="1">
            <widget class="ComboMenu" name="comboMenuGeneratorLead"/>
           </item>
-          <item row="1" column="0" colspan="2">
-           <widget class="QCheckBox" name="checkBoxGeneratorPokeRadarShiny">
-            <property name="text">
-             <string>Poke Radar Shiny</string>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="0">
            <widget class="QLabel" name="labelGeneratorSeed">
             <property name="text">
@@ -335,16 +328,6 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="2" colspan="2">
-           <widget class="QCheckBox" name="checkBoxGeneratorPokeRadar">
-            <property name="text">
-             <string>Poke Radar</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">buttonGroupGenerator</string>
-            </attribute>
-           </widget>
-          </item>
           <item row="6" column="0" colspan="2">
            <widget class="QCheckBox" name="checkBoxGeneratorSwarm">
             <property name="text">
@@ -598,13 +581,6 @@
           </item>
           <item row="0" column="2">
            <widget class="ComboMenu" name="comboMenuSearcherLead"/>
-          </item>
-          <item row="1" column="0" colspan="2">
-           <widget class="QCheckBox" name="checkBoxSearcherPokeRadarShiny">
-            <property name="text">
-             <string>Poke Radar Shiny</string>
-            </property>
-           </widget>
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="labelSearcherMinDelay">
@@ -889,16 +865,6 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="2" colspan="2">
-           <widget class="QCheckBox" name="checkBoxSearcherPokeRadar">
-            <property name="text">
-             <string>Poke Radar</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">buttonGroupSearcher</string>
-            </attribute>
-           </widget>
-          </item>
           <item row="6" column="0" colspan="2">
            <widget class="QCheckBox" name="checkBoxSearcherSwarm">
             <property name="text">
@@ -1137,7 +1103,6 @@
  <tabstops>
   <tabstop>tabRNGSelector</tabstop>
   <tabstop>comboMenuGeneratorLead</tabstop>
-  <tabstop>checkBoxGeneratorPokeRadarShiny</tabstop>
   <tabstop>textBoxGeneratorSeed</tabstop>
   <tabstop>textBoxGeneratorInitialAdvances</tabstop>
   <tabstop>textBoxGeneratorMaxAdvances</tabstop>
@@ -1153,7 +1118,6 @@
   <tabstop>comboBoxGeneratorDualSlot</tabstop>
   <tabstop>checkBoxGeneratorDualSlot</tabstop>
   <tabstop>checkBoxGeneratorFeebasTile</tabstop>
-  <tabstop>checkBoxGeneratorPokeRadar</tabstop>
   <tabstop>checkBoxGeneratorSwarm</tabstop>
   <tabstop>checkBoxGeneratorRadio</tabstop>
   <tabstop>comboBoxGeneratorRadio</tabstop>
@@ -1171,7 +1135,6 @@
   <tabstop>spinBoxGeneratorLevelMax</tabstop>
   <tabstop>tableViewGenerator</tabstop>
   <tabstop>comboMenuSearcherLead</tabstop>
-  <tabstop>checkBoxSearcherPokeRadarShiny</tabstop>
   <tabstop>textBoxSearcherMinDelay</tabstop>
   <tabstop>textBoxSearcherMaxDelay</tabstop>
   <tabstop>textBoxSearcherMinAdvance</tabstop>
@@ -1186,7 +1149,6 @@
   <tabstop>checkBoxSearcherDualSlot</tabstop>
   <tabstop>comboBoxSearcherDualSlot</tabstop>
   <tabstop>checkBoxSearcherFeebasTile</tabstop>
-  <tabstop>checkBoxSearcherPokeRadar</tabstop>
   <tabstop>checkBoxSearcherRadio</tabstop>
   <tabstop>comboBoxSearcherRadio</tabstop>
   <tabstop>checkBoxSearcherSwarm</tabstop>

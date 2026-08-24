@@ -248,9 +248,6 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->comboBoxSearcherDualSlot->setup(
         { toInt(Game::Ruby), toInt(Game::Sapphire), toInt(Game::FireRed), toInt(Game::LeafGreen), toInt(Game::Emerald) });
 
-    ui->checkBoxGeneratorPokeRadarShiny->hide();
-    ui->checkBoxSearcherPokeRadarShiny->hide();
-
     ui->comboBoxGeneratorLocation->enableAutoComplete();
     ui->comboBoxSearcherLocation->enableAutoComplete();
 
@@ -330,8 +327,6 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     connect(ui->buttonGroupSearcher, &QButtonGroup::buttonClicked, this, [=] { searcherEncounterUpdate(); });
     connect(ui->checkBoxGeneratorFeebasTile, &QCheckBox::checkStateChanged, this, &Wild4::generatorFeebasTileStateChanged);
     connect(ui->checkBoxSearcherFeebasTile, &QCheckBox::checkStateChanged, this, &Wild4::searcherFeebasTileStateChanged);
-    connect(ui->checkBoxGeneratorPokeRadar, &QCheckBox::checkStateChanged, this, &Wild4::generatorPokeRadarStateChanged);
-    connect(ui->checkBoxSearcherPokeRadar, &QCheckBox::checkStateChanged, this, &Wild4::searcherPokeRadarStateChanged);
     connect(ui->checkBoxGeneratorStepEncounter, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
         generatorModel->setShowStepEncounter(state == Qt::Checked);
         ui->checkBoxGeneratorWhiteFlute->setEnabled(state == Qt::Checked);
@@ -430,7 +425,6 @@ void Wild4::updateEncounterGenerator()
                 = ui->comboBoxGeneratorReplacement1->count() > 0 ? ui->comboBoxGeneratorReplacement1->getCurrentUShort() : 0;
         }
         settings.dppt.feebasTile = ui->checkBoxGeneratorFeebasTile->isChecked();
-        settings.dppt.radar = ui->checkBoxGeneratorPokeRadar->isChecked();
     }
     else
     {
@@ -463,7 +457,6 @@ void Wild4::updateEncounterSearcher()
                 = ui->comboBoxSearcherReplacement1->count() > 0 ? ui->comboBoxSearcherReplacement1->getCurrentUShort() : 0;
         }
         settings.dppt.feebasTile = ui->checkBoxSearcherFeebasTile->isChecked();
-        settings.dppt.radar = ui->checkBoxSearcherPokeRadar->isChecked();
     }
     else
     {
@@ -670,23 +663,7 @@ void Wild4::generate()
     auto encounter = ui->comboBoxGeneratorEncounter->getEnum<Encounter>();
     if ((currentProfile->getVersion() & Game::DPPt) != Game::None)
     {
-        if (ui->checkBoxGeneratorPokeRadar->isChecked())
-        {
-            method = Method::PokeRadar;
-            std::array<bool, 13> encounters = ui->filterGenerator->getEncounterSlots();
-            if (std::ranges::count(encounters, true) != 1)
-            {
-                QMessageBox msg(QMessageBox::Warning, tr("Too many slots selected"),
-                                tr("Please select a single encounter slot for Poke Radar"));
-                msg.exec();
-                return;
-            }
-            else
-            {
-                fixedSlot = std::ranges::find(encounters, true) - encounters.begin();
-            }
-        }
-        else if (encounter == Encounter::HoneyTree)
+        if (encounter == Encounter::HoneyTree)
         {
             method = Method::HoneyTree;
             std::array<bool, 13> encounters = ui->filterGenerator->getEncounterSlots();
@@ -721,7 +698,7 @@ void Wild4::generate()
     u32 offset = ui->textBoxGeneratorOffset->getUInt();
     auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
     bool feebasTile = ui->checkBoxGeneratorFeebasTile->isChecked();
-    bool chained = ui->checkBoxGeneratorPokeRadarShiny->isChecked();
+    bool chained = false;
     bool unownRadio = ui->checkBoxGeneratorRadio->isChecked() && ui->comboBoxGeneratorRadio->currentIndex() == 2;
     u8 happiness = ui->comboBoxGeneratorHappiness->getCurrentUChar();
     bool searchStepEncounter = ui->checkBoxGeneratorStepEncounter->isChecked();
@@ -770,13 +747,6 @@ void Wild4::generatorEncounterIndexChanged(int index)
         if (!ui->checkBoxGeneratorDualSlot->isVisible())
         {
             ui->checkBoxGeneratorDualSlot->setChecked(false);
-        }
-
-        ui->checkBoxGeneratorPokeRadar->setVisible(!hgss && grass);
-        if (!ui->checkBoxGeneratorPokeRadar->isVisible())
-        {
-            ui->checkBoxGeneratorPokeRadar->setChecked(false);
-            ui->checkBoxGeneratorPokeRadarShiny->setChecked(false);
         }
 
         ui->checkBoxGeneratorRadio->setVisible(hgss && stepEncounter);
@@ -985,18 +955,6 @@ void Wild4::generatorLeadIndexChanged()
     ui->spinBoxGeneratorLeadLevel->setVisible(visible);
 }
 
-void Wild4::generatorPokeRadarStateChanged(Qt::CheckState state)
-{
-    ui->checkBoxGeneratorPokeRadarShiny->setVisible(state == Qt::Checked);
-    if (!ui->checkBoxGeneratorPokeRadarShiny->isVisible())
-    {
-        ui->checkBoxGeneratorPokeRadarShiny->setChecked(false);
-    }
-    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::MagnetPull), state == Qt::Checked);
-    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Hustle), state == Qt::Checked); // Also handles Pressure and Vital Spirit
-    ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Static), state == Qt::Checked);
-}
-
 void Wild4::openAdvanceFinder()
 {
     auto *advanceFinder = new AdvanceFinder(generatorModel, ui->tableViewGenerator, currentProfile, this);
@@ -1047,23 +1005,7 @@ void Wild4::search()
     auto encounter = ui->comboBoxSearcherEncounter->getEnum<Encounter>();
     if ((currentProfile->getVersion() & Game::DPPt) != Game::None)
     {
-        if (ui->checkBoxSearcherPokeRadar->isChecked())
-        {
-            method = Method::PokeRadar;
-            std::array<bool, 13> encounters = ui->filterSearcher->getEncounterSlots();
-            if (std::ranges::count(encounters, true) != 1)
-            {
-                QMessageBox msg(QMessageBox::Warning, tr("Too many slots selected"),
-                                tr("Please select a single encounter slot for Poke Radar"));
-                msg.exec();
-                return;
-            }
-            else
-            {
-                fixedSlot = std::ranges::find(encounters, true) - encounters.begin();
-            }
-        }
-        else if (encounter == Encounter::HoneyTree)
+        if (encounter == Encounter::HoneyTree)
         {
             method = Method::HoneyTree;
             std::array<bool, 13> encounters = ui->filterSearcher->getEncounterSlots();
@@ -1117,7 +1059,7 @@ void Wild4::search()
     u32 maxDelay = ui->textBoxSearcherMaxDelay->getUInt();
     auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     bool feebas = ui->checkBoxSearcherFeebasTile->isChecked();
-    bool shiny = ui->checkBoxSearcherPokeRadarShiny->isChecked();
+    bool shiny = false;
     bool unownRadio = ui->checkBoxSearcherRadio->isChecked() && ui->comboBoxSearcherRadio->currentIndex() == 2;
     u8 happiness = ui->comboBoxSearcherHappiness->getCurrentUChar();
     bool searchStepEncounter = ui->checkBoxSearcherStepEncounter->isChecked();
@@ -1183,13 +1125,6 @@ void Wild4::searcherEncounterIndexChanged(int index)
         if (!ui->checkBoxSearcherDualSlot->isVisible())
         {
             ui->checkBoxSearcherDualSlot->setChecked(false);
-        }
-
-        ui->checkBoxSearcherPokeRadar->setVisible(!hgss && grass);
-        if (!ui->checkBoxSearcherPokeRadar->isVisible())
-        {
-            ui->checkBoxSearcherPokeRadar->setChecked(false);
-            ui->checkBoxSearcherPokeRadarShiny->setChecked(false);
         }
 
         ui->checkBoxSearcherRadio->setVisible(hgss && stepEncounter);
@@ -1373,18 +1308,6 @@ void Wild4::searcherPokemonIndexChanged(int index)
     }
 }
 
-void Wild4::searcherPokeRadarStateChanged(Qt::CheckState state)
-{
-    ui->checkBoxSearcherPokeRadarShiny->setVisible(state == Qt::Checked);
-    if (!ui->checkBoxSearcherPokeRadarShiny->isVisible())
-    {
-        ui->checkBoxSearcherPokeRadarShiny->setChecked(false);
-    }
-    ui->comboMenuSearcherLead->hideAction(toInt(Lead::MagnetPull), state == Qt::Checked);
-    ui->comboMenuSearcherLead->hideAction(toInt(Lead::Hustle), state == Qt::Checked); // Also handles Pressure and Vital Spirit
-    ui->comboMenuSearcherLead->hideAction(toInt(Lead::Static), state == Qt::Checked);
-}
-
 void Wild4::seedToTime()
 {
     QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
@@ -1421,8 +1344,6 @@ void Wild4::transferSettings(int index)
 
         ui->checkBoxSearcherFeebasTile->setChecked(ui->checkBoxGeneratorFeebasTile->isChecked());
 
-        ui->checkBoxSearcherPokeRadar->setCheckState(ui->checkBoxGeneratorPokeRadar->checkState());
-
         ui->checkBoxSearcherRadio->setCheckState(ui->checkBoxGeneratorRadio->checkState());
         ui->comboBoxSearcherRadio->setCurrentIndex(ui->comboBoxGeneratorRadio->currentIndex());
 
@@ -1450,8 +1371,6 @@ void Wild4::transferSettings(int index)
         ui->comboBoxGeneratorDualSlot->setCurrentIndex(ui->comboBoxSearcherDualSlot->currentIndex());
 
         ui->checkBoxGeneratorFeebasTile->setChecked(ui->checkBoxSearcherFeebasTile->isChecked());
-
-        ui->checkBoxGeneratorPokeRadar->setCheckState(ui->checkBoxSearcherPokeRadar->checkState());
 
         ui->checkBoxGeneratorRadio->setCheckState(ui->checkBoxSearcherRadio->checkState());
         ui->comboBoxGeneratorRadio->setCurrentIndex(ui->comboBoxSearcherRadio->currentIndex());
