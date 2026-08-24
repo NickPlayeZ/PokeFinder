@@ -20,6 +20,7 @@
 #ifndef HIDDENGROTTOGENERATORTEST_HPP
 #define HIDDENGROTTOGENERATORTEST_HPP
 
+#include <Core/Enum/PassPower.hpp>
 #include <QObject>
 
 class HiddenGrottoGeneratorTest : public QObject
@@ -32,5 +33,7 @@ private slots:
     void slot_data();
     void slot();
 };
+
+Q_DECLARE_METATYPE(PassPower);
 
 #endif // HIDDENGROTTOGENERATORTEST_HPP

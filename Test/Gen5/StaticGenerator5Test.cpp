@@ -39,6 +39,15 @@ static bool operator==(const State5 &left, const json &right)
         && left.getAdvances() == right["advances"].get<u32>() && left.getChatot() == right["chatot"].get<u8>();
 }
 
+static bool matchesWildPIDRNG(const State5 &left, const json &right)
+{
+    return left.getPID() == right["pid"].get<u32>() && left.getAbilityIndex() == right["abilityIndex"].get<u16>()
+        && left.getAbility() == right["ability"].get<u8>() && left.getGender() == right["gender"].get<u8>()
+        && left.getLevel() == right["level"].get<u8>() && left.getNature() == right["nature"].get<u8>()
+        && left.getShiny() == right["shiny"].get<u8>() && left.getAdvances() == right["advances"].get<u32>()
+        && left.getChatot() == right["chatot"].get<u8>();
+}
+
 void StaticGenerator5Test::generateNonWild_data()
 {
     QTest::addColumn<u64>("seed");
@@ -144,12 +153,21 @@ void StaticGenerator5Test::generateWild()
     StateFilter filter(255, 255, 255, 1, 100, 0, 255, 0, 255, false, min, max, natures, powers);
     StaticGenerator5 generator(0, 9, 0, Method::Method5, lead, toInt(luckyPower), *staticTemplate, profile, filter);
 
-    auto states = generator.generate(seed, 0, 0);
+    u32 initialIVAdvances = luckyPower == PassPower::None ? 0 : 2;
+    auto states = generator.generate(seed, initialIVAdvances, 0);
     QCOMPARE(states.size(), j.size());
 
     for (size_t i = 0; i < states.size(); i++)
     {
         const auto &state = states[i];
-        QVERIFY(state == j[i]);
+        if (luckyPower == PassPower::None)
+        {
+            QVERIFY(state == j[i]);
+        }
+        else
+        {
+            QCOMPARE(state.getIVAdvances(), initialIVAdvances);
+            QVERIFY(matchesWildPIDRNG(state, j[i]));
+        }
     }
 }

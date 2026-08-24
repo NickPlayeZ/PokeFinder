@@ -305,6 +305,11 @@ void SHA1SIMDTest::hash()
     const Time &time = dateTime.getTime();
 
 #ifdef ENABLE_SIMD
+    if (!hasSHA())
+    {
+        QSKIP("SHA extensions are not supported by this CPU");
+    }
+
     SHA1SIMD sha(profile);
     sha.setButton(buttons.front().value);
     sha.setDate(date);
@@ -362,6 +367,11 @@ void SHA1SIMDTest::hashTime()
     Time time(12, 0, 0);
 
 #ifdef ENABLE_SIMD
+    if (!hasSHA())
+    {
+        QSKIP("SHA extensions are not supported by this CPU");
+    }
+
     SHA1SIMD sha(profile);
     sha.setButton(buttons.front().value);
     sha.setDate(date);
