@@ -493,7 +493,9 @@ void HiddenGrotto::grottoSearch()
 
     auto *timer = new QTimer();
     connect(timer, &QTimer::timeout, this, [=] {
-        grottoSearcherModel->addItems(searcher->getResults());
+        auto results = searcher->getResults();
+        std::erase_if(results, [](const auto &result) { return !result.getState().isValid(); });
+        grottoSearcherModel->addItems(results);
         if (showPassPower)
         {
             ui->tableViewGrottoSearcher->resizeColumnToContents(1);
@@ -506,7 +508,9 @@ void HiddenGrotto::grottoSearch()
     connect(timer, &QTimer::destroyed, this, [=] {
         ui->pushButtonGrottoSearch->setEnabled(true);
         ui->pushButtonGrottoCancel->setEnabled(false);
-        grottoSearcherModel->addItems(searcher->getResults());
+        auto results = searcher->getResults();
+        std::erase_if(results, [](const auto &result) { return !result.getState().isValid(); });
+        grottoSearcherModel->addItems(results);
         if (showPassPower)
         {
             ui->tableViewGrottoSearcher->resizeColumnToContents(1);
