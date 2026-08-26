@@ -126,8 +126,15 @@ WildSearcher3::WildSearcher3(Method method, const std::vector<Lead> &leads, bool
 
 void WildSearcher3::startSearch(const std::array<u8, 6> &min, const std::array<u8, 6> &max)
 {
-    searching = true;
+    activeThreads.store(1);
+    threadContainer.emplace_back([this, min, max] {
+        search(min, max);
+        activeThreads.fetch_sub(1);
+    });
+}
 
+void WildSearcher3::search(const std::array<u8, 6> &min, const std::array<u8, 6> &max)
+{
     bool feebas = area.feebasLocation(profile.getVersion())
         && (area.getEncounter() == Encounter::OldRod || area.getEncounter() == Encounter::GoodRod
             || area.getEncounter() == Encounter::SuperRod);
@@ -146,16 +153,18 @@ void WildSearcher3::startSearch(const std::array<u8, 6> &min, const std::array<u
                     {
                         for (u8 spe = min[5]; spe <= max[5]; spe++)
                         {
-                            if (!searching)
+                            if (cancelled.load(std::memory_order_relaxed))
                             {
                                 return;
                             }
 
                             auto states = search(hp, atk, def, spa, spd, spe, feebas, safari, tanoby);
-
-                            std::lock_guard<std::mutex> guard(mutex);
-                            results.insert(results.end(), states.begin(), states.end());
-                            progress++;
+                            if (!states.empty())
+                            {
+                                std::lock_guard<std::mutex> guard(mutex);
+                                results.insert(results.end(), states.begin(), states.end());
+                            }
+                            progress.fetch_add(1, std::memory_order_relaxed);
                         }
                     }
                 }
