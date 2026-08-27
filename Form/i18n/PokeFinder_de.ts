@@ -12129,6 +12129,11 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <translation>Büschel</translation>
     </message>
     <message>
+        <location filename="../Gen4/PokeRadar.cpp" line="997"/>
+        <source>Patch Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../Gen4/PokeRadar.cpp" line="746"/>
         <source>RNG Info</source>
         <translation type="unfinished"></translation>
