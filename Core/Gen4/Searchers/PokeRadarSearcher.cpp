@@ -75,7 +75,7 @@ static u32 getPostBattlePatchTypeAdvances(Game version)
 
 static bool isPokeRadarChainLead(Lead lead)
 {
-    return lead <= Lead::SynchronizeEnd || lead == Lead::CuteCharmF || lead == Lead::CuteCharmM;
+    return lead == Lead::None || lead <= Lead::SynchronizeEnd || lead == Lead::CuteCharmF || lead == Lead::CuteCharmM;
 }
 
 static Lead getPokeRadarSearcherLead(Lead lead, bool chain)
@@ -126,10 +126,11 @@ static u16 getRadarItem(u8 rand, Lead lead, const PersonalInfo *info)
 }
 
 PokeRadarSearcher::PokeRadarSearcher(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 maxDelay, u32 minPatchDistance,
-                                     u16 maxChain, u8 chainSlot, Lead lead, PokeRadarChainType chainType, PokeRadarResult result,
+                                     u16 maxChain, u8 chainSlot, const std::vector<Lead> &leads, PokeRadarChainType chainType,
+                                     PokeRadarResult result,
                                      const std::array<bool, 81> &grass,
                                      const std::array<bool, 13> &encounterSlots, const EncounterArea4 &area, const Profile4 &profile,
-                                     const WildStateFilter &filter, bool specificSynchronize) :
+                                     const WildStateFilter &filter) :
     Searcher(Method::PokeRadar, profile),
     minAdvance(minAdvance),
     maxAdvance(maxAdvance),
@@ -138,8 +139,8 @@ PokeRadarSearcher::PokeRadarSearcher(u32 minAdvance, u32 maxAdvance, u32 minDela
     minPatchDistance(minPatchDistance),
     maxChain(maxChain),
     chainSlot(chainSlot),
-    lead(lead),
-    specificSynchronize(specificSynchronize),
+    leads(leads.empty() ? std::vector<Lead> { Lead::None } : leads),
+    lead(this->leads.front()),
     chainType(chainType),
     result(result),
     grass(grass),
@@ -166,14 +167,19 @@ void PokeRadarSearcher::startSearch(const std::array<u8, 6> &min, const std::arr
         slotCount = encounterSlotCount;
     }
 
-    setMaxProgress(((slotCount + (maxChain == 0 ? 0 : 2)) * 2 * 100) + 1);
+    u64 chainLeadCount = std::ranges::count_if(leads, isPokeRadarChainLead);
+    setMaxProgress((((slotCount * leads.size()) + (maxChain == 0 ? 0 : 2 * chainLeadCount)) * 2 * 100) + 1);
     progress = 0;
 
-    searchPokemon(min, max, false);
-
-    if (searching && maxChain != 0)
+    for (Lead activeLead : leads)
     {
-        searchPokemon(min, max, true);
+        lead = activeLead;
+        searchPokemon(min, max, false);
+
+        if (searching && maxChain != 0 && isPokeRadarChainLead(activeLead))
+        {
+            searchPokemon(min, max, true);
+        }
     }
 
     if (searching)
@@ -244,6 +250,10 @@ void PokeRadarSearcher::searchPokemonType(const std::array<u8, 6> &min, const st
 
                                 auto states = searchPokemonIVs(hp, atk, def, spa, spd, spe, slot, effectiveLead,
                                                                isShinyPatchType(searchChainType), chain);
+                                for (auto &state : states)
+                                {
+                                    state.setLead(lead);
+                                }
                                 pokemon.insert(pokemon.end(), states.begin(), states.end());
                                 currentPhaseProgress = (++currentIV * 100) / ivCombinations;
                             }
@@ -477,11 +487,6 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonShinyIVs(u8 hp, 
 
         u32 pid = shinyPID(rng);
         u8 nature = pid % 25;
-        if (specificSynchronize && effectiveLead <= Lead::SynchronizeEnd && nature != toInt(effectiveLead))
-        {
-            continue;
-        }
-
         if (!filter.compareNature(nature))
         {
             continue;
@@ -498,7 +503,8 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonShinyIVs(u8 hp, 
                 bool valid = false;
                 if (effectiveLead <= Lead::SynchronizeEnd)
                 {
-                    valid = test.nextUShort<false>(2) == 0;
+                    bool synchronize = test.nextUShort<false>(2) == 0;
+                    valid = !synchronize || nature == toInt(effectiveLead);
                 }
                 else
                 {
@@ -611,6 +617,7 @@ std::optional<WildSearcherState4> PokeRadarSearcher::validateChainZeroPokemon(co
     u16 item = getRadarItem(go.nextUShort(100), lead, info);
     WildSearcherState4 state(pokemon.getSeed(), pid, ivs, pid & 1, Utilities::getGender(pid, info), slot.getMaxLevel(), nature,
                              Utilities::getShiny<true>(pid, tsv), encounterSlot, item, slot.getSpecie(), 0, info);
+    state.setLead(pokemon.getLead());
     state.setAdvances(advances == 0 ? 0 : advances - 1);
 
     if (state.getPID() != pokemon.getPID() || state.getIVs() != pokemon.getIVs())
@@ -825,7 +832,7 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
 
                 std::lock_guard<std::mutex> guard(mutex);
                 auto key = std::make_tuple(pokemon.getSeed(), pokemon.getAdvances(), patchState.getAdvances(), chain, pokemon.getEncounterSlot(),
-                                           pokemon.getPID(), searchChainType);
+                                           pokemon.getPID(), searchChainType, lead);
                 if (!resultKeys.insert(key).second)
                 {
                     return;
@@ -940,7 +947,7 @@ void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &poke
         PokeRNG rng(pokemon.getSeed(), pokemon.getAdvances());
         std::lock_guard<std::mutex> guard(mutex);
         auto key = std::make_tuple(pokemon.getSeed(), pokemon.getAdvances(), bestPatch->state.getAdvances(), chain, pokemon.getEncounterSlot(),
-                                   pokemon.getPID(), searchChainType);
+                                   pokemon.getPID(), searchChainType, lead);
         if (!resultKeys.insert(key).second)
         {
             return;
@@ -966,7 +973,8 @@ void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &poke
 const std::vector<PokeRadarSearcher::PostBattlePatch> &PokeRadarSearcher::getPostBattlePatches(u32 seed, u16 chain,
                                                                                                PokeRadarChainType searchChainType)
 {
-    u64 key = (static_cast<u64>(seed) << 24) | (static_cast<u64>(chain) << 8) | static_cast<u8>(searchChainType);
+    u64 key = (static_cast<u64>(seed) << 32) | (static_cast<u64>(chain) << 16) | (static_cast<u64>(toInt(lead)) << 8)
+        | static_cast<u8>(searchChainType);
     auto cached = postBattlePatches.find(key);
     if (cached != postBattlePatches.end())
     {

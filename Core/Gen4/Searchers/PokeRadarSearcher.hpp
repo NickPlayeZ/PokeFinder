@@ -42,9 +42,9 @@ class PokeRadarSearcher : public Searcher<Profile4, PokeRadarState>
 {
 public:
     PokeRadarSearcher(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 maxDelay, u32 minPatchDistance, u16 maxChain,
-                      u8 chainSlot, Lead lead, PokeRadarChainType chainType, PokeRadarResult result,
+                      u8 chainSlot, const std::vector<Lead> &leads, PokeRadarChainType chainType, PokeRadarResult result,
                       const std::array<bool, 81> &grass, const std::array<bool, 13> &encounterSlots, const EncounterArea4 &area,
-                      const Profile4 &profile, const WildStateFilter &filter, bool specificSynchronize = false);
+                      const Profile4 &profile, const WildStateFilter &filter);
 
     void startSearch(const std::array<u8, 6> &min, const std::array<u8, 6> &max);
     void cancelSearch();
@@ -89,8 +89,8 @@ private:
     u32 minPatchDistance;
     u16 maxChain;
     u8 chainSlot;
+    std::vector<Lead> leads;
     Lead lead;
-    bool specificSynchronize;
     PokeRadarChainType chainType;
     PokeRadarResult result;
     std::array<bool, 81> grass;
@@ -99,7 +99,7 @@ private:
     WildStateFilter filter;
     std::atomic<u64> currentPhaseProgress;
     std::unordered_map<u64, std::vector<PostBattlePatch>> postBattlePatches;
-    std::set<std::tuple<u32, u32, u32, u16, u8, u32, PokeRadarChainType>> resultKeys;
+    std::set<std::tuple<u32, u32, u32, u16, u8, u32, PokeRadarChainType, Lead>> resultKeys;
 };
 
 #endif // POKERADARSEARCHER_HPP

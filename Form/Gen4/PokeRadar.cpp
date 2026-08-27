@@ -86,6 +86,25 @@ static const QString settingPrefix = QStringLiteral("pokeRadar");
 static constexpr u16 trophyGardenLocation = 117;
 static constexpr int maxPokeRadarChain = 40;
 
+static std::vector<Lead> getSearcherLeads(ComboMenu *comboMenu)
+{
+    auto data = comboMenu->getCheckedData();
+    std::vector<Lead> leads;
+    for (int lead : data)
+    {
+        Lead value = static_cast<Lead>(lead);
+        if (!std::ranges::contains(leads, value))
+        {
+            leads.emplace_back(value);
+        }
+    }
+    if (leads.empty())
+    {
+        leads.emplace_back(Lead::None);
+    }
+    return leads;
+}
+
 static constexpr std::array<u16, 46> radarLocations = {
     139, 8,   9,   137, 134, 134, 136, 13,  140, 141, 142, 144, 143, 146, 145, 147,
     148, 149, 150, 157, 156, 159, 158, 160, 161, 162, 162, 163, 164, 165, 166, 167,
@@ -385,6 +404,10 @@ static std::vector<PokeRadarState> mergeSearcherActivationResults(
             }
             else
             {
+                if (state.hasSearcherPokemon())
+                {
+                    merged[iter->second].mergeSearcherLeadMask(state.getSearcherPokemon().getLeadMask());
+                }
                 merged[iter->second].addResult(displayedResult);
                 merged[iter->second].setResultPatches(displayedResult, state.getPatches());
             }
@@ -775,7 +798,10 @@ QGroupBox *PokeRadar::createRNGInfo(PokeRadarControls &controls, bool searcherTa
         }
         else
         {
-            lead->addAction(tr("Synchronize"), toInt(Lead::Synchronize));
+            lead->addMenu(tr("Synchronize"), Translator::getNatures());
+            lead->setMultiSelect(true);
+            lead->setCheckedData({ toInt(Lead::None) });
+            lead->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
         }
     };
 
@@ -2252,31 +2278,14 @@ void PokeRadar::search()
                                    searcher.filter->getDisableFilters(), searcher.filter->getMinIVs(), searcher.filter->getMaxIVs(),
                                    searcher.filter->getNatures(), searcher.filter->getHiddenPowers(), searchSlots);
 
-            std::vector<std::pair<Lead, bool>> leads = { { searcher.lead->getEnum<Lead>(), false } };
-            if (leads[0].first == Lead::Synchronize)
+            auto leads = getSearcherLeads(searcher.lead);
+            for (PokeRadarResult activation : activations)
             {
-                leads.clear();
-                auto natures = searcher.filter->getNatures();
-                for (u8 nature = 0; nature < natures.size(); nature++)
-                {
-                    if (natures[nature])
-                    {
-                        leads.emplace_back(static_cast<Lead>(nature), true);
-                    }
-                }
-            }
-
-            for (const auto &[lead, specificSynchronize] : leads)
-            {
-                for (PokeRadarResult activation : activations)
-                {
-                    radarSearchers->emplace_back(
-                        activation,
-                        new PokeRadarSearcher(searcher.initialAdvances->getUInt(), searcher.maxAdvances->getUInt(), searcher.minDelay->getUInt(),
-                                              searcher.maxDelay->getUInt(), minDistance, searcher.chainCount->value(), searcher.slot->getCurrentUChar(),
-                                              lead, chainType, activation, getGrass(searcher), searchSlots, *areaIter, *currentProfile, filter,
-                                              specificSynchronize));
-                }
+                radarSearchers->emplace_back(
+                    activation,
+                    new PokeRadarSearcher(searcher.initialAdvances->getUInt(), searcher.maxAdvances->getUInt(), searcher.minDelay->getUInt(),
+                                          searcher.maxDelay->getUInt(), minDistance, searcher.chainCount->value(), searcher.slot->getCurrentUChar(),
+                                          leads, chainType, activation, getGrass(searcher), searchSlots, *areaIter, *currentProfile, filter));
             }
         }
     }

@@ -340,6 +340,18 @@ public:
         return searcherPokemon.value();
     }
 
+    void mergeSearcherLeadMask(u64 leadMask)
+    {
+        if (!searcherPokemon.has_value())
+        {
+            return;
+        }
+
+        u64 currentMask = searcherPokemon->getLeadMask();
+        u64 noneMask = getLeadFlag(Lead::None);
+        searcherPokemon->setLeadMask((currentMask & noneMask) != 0 || (leadMask & noneMask) != 0 ? noneMask : currentMask | leadMask);
+    }
+
 private:
     u32 advances;
     u32 patchAdvances;
