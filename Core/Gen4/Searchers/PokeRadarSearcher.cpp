@@ -405,13 +405,29 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonNormalIVs(u8 hp,
 
                 bool valid = false;
                 u32 seed;
-                if (effectiveLead == Lead::None || effectiveLead == Lead::CompoundEyes || effectiveLead == Lead::MagnetPull
-                    || effectiveLead == Lead::Static)
+                if (effectiveLead == Lead::None || effectiveLead == Lead::CompoundEyes)
                 {
                     if ((nextRNG / 0xa3e) == nature)
                     {
                         seed = test.getSeed();
                         valid = true;
+                    }
+                }
+                else if (effectiveLead == Lead::MagnetPull || effectiveLead == Lead::Static || effectiveLead == Lead::Pressure)
+                {
+                    if ((nextRNG / 0xa3e) == nature)
+                    {
+                        // These leads consume an additional slot/level modifier call before nature generation.
+                        // Recover both neighboring alignments and let the forward chain-zero replay retain the exact one.
+                        for (u8 offset = 0; offset < 2; offset++)
+                        {
+                            PokeRNGR candidate(test);
+                            candidate.advance(offset);
+                            WildSearcherState4 state(candidate.getSeed(), pid, ivs, pid & 1, Utilities::getGender(pid, info),
+                                                     slot.getMaxLevel(), nature, Utilities::getShiny<true>(pid, tsv), index, item,
+                                                     slot.getSpecie(), 0, info);
+                            states.emplace_back(state);
+                        }
                     }
                 }
                 else if (effectiveLead <= Lead::SynchronizeEnd)
@@ -553,12 +569,30 @@ std::optional<WildSearcherState4> PokeRadarSearcher::validateChainZeroPokemon(co
     u32 advances = pokemon.getAdvances() - 1;
     PokeRNG go(pokemon.getSeed(), advances);
 
-    u8 encounterSlot = EncounterSlot::jSlot(go.nextUShort<false>(100), area.getEncounter());
+    u8 encounterSlot;
+    if (lead == Lead::MagnetPull || lead == Lead::Static)
+    {
+        ModifiedSlots modifiedSlots = area.getSlots(lead);
+        if (go.nextUShort<false>(2) == 0 && !modifiedSlots.empty())
+        {
+            encounterSlot = modifiedSlots[go.nextUShort(modifiedSlots.count)];
+        }
+        else
+        {
+            encounterSlot = EncounterSlot::jSlot(go.nextUShort<false>(100), area.getEncounter());
+        }
+    }
+    else
+    {
+        encounterSlot = EncounterSlot::jSlot(go.nextUShort<false>(100), area.getEncounter());
+    }
+
     if (!allSlots && !encounterSlots[encounterSlot])
     {
         return std::nullopt;
     }
 
+    u8 level = area.calculateLevel<false, false>(encounterSlot, go, nullptr, lead == Lead::Pressure);
     const Slot &slot = area.getPokemon(encounterSlot);
     const PersonalInfo *info = slot.getInfo();
 
@@ -615,7 +649,7 @@ std::optional<WildSearcherState4> PokeRadarSearcher::validateChainZeroPokemon(co
     ivs[5] = iv2 & 31;
 
     u16 item = getRadarItem(go.nextUShort(100), lead, info);
-    WildSearcherState4 state(pokemon.getSeed(), pid, ivs, pid & 1, Utilities::getGender(pid, info), slot.getMaxLevel(), nature,
+    WildSearcherState4 state(pokemon.getSeed(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
                              Utilities::getShiny<true>(pid, tsv), encounterSlot, item, slot.getSpecie(), 0, info);
     state.setLead(pokemon.getLead());
     state.setAdvances(advances == 0 ? 0 : advances - 1);

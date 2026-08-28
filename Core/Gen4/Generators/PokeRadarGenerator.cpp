@@ -316,13 +316,36 @@ std::vector<WildGeneratorState4> PokeRadarPokemonGenerator::generateNormal(u32 s
         u32 battleAdvances = battleAdvancesConst + initialAdvances + offset + cnt;
         PokeRNG go(rng, jump);
 
-        u8 encounterSlot = index.value_or(EncounterSlot::jSlot(go.nextUShort<false>(100, &battleAdvances), area.getEncounter()));
+        u8 encounterSlot;
+        if (index.has_value())
+        {
+            encounterSlot = *index;
+        }
+        else if (lead == Lead::MagnetPull || lead == Lead::Static)
+        {
+            ModifiedSlots modifiedSlots = area.getSlots(lead);
+            if (go.nextUShort<false>(2, &battleAdvances) == 0 && !modifiedSlots.empty())
+            {
+                encounterSlot = modifiedSlots[go.nextUShort(modifiedSlots.count, &battleAdvances)];
+            }
+            else
+            {
+                encounterSlot = EncounterSlot::jSlot(go.nextUShort<false>(100, &battleAdvances), area.getEncounter());
+            }
+        }
+        else
+        {
+            encounterSlot = EncounterSlot::jSlot(go.nextUShort<false>(100, &battleAdvances), area.getEncounter());
+        }
+
         if (!index.has_value() && !filter.compareEncounterSlot(encounterSlot))
         {
             rng.next();
             continue;
         }
 
+        u8 level = index.has_value() ? area.getPokemon(encounterSlot).getMaxLevel()
+                                     : area.calculateLevel<false, false>(encounterSlot, go, &battleAdvances, lead == Lead::Pressure);
         const Slot &slot = area.getPokemon(encounterSlot);
         const PersonalInfo *info = slot.getInfo();
 
@@ -387,7 +410,7 @@ std::vector<WildGeneratorState4> PokeRadarPokemonGenerator::generateNormal(u32 s
         u16 item = getRadarItem(go.nextUShort(100, &battleAdvances), lead, info);
 
         WildGeneratorState4 state(rng.nextUShort(), battleAdvances, initialAdvances + cnt, pid, ivs, pid & 1,
-                                  Utilities::getGender(pid, info), slot.getMaxLevel(), nature, Utilities::getShiny<true>(pid, tsv),
+                                  Utilities::getGender(pid, info), level, nature, Utilities::getShiny<true>(pid, tsv),
                                   encounterSlot, item, slot.getSpecie(), 0, info);
         if (filter.compareState(static_cast<const WildGeneratorState &>(state)))
         {

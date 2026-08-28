@@ -785,8 +785,7 @@ QGroupBox *PokeRadar::createRNGInfo(PokeRadarControls &controls, bool searcherTa
         lead->addAction(tr("None"), toInt(Lead::None));
         lead->addAction(tr("Compound Eyes"), toInt(Lead::CompoundEyes));
         lead->addMenu(tr("Cute Charm"),
-                      { { tr("Cute Charm: \u2640 Lead"), toInt(Lead::CuteCharmF) },
-                        { tr("Cute Charm: \u2642 Lead"), toInt(Lead::CuteCharmM) } });
+                      { { tr("\u2642 Lead"), toInt(Lead::CuteCharmM) }, { tr("\u2640 Lead"), toInt(Lead::CuteCharmF) } });
         lead->addMenu(tr("Level Modifier"),
                       { { tr("Hustle"), toInt(Lead::Hustle) },
                         { tr("Pressure"), toInt(Lead::Pressure) },
