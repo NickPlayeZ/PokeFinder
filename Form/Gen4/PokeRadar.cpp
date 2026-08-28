@@ -68,7 +68,6 @@
 #include <QSignalBlocker>
 #include <QSpinBox>
 #include <QFrame>
-#include <QThread>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <atomic>
@@ -2255,7 +2254,6 @@ void PokeRadar::search()
     auto min = searcher.filter->getMinIVs();
     auto max = searcher.filter->getMaxIVs();
     auto *radarSearchers = new std::vector<std::pair<PokeRadarResult, PokeRadarSearcher *>>;
-    auto *cancelled = new std::atomic_bool(false);
 
     auto encounters = Encounters4::getEncounters(Encounter::Grass, getEncounterSettings(searcher, getSelectedRadar(chainType)), currentProfile);
     if (searcher.location->currentIndex() >= 0)
@@ -2292,7 +2290,6 @@ void PokeRadar::search()
     if (radarSearchers->empty())
     {
         delete radarSearchers;
-        delete cancelled;
         return;
     }
 
@@ -2337,55 +2334,48 @@ void PokeRadar::search()
         return progress / static_cast<int>(radarSearchers->size());
     };
 
-    auto *thread = QThread::create([=] {
-        for (auto &[activation, radarSearcher] : *radarSearchers)
-        {
-            if (cancelled->load())
-            {
-                break;
-            }
-
-            radarSearcher->startSearch(min, max);
-        }
-    });
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    connect(searcher.cancel, &QPushButton::clicked, thread, [=] {
-        cancelled->store(true);
+    auto *timer = new QTimer(this);
+    connect(searcher.cancel, &QPushButton::clicked, timer, [=] {
         for (auto &[activation, radarSearcher] : *radarSearchers)
         {
             radarSearcher->cancelSearch();
         }
+        searcher.cancel->setEnabled(false);
     });
 
-    auto *timer = new QTimer();
-    timer->callOnTimeout(this, [=] {
+    connect(timer, &QTimer::timeout, this, [=] {
         drainResults();
         int progress = getSearchProgress();
-        if (progress == 100 && thread->isRunning())
+        bool searching = std::ranges::any_of(*radarSearchers, [](const auto &entry) { return entry.second->isSearching(); });
+        if (progress == 100 && searching)
         {
             progress = 99;
         }
         searcher.progressBar->setValue(progress);
-    });
-    connect(thread, &QThread::finished, timer, &QTimer::stop);
-    connect(thread, &QThread::finished, timer, &QTimer::deleteLater);
-    connect(timer, &QTimer::destroyed, this, [=] {
-        drainResults();
-        int progress = getSearchProgress();
-        for (auto &[activation, radarSearcher] : *radarSearchers)
+
+        if (!searching)
         {
-            delete radarSearcher;
-        }
+            timer->stop();
+            drainResults();
+            progress = getSearchProgress();
+            for (auto &[activation, radarSearcher] : *radarSearchers)
+            {
+                delete radarSearcher;
+            }
 
-        searcher.button->setEnabled(true);
-        searcher.cancel->setEnabled(false);
-        searcher.progressBar->setValue(progress);
-        delete accumulatedResults;
-        delete radarSearchers;
-        delete cancelled;
+            searcher.button->setEnabled(true);
+            searcher.cancel->setEnabled(false);
+            searcher.progressBar->setValue(progress);
+            delete accumulatedResults;
+            delete radarSearchers;
+            timer->deleteLater();
+        }
     });
 
-    thread->start();
+    for (auto &[activation, radarSearcher] : *radarSearchers)
+    {
+        radarSearcher->startSearch(min, max);
+    }
     timer->start(1000);
 }
 

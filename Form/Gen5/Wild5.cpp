@@ -765,7 +765,7 @@ void Wild5::search()
         searcher->cancelSearch();
         ui->pushButtonCancel->setEnabled(false);
     });
-    connect(timer, &QTimer::timeout, this, [this, searcher, timer] {
+    connect(timer, &QTimer::timeout, this, [this, searcher, timer, showPassPower] {
         searcherModel->addItems(searcher->getResults());
         if (showPassPower)
         {

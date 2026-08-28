@@ -63,6 +63,7 @@ private:
         std::vector<BattleStart> battleStarts;
     };
 
+    void search(const std::array<u8, 6> &min, const std::array<u8, 6> &max);
     void addPatchMatches(const WildSearcherState4 &pokemon, u16 chainMin, u16 chainMax, PokeRadarChainType searchChainType);
     void addManualPatchMatches(const WildSearcherState4 &pokemon, u16 chainMin, u16 chainMax, PokeRadarChainType searchChainType);
     void addPostBattlePatchMatches(const WildSearcherState4 &pokemon, u16 chainMin, u16 chainMax, PokeRadarChainType searchChainType);

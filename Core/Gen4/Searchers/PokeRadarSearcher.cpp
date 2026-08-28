@@ -154,7 +154,15 @@ PokeRadarSearcher::PokeRadarSearcher(u32 minAdvance, u32 maxAdvance, u32 minDela
 
 void PokeRadarSearcher::startSearch(const std::array<u8, 6> &min, const std::array<u8, 6> &max)
 {
-    searching = true;
+    activeThreads.store(1);
+    threadContainer.emplace_back([this, min, max] {
+        search(min, max);
+        activeThreads.fetch_sub(1);
+    });
+}
+
+void PokeRadarSearcher::search(const std::array<u8, 6> &min, const std::array<u8, 6> &max)
+{
 
     const u8 encounterSlotCount = area.getCount();
     u64 slotCount = 0;
@@ -176,13 +184,13 @@ void PokeRadarSearcher::startSearch(const std::array<u8, 6> &min, const std::arr
         lead = activeLead;
         searchPokemon(min, max, false);
 
-        if (searching && maxChain != 0 && isPokeRadarChainLead(activeLead))
+        if (!isCancelled() && maxChain != 0 && isPokeRadarChainLead(activeLead))
         {
             searchPokemon(min, max, true);
         }
     }
 
-    if (searching)
+    if (!isCancelled())
     {
         progress = maxProgress;
     }
@@ -193,7 +201,7 @@ void PokeRadarSearcher::searchPokemon(const std::array<u8, 6> &min, const std::a
     PokeRadarChainType searchChainType = getPokeRadarSearcherChainType(chainType, chain);
     searchPokemonType(min, max, chain, searchChainType);
 
-    if (searching && chain)
+    if (!isCancelled() && chain)
     {
         PokeRadarChainType shinyType
             = searchChainType == PokeRadarChainType::Strong ? PokeRadarChainType::StrongShiny : PokeRadarChainType::WeakShiny;
@@ -223,7 +231,7 @@ void PokeRadarSearcher::searchPokemonType(const std::array<u8, 6> &min, const st
     std::set<std::tuple<u32, u32, u8, u32>> chainZeroPokemonKeys;
     for (u8 slot = startSlot; slot < endSlot; slot++)
     {
-        if (!searching)
+        if (isCancelled())
         {
             return;
         }
@@ -243,7 +251,7 @@ void PokeRadarSearcher::searchPokemonType(const std::array<u8, 6> &min, const st
                         {
                             for (u8 spe = min[5]; spe <= max[5]; spe++)
                             {
-                                if (!searching)
+                                if (isCancelled())
                                 {
                                     return;
                                 }
@@ -266,7 +274,7 @@ void PokeRadarSearcher::searchPokemonType(const std::array<u8, 6> &min, const st
         progress += 100;
         for (size_t i = 0; i < pokemon.size(); i++)
         {
-            if (!searching)
+            if (isCancelled())
             {
                 return;
             }
@@ -817,14 +825,14 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
 
     for (u32 patchAdvances = end;; patchAdvances--)
     {
-        if (!searching)
+        if (isCancelled())
         {
             return;
         }
 
         for (u16 chain = chainMin; chain <= chainMax; chain++)
         {
-            if (!searching)
+            if (isCancelled())
             {
                 return;
             }
@@ -844,7 +852,7 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
                 for (u32 nextPatchAdvances = patchAdvances == 0 ? 0 : patchAdvances - 1;
                      targetPatchAdvances.size() < maxPatchMatches && nextPatchAdvances < patchAdvances;)
                 {
-                    if (!searching)
+                    if (isCancelled())
                     {
                         return;
                     }
@@ -909,7 +917,7 @@ void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &poke
 
     for (u16 chain = chainMin; chain <= chainMax; chain++)
     {
-        if (!searching)
+        if (isCancelled())
         {
             return;
         }
@@ -1021,7 +1029,7 @@ const std::vector<PokeRadarSearcher::PostBattlePatch> &PokeRadarSearcher::getPos
     std::vector<PostBattlePatch> patches;
     for (u32 advances = 0; advances <= maxAdvance; advances++)
     {
-        if (!searching)
+        if (isCancelled())
         {
             break;
         }

@@ -491,7 +491,7 @@ void HiddenGrotto::grottoSearch()
         searcher->cancelSearch();
         ui->pushButtonGrottoCancel->setEnabled(false);
     });
-    connect(timer, &QTimer::timeout, this, [this, searcher, timer] {
+    connect(timer, &QTimer::timeout, this, [this, searcher, timer, showPassPower] {
         auto results = searcher->getResults();
         std::erase_if(results, [](const auto &result) { return !result.getState().isValid(); });
         grottoSearcherModel->addItems(results);
