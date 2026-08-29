@@ -79,6 +79,7 @@ private:
                                                            Lead effectiveLead, bool applyFilter) const;
     std::vector<WildSearcherState4> searchPokemonShinyIVs(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe, u8 index,
                                                           Lead effectiveLead, bool applyFilter) const;
+    bool validateChainShinyPokemon(const WildSearcherState4 &pokemon, Lead effectiveLead) const;
     std::optional<WildSearcherState4> validateChainZeroPokemon(const WildSearcherState4 &pokemon, bool allSlots) const;
     bool isShinyPatchType(PokeRadarChainType searchChainType) const;
     bool patchMatchesType(const PokeRadarState &state, PokeRadarChainType searchChainType) const;

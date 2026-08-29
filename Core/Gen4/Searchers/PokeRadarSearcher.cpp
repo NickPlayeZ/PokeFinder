@@ -262,6 +262,12 @@ void PokeRadarSearcher::searchPokemonType(const std::array<u8, 6> &min, const st
                                 {
                                     state.setLead(lead);
                                 }
+                                if (chain && isShinyPatchType(searchChainType))
+                                {
+                                    std::erase_if(states, [this, effectiveLead](const WildSearcherState4 &state) {
+                                        return !validateChainShinyPokemon(state, effectiveLead);
+                                    });
+                                }
                                 pokemon.insert(pokemon.end(), states.begin(), states.end());
                                 currentPhaseProgress = (++currentIV * 100) / ivCombinations;
                             }
@@ -520,6 +526,7 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonShinyIVs(u8 hp, 
         {
             u8 huntNature;
             u8 gender = (pid & 0xff) < info->getGender();
+            bool firstCandidate = true;
             do
             {
                 PokeRNGR test(rng);
@@ -528,7 +535,7 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonShinyIVs(u8 hp, 
                 if (effectiveLead <= Lead::SynchronizeEnd)
                 {
                     bool synchronize = test.nextUShort<false>(2) == 0;
-                    valid = !synchronize || nature == toInt(effectiveLead);
+                    valid = synchronize ? nature == toInt(effectiveLead) : firstCandidate;
                 }
                 else
                 {
@@ -545,6 +552,7 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonShinyIVs(u8 hp, 
                     }
                 }
 
+                firstCandidate = false;
                 u32 huntPID = shinyPID(rng);
                 huntNature = huntPID % 25;
                 if (cuteCharm && gender == ((huntPID & 0xff) < info->getGender()))
@@ -565,6 +573,87 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonShinyIVs(u8 hp, 
     }
 
     return states;
+}
+
+bool PokeRadarSearcher::validateChainShinyPokemon(const WildSearcherState4 &pokemon, Lead effectiveLead) const
+{
+    // Shiny chain results are displayed one frame after the reverse search's internal alignment.
+    PokeRNG go(pokemon.getSeed(), pokemon.getAdvances() + 1);
+
+    // A fixed chain slot still evaluates and consumes the normal slot roll in the forward generator.
+    go.nextUShort<false>(100);
+
+    const Slot &slot = area.getPokemon(chainSlot);
+    const PersonalInfo *info = slot.getInfo();
+    bool cuteCharm = (effectiveLead == Lead::CuteCharmF || effectiveLead == Lead::CuteCharmM) && !info->getFixedGender();
+
+    auto cuteCharmCheck = [effectiveLead](const PersonalInfo *info, u32 pid) {
+        if (effectiveLead == Lead::CuteCharmF)
+        {
+            return (pid & 0xff) >= info->getGender();
+        }
+        return (pid & 0xff) < info->getGender();
+    };
+
+    auto shinyPID = [this, &go]() {
+        u16 low = go.nextUShort() & 7;
+        u16 high = go.nextUShort() & 7;
+        u16 shinyValue = tsv >> 3;
+        for (int i = 0; i < 13; i++)
+        {
+            u16 pidBit = 1 << (i + 3);
+            if (shinyValue & (1 << i))
+            {
+                if (go.nextUShort() & 1)
+                {
+                    low |= pidBit;
+                }
+                else
+                {
+                    high |= pidBit;
+                }
+            }
+            else if (go.nextUShort() & 1)
+            {
+                low |= pidBit;
+                high |= pidBit;
+            }
+        }
+        return static_cast<u32>((high << 16) | low);
+    };
+
+    u32 pid;
+    if (cuteCharm && go.nextUShort<false>(3) != 0)
+    {
+        do
+        {
+            pid = shinyPID();
+        } while (!cuteCharmCheck(info, pid));
+    }
+    else if (effectiveLead <= Lead::SynchronizeEnd && go.nextUShort<false>(2) == 0)
+    {
+        do
+        {
+            pid = shinyPID();
+        } while (pid % 25 != toInt(effectiveLead));
+    }
+    else
+    {
+        pid = shinyPID();
+    }
+
+    u16 iv1 = go.nextUShort();
+    u16 iv2 = go.nextUShort();
+    std::array<u8, 6> ivs = {
+        static_cast<u8>(iv1 & 31),
+        static_cast<u8>((iv1 >> 5) & 31),
+        static_cast<u8>((iv1 >> 10) & 31),
+        static_cast<u8>((iv2 >> 5) & 31),
+        static_cast<u8>((iv2 >> 10) & 31),
+        static_cast<u8>(iv2 & 31),
+    };
+
+    return pid == pokemon.getPID() && ivs == pokemon.getIVs();
 }
 
 std::optional<WildSearcherState4> PokeRadarSearcher::validateChainZeroPokemon(const WildSearcherState4 &pokemon, bool allSlots) const
@@ -1023,15 +1112,13 @@ void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &poke
 const std::vector<PokeRadarSearcher::PostBattlePatch> &PokeRadarSearcher::getPostBattlePatches(u32 seed, u16 chain,
                                                                                                PokeRadarChainType searchChainType)
 {
-    u64 key = (static_cast<u64>(seed) << 32) | (static_cast<u64>(chain) << 16) | (static_cast<u64>(toInt(lead)) << 8)
-        | static_cast<u8>(searchChainType);
+    u64 key = (static_cast<u64>(seed) << 32) | (static_cast<u64>(chain) << 8) | static_cast<u8>(searchChainType);
     auto cached = postBattlePatches.find(key);
     if (cached != postBattlePatches.end())
     {
         return cached->second;
     }
 
-    Lead effectiveLead = getPokeRadarSearcherLead(lead, true);
     PokeRadarGenerator radar(0, 0, chain, searchChainType, result, grass);
     std::unordered_map<u32, size_t> indexByPatchAdvance;
     std::vector<PostBattlePatch> patches;
@@ -1042,7 +1129,9 @@ const std::vector<PokeRadarSearcher::PostBattlePatch> &PokeRadarSearcher::getPos
             break;
         }
 
-        u32 battleAdvances = calculatePokemonBattleAdvances(seed, advances, effectiveLead, false);
+        // The lead used for the target encounter can be changed after these patches spawn.
+        // Keep the preceding battle neutral instead of coupling its RNG consumption to the target lead.
+        u32 battleAdvances = calculatePokemonBattleAdvances(seed, advances, Lead::None, false);
         u32 battlePatchAdvances = getPostBattlePatchAdvances(battleAdvances, profile.getVersion());
         u32 battlePatchTypeAdvances = getPostBattlePatchTypeAdvances(profile.getVersion());
         PokeRadarState patchState = radar.generatePrevious(seed, battlePatchAdvances, battlePatchTypeAdvances);

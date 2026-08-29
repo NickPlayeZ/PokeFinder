@@ -425,6 +425,12 @@ static std::vector<PokeRadarState> mergeSearcherActivationResults(
     return merged;
 }
 
+static bool hasSynchronizeLead(const PokeRadarState &state)
+{
+    constexpr u64 synchronizeMask = (1ULL << 25) - 1;
+    return state.hasSearcherPokemon() && (state.getSearcherPokemon().getLeadMask() & synchronizeMask) != 0;
+}
+
 PokeRadar::PokeRadar(QWidget *parent) : QWidget(parent), currentProfile(nullptr)
 {
     setAttribute(Qt::WA_QuitOnClose, false);
@@ -2303,7 +2309,7 @@ void PokeRadar::search()
         accumulatedResults->emplace_back(activation, std::vector<PokeRadarState> {});
     }
 
-    auto drainResults = [=] {
+    auto drainResults = [=](bool forceRefresh = false) {
         bool changed = false;
         for (size_t i = 0; i < radarSearchers->size(); i++)
         {
@@ -2318,10 +2324,19 @@ void PokeRadar::search()
             changed = true;
         }
 
-        if (changed)
+        if (changed || forceRefresh)
         {
+            auto displayedResults = *accumulatedResults;
+            for (size_t i = 0; i < displayedResults.size(); i++)
+            {
+                if ((*radarSearchers)[i].second->isSearching())
+                {
+                    std::erase_if(displayedResults[i].second, hasSynchronizeLead);
+                }
+            }
+
             searcher.model->clearModel();
-            searcher.model->addItems(mergeSearcherActivationResults(*accumulatedResults));
+            searcher.model->addItems(mergeSearcherActivationResults(displayedResults));
         }
     };
 
@@ -2356,7 +2371,7 @@ void PokeRadar::search()
         if (!searching)
         {
             timer->stop();
-            drainResults();
+            drainResults(true);
             progress = getSearchProgress();
             for (auto &[activation, radarSearcher] : *radarSearchers)
             {
