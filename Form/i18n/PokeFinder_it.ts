@@ -12384,7 +12384,7 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     </message>
     <message>
         <location filename="../Gen4/PokeRadar.cpp" line="1018"/>
-        <source>Grace Steps</source>
+        <source>Cooldown Steps</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

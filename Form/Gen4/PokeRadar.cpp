@@ -198,6 +198,11 @@ static bool isPokeRadarChainLead(Lead lead)
     return lead <= Lead::SynchronizeEnd || lead == Lead::CuteCharmF || lead == Lead::CuteCharmM;
 }
 
+static bool isPokeRadarEncounterModifier(Lead lead)
+{
+    return lead == Lead::QuickFeet;
+}
+
 static Lead getPokeRadarGeneratorLead(const PokeRadarControls &controls)
 {
     if (controls.lead == nullptr)
@@ -206,7 +211,8 @@ static Lead getPokeRadarGeneratorLead(const PokeRadarControls &controls)
     }
 
     Lead lead = controls.lead->getEnum<Lead>();
-    if (controls.chainCount->value() == 0 || isPokeRadarChainLead(lead) || lead == Lead::CompoundEyes)
+    if (controls.chainCount->value() == 0 || isPokeRadarChainLead(lead) || isPokeRadarEncounterModifier(lead)
+        || lead == Lead::CompoundEyes)
     {
         return lead;
     }
@@ -791,6 +797,13 @@ QGroupBox *PokeRadar::createRNGInfo(PokeRadarControls &controls, bool searcherTa
         lead->addAction(tr("Compound Eyes"), toInt(Lead::CompoundEyes));
         lead->addMenu(tr("Cute Charm"),
                       { { tr("\u2642 Lead"), toInt(Lead::CuteCharmM) }, { tr("\u2640 Lead"), toInt(Lead::CuteCharmF) } });
+        if (generatorTab)
+        {
+            lead->addMenu(tr("Encounter Modifier"),
+                          { { tr("Quick Feet"), toInt(Lead::QuickFeet) },
+                            { tr("Stench"), toInt(Lead::Stench) },
+                            { tr("White Smoke"), toInt(Lead::WhiteSmoke) } });
+        }
         lead->addMenu(tr("Level Modifier"),
                       { { tr("Hustle"), toInt(Lead::Hustle) },
                         { tr("Pressure"), toInt(Lead::Pressure) },
@@ -826,6 +839,8 @@ QGroupBox *PokeRadar::createRNGInfo(PokeRadarControls &controls, bool searcherTa
         controls.seed->setValues(InputType::Seed32Bit);
         controls.lead = new ComboMenu(rngInfo);
         setupLead(controls.lead, true);
+        connect(controls.lead->menu(), &QMenu::triggered, this,
+                [this](QAction *) { updateMinimumGraceSteps(generator, generatorEncounters); });
     }
     controls.minPatchDistance = nullptr;
     if (searcherTab)
@@ -963,6 +978,12 @@ QGroupBox *PokeRadar::createSettings(PokeRadarControls &controls, bool searcherT
     controls.dualSlotGame->addItem(tr("Fire Red"), static_cast<int>(Game::FireRed));
     controls.dualSlotGame->addItem(tr("Leaf Green"), static_cast<int>(Game::LeafGreen));
     controls.swarm = new QCheckBox(tr("Swarm"), settings);
+    controls.blackFlute = searcherTab ? nullptr : new QCheckBox(tr("Black Flute"), settings);
+    if (controls.blackFlute != nullptr)
+    {
+        connect(controls.blackFlute, &QCheckBox::stateChanged, this,
+                [this] { updateMinimumGraceSteps(generator, generatorEncounters); });
+    }
     controls.slot = new ComboBox(settings);
     controls.patchTypes = nullptr;
     if (!searcherTab)
@@ -1004,6 +1025,10 @@ QGroupBox *PokeRadar::createSettings(PokeRadarControls &controls, bool searcherT
     layout->addWidget(controls.dualSlot, 3, 0);
     layout->addWidget(controls.dualSlotGame, 3, 1);
     layout->addWidget(controls.swarm, 3, 2);
+    if (controls.blackFlute != nullptr)
+    {
+        layout->addWidget(controls.blackFlute, 3, 3);
+    }
     layout->addWidget(controls.replacement, 4, 0);
     layout->addWidget(controls.replacement0, 4, 1);
     layout->addWidget(controls.replacement1, 4, 2);
@@ -1039,7 +1064,7 @@ QGroupBox *PokeRadar::createSettings(PokeRadarControls &controls, bool searcherT
     layout->addWidget(new QLabel(tr("Levels"), settings), levelRow, 0);
     layout->addWidget(controls.levelMin, levelRow, 1);
     layout->addWidget(controls.levelMax, levelRow, 2);
-    layout->addWidget(new QLabel(tr("Grace Steps"), settings), levelRow + 1, 0);
+    layout->addWidget(new QLabel(tr("Cooldown Steps"), settings), levelRow + 1, 0);
     layout->addWidget(controls.minimumGraceSteps, levelRow + 1, 1);
     layout->setRowStretch(levelRow + 2, 1);
 
@@ -2068,7 +2093,15 @@ void PokeRadar::updateMinimumGraceSteps(PokeRadarControls &controls, const std::
         return;
     }
 
-    const u8 rate = encounters[controls.location->currentIndex()].getRate();
+    u8 rate = encounters[controls.location->currentIndex()].getRate();
+    if (&controls == &generator && controls.lead != nullptr && isPokeRadarEncounterModifier(controls.lead->getEnum<Lead>()))
+    {
+        rate /= 2;
+    }
+    if (controls.blackFlute != nullptr && controls.blackFlute->isChecked())
+    {
+        rate /= 2;
+    }
     const u8 graceSteps = 8 - std::min<u8>(rate / 10, 8);
     controls.minimumGraceSteps->setValue(graceSteps == 0 ? 0 : graceSteps - 1);
 }
