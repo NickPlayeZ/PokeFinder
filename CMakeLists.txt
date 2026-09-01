@@ -4,7 +4,7 @@ if (APPLE AND NOT DEFINED CMAKE_OSX_ARCHITECTURES)
     set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 endif()
 
-project(PokeFinder VERSION 5.1.3)
+project(PokeFinder VERSION 5.1.4)
 
 option(TEST "Run Tests" OFF)
 option(ENABLE_SIMD "Enable SIMD" ON)
