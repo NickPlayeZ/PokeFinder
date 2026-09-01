@@ -22,8 +22,6 @@
 
 #include <Core/Global.hpp>
 #include <QWidget>
-#include <array>
-#include <vector>
 
 class AdjacentSeedsModel;
 class DateTime;
@@ -39,7 +37,7 @@ namespace Ui
 /**
  * @brief Provides settings to calibrate nearby seeds
  */
-class AdjacentSeeds : public QWidget
+class AdjacentSeeds final : public QWidget
 {
     Q_OBJECT
 signals:
@@ -98,23 +96,6 @@ private slots:
      * @brief Generates adjacent seeds from a date/time and keypresses
      */
     void generate();
-
-    /**
-     * @brief Opens IV Calculator for IV search method
-     */
-    void openIVCalculator();
-
-    /**
-     * @brief Resets IV filters to defaults
-     */
-    void resetIVs();
-
-    /**
-     * @brief Updates min/max IV values based upon calculation from IV Calculator
-     *
-     * @param ivs Possible IV ranges
-     */
-    void updateIVs(const std::array<std::vector<u8>, 6> &ivs);
 
     /**
      * @brief Updates showing profile related information

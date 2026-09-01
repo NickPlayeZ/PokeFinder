@@ -81,7 +81,7 @@ private:
      * @param spe Spe IV
      * @param staticTemplate Pokemon template
      */
-   void search(const std::array<u8, 6> &min, const std::array<u8, 6> &max, const StaticTemplate4 *staticTemplate);
+    void search(const std::array<u8, 6> &min, const std::array<u8, 6> &max, const StaticTemplate4 *staticTemplate);
 
     /**
      * @brief Searches for matching states from provided IVs

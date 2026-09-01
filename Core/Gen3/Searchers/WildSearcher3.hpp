@@ -50,7 +50,6 @@ public:
      */
     WildSearcher3(Method method, Lead lead, bool feebasTile, bool bike, Item item, const EncounterArea3 &area, const Profile3 &profile,
                   const WildStateFilter &filter);
-
     WildSearcher3(Method method, const std::vector<Lead> &leads, bool feebasTile, bool bike, Item item, const EncounterArea3 &area,
                   const Profile3 &profile, const WildStateFilter &filter);
 

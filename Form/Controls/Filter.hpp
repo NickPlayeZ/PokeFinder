@@ -69,13 +69,6 @@ public:
     ~Filter() override;
 
     /**
-     * @brief Handles when the context menu is requested.
-     *
-     * @param event Contains context menu event information
-     */
-    void contextMenuEvent(QContextMenuEvent *event) override;
-
-    /**
      * @brief Copies the values from another Filter
      *
      * @param other The Filter to copy values from
@@ -289,43 +282,8 @@ public:
      */
     u8 getWeightMin() const;
 
-protected:
-    /**
-     * @brief Shows the combo box model when clicked
-     *
-     * @param object Object that is part of triggered event
-     * @param event Contains information about the triggered event
-     *
-     * @return true Model should be shown
-     * @return false Model should not be shown
-     */
-    bool eventFilter(QObject *object, QEvent *event) override;
-
 private:
     Ui::Filter *ui;
-
-private slots:
-    /**
-     * @brief Opens IV calculator to determine IV minimum/maximum
-     */
-    void openIVCalculator() const;
-
-    /**
-     * @brief Updates min/max IV values based upon calculation from IV Calculator
-     *
-     * @param ivs Possible IV ranges
-     */
-    void updateIVs(const std::array<std::vector<u8>, 6> &ivs);
-
-    /**
-     * @brief Sets the current IVs from the clipboard
-     */
-    void setIVsFromClipBoard();
-
-    /**
-     * @brief Sets the current IVs to the clipboard
-     */
-    void setIVsToClipBoard();
 };
 
 #endif // FILTER_HPP

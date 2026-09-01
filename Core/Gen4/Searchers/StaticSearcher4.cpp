@@ -83,7 +83,6 @@ void StaticSearcher4::startSearch(const std::array<u8, 6> &min, const std::array
         activeThreads.fetch_sub(1);
     });
 }
-
 void StaticSearcher4::search(const std::array<u8, 6> &min, const std::array<u8, 6> &max, const StaticTemplate4 *staticTemplate)
 {
     for (u8 hp = min[0]; hp <= max[0]; hp++)
