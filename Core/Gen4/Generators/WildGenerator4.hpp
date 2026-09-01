@@ -109,6 +109,9 @@ private:
      */
     std::vector<WildGeneratorState4> generateHoneyTree(u32 seed, u8 index) const;
 
+    std::vector<WildGeneratorState4> generatePokeRadar(u32 seed, u8 index) const;
+
+    std::vector<WildGeneratorState4> generatePokeRadarShiny(u32 seed, u8 index) const;
 };
 
 #endif // WILDGENERATOR4_HPP

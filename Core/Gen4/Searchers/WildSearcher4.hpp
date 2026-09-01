@@ -129,6 +129,16 @@ private:
     std::vector<WildSearcherState4> searchInitialSeeds(const std::vector<WildSearcherState4> &results) const;
 
     /**
+     * @brief Searches for matching states from provided IVs via Poke Radar
+     */
+    std::vector<WildSearcherState4> searchPokeRadar(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe, u8 index) const;
+
+    /**
+     * @brief Searches for matching states from provided IVs via a shiny Poke Radar patch
+     */
+    std::vector<WildSearcherState4> searchPokeRadarShiny(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe, u8 index) const;
+
+    /**
      * @brief Searches for matching states from provided IVs via Method J
      *
      * @param hp HP IV
