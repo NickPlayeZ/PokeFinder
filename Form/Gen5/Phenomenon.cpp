@@ -51,7 +51,6 @@
 #include <QPushButton>
 #include <QSettings>
 #include <QSizePolicy>
-#include <QThread>
 #include <QTimer>
 #include <algorithm>
 
@@ -702,29 +701,12 @@ void Phenomenon::search()
     QSettings settings;
     int threads = settings.value("settings/threads").toInt();
 
-    auto *thread = QThread::create([=] { searcher->startSearch(threads, start, end); });
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    connect(ui->pushButtonCancel, &QPushButton::clicked, [searcher] { searcher->cancelSearch(); });
-
-    auto *timer = new QTimer();
-    connect(timer, &QTimer::timeout, this, [=] {
-        auto results = searcher->getResults();
-        std::erase_if(results, [=, this](const SearcherState5<WildState5> &result) {
-            const auto &state = result.getState();
-            return removeBySearcherFilters(state);
-        });
-        searcherModel->addItems(results);
-        if (showPassPower)
-        {
-            ui->tableViewSearcher->resizeColumnToContents(2);
-        }
-        ui->progressBar->setValue(searcher->getProgress());
-    });
-    connect(thread, &QThread::finished, timer, &QTimer::stop);
-    connect(thread, &QThread::finished, timer, &QTimer::deleteLater);
-    connect(timer, &QTimer::destroyed, this, [=] {
-        ui->pushButtonSearch->setEnabled(true);
+    auto *timer = new QTimer(this);
+    connect(ui->pushButtonCancel, &QPushButton::clicked, timer, [this, searcher] {
+        searcher->cancelSearch();
         ui->pushButtonCancel->setEnabled(false);
+    });
+    connect(timer, &QTimer::timeout, this, [this, searcher, timer, showPassPower] {
         auto results = searcher->getResults();
         std::erase_if(results, [=, this](const SearcherState5<WildState5> &result) {
             const auto &state = result.getState();
@@ -736,10 +718,32 @@ void Phenomenon::search()
             ui->tableViewSearcher->resizeColumnToContents(2);
         }
         ui->progressBar->setValue(searcher->getProgress());
-        delete searcher;
+
+        if (!searcher->isSearching())
+        {
+            timer->stop();
+
+            auto finalResults = searcher->getResults();
+            std::erase_if(finalResults, [=, this](const SearcherState5<WildState5> &result) {
+                const auto &state = result.getState();
+                return removeBySearcherFilters(state);
+            });
+            searcherModel->addItems(finalResults);
+            if (showPassPower)
+            {
+                ui->tableViewSearcher->resizeColumnToContents(2);
+            }
+            ui->progressBar->setValue(searcher->getProgress());
+
+            ui->pushButtonSearch->setEnabled(true);
+            ui->pushButtonCancel->setEnabled(false);
+
+            delete searcher;
+            timer->deleteLater();
+        }
     });
 
-    thread->start();
+    searcher->startSearch(threads, start, end);
     timer->start(1000);
 }
 
