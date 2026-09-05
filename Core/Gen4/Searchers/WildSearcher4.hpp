@@ -56,7 +56,7 @@ public:
                   bool unownRadio, u8 happiness, const EncounterArea4 &area, const Profile4 &profile, const WildStateFilter &filter);
 
     WildSearcher4(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 maxDelay, Method method, Lead lead, bool feebasTile, bool shiny,
-                  bool unownRadio, u8 happiness, bool searchStepEncounter, u8 stepOptions, const EncounterArea4 &area,
+                  bool unownRadio, u8 happiness, bool searchStepEncounter, u16 stepOptions, const EncounterArea4 &area,
                   const Profile4 &profile, const WildStateFilter &filter);
 
     WildSearcher4(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 maxDelay, Method method, const std::vector<Lead> &leads,
@@ -64,7 +64,7 @@ public:
                   const WildStateFilter &filter);
 
     WildSearcher4(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 maxDelay, Method method, const std::vector<Lead> &leads,
-                  bool feebasTile, bool shiny, bool unownRadio, u8 happiness, bool searchStepEncounter, u8 stepOptions,
+                  bool feebasTile, bool shiny, bool unownRadio, u8 happiness, bool searchStepEncounter, u16 stepOptions,
                   const EncounterArea4 &area, const Profile4 &profile, const WildStateFilter &filter);
 
     /**
@@ -91,7 +91,7 @@ private:
     bool searchStepEncounter;
     bool shiny;
     bool unownRadio;
-    u8 stepOptions;
+    u16 stepOptions;
     ModifiedSlots modifiedSlots;
     std::vector<Lead> leads;
 

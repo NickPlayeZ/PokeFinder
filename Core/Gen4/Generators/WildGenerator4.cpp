@@ -83,9 +83,10 @@ static bool isStepModifier(Lead lead)
     return lead == Lead::ArenaTrap;
 }
 
-static bool getStepEncounter(u8 movementRatio, u8 encounterRatio, u16 encounterRate, Lead lead, bool whiteFlute, bool fastMovement)
+static bool getStepEncounter(u8 movementRatio, u8 encounterRatio, u16 encounterRate, Lead lead, bool whiteFlute, bool fastMovement,
+                             s8 dateModifier)
 {
-    u16 movementRate = fastMovement ? 70 : 40;
+    int movementRate = (fastMovement ? 70 : 40) + dateModifier;
 
     if (isStepModifier(lead))
     {
@@ -327,8 +328,8 @@ static u16 getRockSmashItem(u8 location, Game version, Lead lead, bool rockSmash
 }
 
 WildGenerator4::WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, bool feebasTile, bool shiny,
-                               bool unownRadio, u8 happiness, bool searchStepEncounter, bool whiteFlute, bool fastMovement, u8 movement,
-                               u8 radio, bool rockSmashPokemon, u8 leadLevel, const EncounterArea4 &area, const Profile4 &profile,
+                               bool unownRadio, u8 happiness, bool searchStepEncounter, bool whiteFlute, bool fastMovement, s8 dateModifier,
+                               u8 movement, u8 radio, bool rockSmashPokemon, u8 leadLevel, const EncounterArea4 &area, const Profile4 &profile,
                                const WildStateFilter &filter) :
     WildGenerator(initialAdvances, maxAdvances, offset, method, lead, area, profile, filter),
     feebasTile(feebasTile),
@@ -338,6 +339,7 @@ WildGenerator4::WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset,
     whiteFlute(whiteFlute),
     fastMovement(fastMovement),
     rockSmashPokemon(rockSmashPokemon),
+    dateModifier(dateModifier),
     movement(movement),
     radio(radio),
     happiness(happiness),
@@ -348,7 +350,7 @@ WildGenerator4::WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset,
 WildGenerator4::WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, bool feebasTile, bool shiny,
                                bool unownRadio, u8 happiness, const EncounterArea4 &area, const Profile4 &profile,
                                const WildStateFilter &filter) :
-    WildGenerator4(initialAdvances, maxAdvances, offset, method, lead, feebasTile, shiny, unownRadio, happiness, false, false, false, 0, 0,
+    WildGenerator4(initialAdvances, maxAdvances, offset, method, lead, feebasTile, shiny, unownRadio, happiness, false, false, false, 0, 0, 0,
                    false, 0, area, profile, filter)
 {
 }
@@ -398,7 +400,7 @@ std::vector<WildGeneratorState4> WildGenerator4::generateMethodJ(u32 seed) const
             u8 graceRatio = static_cast<u8>((movementRNG.getSeed() >> 16) / 0x290);
             u8 movementRatio = movementRNG.nextUShort() / 0x290;
             u8 encounterRatio = encounterRNG.nextUShort() / 0x290;
-            stepEncounter = getStepEncounter(movementRatio, encounterRatio, area.getRate(), lead, whiteFlute, fastMovement);
+            stepEncounter = getStepEncounter(movementRatio, encounterRatio, area.getRate(), lead, whiteFlute, fastMovement, dateModifier);
             movements = getStepMovements(graceRatio, area.getRate(), lead, whiteFlute);
             valid = stepEncounter;
         }

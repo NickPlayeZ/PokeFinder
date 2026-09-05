@@ -45,6 +45,7 @@ public:
      * @param shiny Unused legacy flag
      * @param unownRadio Whether the radio station gives undiscovered Unowns more frequently
      * @param happiness Encounter rate modifier for fishing in HGSS
+     * @param dateModifier Date-based DPPt movement rate modifier
      * @param rockSmashPokemon Whether the walking Pokemon uses Rock Smash in HGSS
      * @param leadLevel Level of the lead pokemon for Keen Eye rock smash suppression
      * @param area Wild pokemon info
@@ -52,7 +53,7 @@ public:
      * @param filter State filter
      */
     WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, bool feebasTile, bool shiny, bool unownRadio,
-                   u8 happiness, bool searchStepEncounter, bool whiteFlute, bool fastMovement, u8 movement, u8 radio,
+                   u8 happiness, bool searchStepEncounter, bool whiteFlute, bool fastMovement, s8 dateModifier, u8 movement, u8 radio,
                    bool rockSmashPokemon, u8 leadLevel, const EncounterArea4 &area, const Profile4 &profile, const WildStateFilter &filter);
 
     WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, bool feebasTile, bool shiny, bool unownRadio,
@@ -76,6 +77,7 @@ private:
     bool whiteFlute;
     bool fastMovement;
     bool rockSmashPokemon;
+    s8 dateModifier;
     u8 movement;
     u8 radio;
     u8 happiness;

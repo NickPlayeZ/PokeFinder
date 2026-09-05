@@ -61,7 +61,7 @@ enum Gen4Movement : u8
     Surfing
 };
 
-enum HGSSSearcherStepOption : u8
+enum HGSSSearcherStepOption : u16
 {
     StepWhiteFlute = 1 << 0,
     StepPokemonMarch = 1 << 1,
@@ -70,7 +70,9 @@ enum HGSSSearcherStepOption : u8
     StepRunning = 1 << 4,
     StepWalkingLongGrass = 1 << 5,
     StepRunningLongGrass = 1 << 6,
-    StepPokemonLullaby = 1 << 7
+    StepPokemonLullaby = 1 << 7,
+    StepDateModifier5 = 1 << 8,
+    StepDateModifier10 = 1 << 9
 };
 
 static bool hasLongGrass(Game version, Encounter encounter, u8 location)
@@ -149,6 +151,10 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->labelGeneratorMovement->setEnabled(false);
     ui->comboBoxGeneratorMovement->setVisible(false);
     ui->comboBoxGeneratorMovement->setEnabled(false);
+    ui->labelGeneratorDateModifier->setVisible(false);
+    ui->labelGeneratorDateModifier->setEnabled(false);
+    ui->comboBoxGeneratorDateModifier->setVisible(false);
+    ui->comboBoxGeneratorDateModifier->setEnabled(false);
     ui->checkBoxGeneratorRockSmashPokemon->setVisible(false);
     ui->labelGeneratorLeadLevel->setVisible(false);
     ui->spinBoxGeneratorLeadLevel->setVisible(false);
@@ -251,6 +257,7 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->comboBoxSearcherLocation->enableAutoComplete();
 
     ui->comboBoxGeneratorHappiness->setup({ 0, 20, 30, 40, 50 });
+    ui->comboBoxGeneratorDateModifier->setup({ -10, -5, 0, 5, 10 });
     ui->comboBoxSearcherHappiness->setup({ 0, 20, 30, 40, 50 });
 
     auto *seedToTime = new QAction(tr("Generate times for seed"), ui->tableViewSearcher);
@@ -331,6 +338,8 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
         ui->checkBoxGeneratorWhiteFlute->setEnabled(state == Qt::Checked);
         ui->labelGeneratorMovement->setEnabled(state == Qt::Checked);
         ui->comboBoxGeneratorMovement->setEnabled(state == Qt::Checked);
+        ui->labelGeneratorDateModifier->setEnabled(state == Qt::Checked);
+        ui->comboBoxGeneratorDateModifier->setEnabled(state == Qt::Checked);
         if (state != Qt::Checked)
         {
             ui->checkBoxGeneratorWhiteFlute->setChecked(false);
@@ -554,7 +563,7 @@ void Wild4::updateSearcherStepOptions()
 
     checkListSearcherStepOptions->clear();
     std::vector<bool> checks;
-    auto addOption = [&](const QString &text, u8 data, bool defaultChecked) {
+    auto addOption = [&](const QString &text, u16 data, bool defaultChecked) {
         checkListSearcherStepOptions->addItem(text, data);
         bool existed = std::ranges::contains(previousOptions, data);
         bool checked = hasPrevious && existed ? std::ranges::contains(previous, data) : defaultChecked;
@@ -569,6 +578,11 @@ void Wild4::updateSearcherStepOptions()
     {
         addOption(tr("Pokemon March"), StepPokemonMarch, false);
         addOption(tr("Pokemon Lullaby"), StepPokemonLullaby, false);
+    }
+    else
+    {
+        addOption(tr("Date Modifier 5%"), StepDateModifier5, false);
+        addOption(tr("Date Modifier 10%"), StepDateModifier10, false);
     }
     if (!surf && (bikeOnly || !bikeRestricted))
     {
@@ -617,12 +631,12 @@ void Wild4::updateSearcherStepOptionsText()
     }
 }
 
-u8 Wild4::getSearcherStepOptions() const
+u16 Wild4::getSearcherStepOptions() const
 {
-    u8 options = 0;
+    u16 options = 0;
     for (u16 data : checkListSearcherStepOptions->getExplicitCheckedData())
     {
-        options |= static_cast<u8>(data);
+        options |= data;
     }
 
     auto encounter = ui->comboBoxSearcherEncounter->getEnum<Encounter>();
@@ -704,13 +718,14 @@ void Wild4::generate()
     bool whiteFlute = ui->checkBoxGeneratorWhiteFlute->isChecked();
     u8 movement = ui->comboBoxGeneratorMovement->getCurrentUChar();
     bool fastMovement = movement == Biking || movement == WalkingLongGrass || movement == RunningLongGrass;
+    s8 dateModifier = static_cast<s8>(ui->comboBoxGeneratorDateModifier->getCurrentInt());
     u8 radio = ui->checkBoxGeneratorRadio->isChecked() ? ui->comboBoxGeneratorRadio->currentIndex() + 1 : 0;
     bool rockSmashPokemon = ui->checkBoxGeneratorRockSmashPokemon->isChecked();
     u8 leadLevel = lead == Lead::KeenEye || lead == Lead::Intimidate ? ui->spinBoxGeneratorLeadLevel->value() : 0;
 
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
     WildGenerator4 generator(initialAdvances, maxAdvances, offset, method, lead, feebasTile, chained, unownRadio, happiness,
-                             searchStepEncounter, whiteFlute, fastMovement, movement, radio, rockSmashPokemon, leadLevel,
+                             searchStepEncounter, whiteFlute, fastMovement, dateModifier, movement, radio, rockSmashPokemon, leadLevel,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
 
     auto states = generator.generate(seed, fixedSlot);
@@ -737,6 +752,16 @@ void Wild4::generatorEncounterIndexChanged(int index)
         bool swarm = encounter == Encounter::Grass || encounter == Encounter::Surfing || encounter == Encounter::OldRod
             || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod;
         bool honey = encounter == Encounter::HoneyTree;
+
+        ui->gridLayout_3->removeWidget(ui->checkBoxGeneratorSwarm);
+        if (hgss)
+        {
+            ui->gridLayout_3->addWidget(ui->checkBoxGeneratorSwarm, 6, 0, 1, 2);
+        }
+        else
+        {
+            ui->gridLayout_3->addWidget(ui->checkBoxGeneratorSwarm, 5, 3);
+        }
 
         ui->labelGeneratorHappiness->setVisible(hgss && fish);
         ui->comboBoxGeneratorHappiness->setVisible(hgss && fish);
@@ -768,6 +793,12 @@ void Wild4::generatorEncounterIndexChanged(int index)
         ui->comboBoxGeneratorMovement->setVisible(stepEncounter && encounter != Encounter::Surfing);
         ui->labelGeneratorMovement->setEnabled(ui->checkBoxGeneratorStepEncounter->isChecked() && ui->labelGeneratorMovement->isVisible());
         ui->comboBoxGeneratorMovement->setEnabled(ui->checkBoxGeneratorStepEncounter->isChecked() && ui->comboBoxGeneratorMovement->isVisible());
+        ui->labelGeneratorDateModifier->setVisible(!hgss && stepEncounter);
+        ui->comboBoxGeneratorDateModifier->setVisible(!hgss && stepEncounter);
+        ui->labelGeneratorDateModifier->setEnabled(ui->checkBoxGeneratorStepEncounter->isChecked()
+                                                   && ui->labelGeneratorDateModifier->isVisible());
+        ui->comboBoxGeneratorDateModifier->setEnabled(ui->checkBoxGeneratorStepEncounter->isChecked()
+                                                      && ui->comboBoxGeneratorDateModifier->isVisible());
         if (!ui->checkBoxGeneratorStepEncounter->isVisible())
         {
             ui->checkBoxGeneratorStepEncounter->setChecked(false);
@@ -775,6 +806,8 @@ void Wild4::generatorEncounterIndexChanged(int index)
             ui->checkBoxGeneratorWhiteFlute->setEnabled(false);
             ui->labelGeneratorMovement->setEnabled(false);
             ui->comboBoxGeneratorMovement->setEnabled(false);
+            ui->labelGeneratorDateModifier->setEnabled(false);
+            ui->comboBoxGeneratorDateModifier->setEnabled(false);
         }
 
         ui->labelGeneratorTime->setVisible((!hgss && grass) || hgss);
@@ -1063,7 +1096,7 @@ void Wild4::search()
     bool unownRadio = ui->checkBoxSearcherRadio->isChecked() && ui->comboBoxSearcherRadio->currentIndex() == 2;
     u8 happiness = ui->comboBoxSearcherHappiness->getCurrentUChar();
     bool searchStepEncounter = ui->checkBoxSearcherStepEncounter->isChecked();
-    u8 stepOptions = searchStepEncounter ? getSearcherStepOptions() : 0;
+    u16 stepOptions = searchStepEncounter ? getSearcherStepOptions() : 0;
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
     auto *searcher = new WildSearcher4(minAdvance, maxAdvance, minDelay, maxDelay, method, leads, feebas, shiny, unownRadio, happiness,
@@ -1148,10 +1181,9 @@ void Wild4::searcherEncounterIndexChanged(int index)
         ui->labelSearcherTime->setVisible((!hgss && grass) || hgss);
         ui->comboBoxSearcherTime->setVisible((!hgss && grass) || hgss);
 
-        bool dpptSurf = !hgss && encounter == Encounter::Surfing;
         ui->checkBoxSearcherStepEncounter->setVisible(stepEncounter);
-        ui->checkBoxSearcherWhiteFlute->setVisible(stepEncounter && dpptSurf);
-        checkListSearcherStepOptions->setVisible(stepEncounter && !dpptSurf);
+        ui->checkBoxSearcherWhiteFlute->setVisible(false);
+        checkListSearcherStepOptions->setVisible(stepEncounter);
         ui->checkBoxSearcherWhiteFlute->setEnabled(ui->checkBoxSearcherStepEncounter->isChecked() && ui->checkBoxSearcherWhiteFlute->isVisible());
         checkListSearcherStepOptions->setEnabled(ui->checkBoxSearcherStepEncounter->isChecked() && checkListSearcherStepOptions->isVisible());
         if (!ui->checkBoxSearcherWhiteFlute->isVisible())
