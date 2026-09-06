@@ -4450,65 +4450,65 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     <name>IVFilter</name>
     <message>
         <source>HP</source>
-        <translation type="unfinished">PS</translation>
+        <translation>PS</translation>
     </message>
     <message>
         <source>Atk</source>
-        <translation type="unfinished">Att</translation>
+        <translation>Att</translation>
     </message>
     <message>
         <source>Def</source>
-        <translation type="unfinished">Dif</translation>
+        <translation>Dif</translation>
     </message>
     <message>
         <source>SpA</source>
-        <translation type="unfinished">AttSp</translation>
+        <translation>AttSp</translation>
     </message>
     <message>
         <source>SpD</source>
-        <translation type="unfinished">DifSp</translation>
+        <translation>DifSp</translation>
     </message>
     <message>
         <source>Spe</source>
-        <translation type="unfinished">Vel</translation>
+        <translation>Vel</translation>
     </message>
     <message>
         <source>Show Stats</source>
-        <translation type="unfinished">Mostra Statistiche</translation>
+        <translation>Mostra Statistiche</translation>
     </message>
     <message>
         <source>IV Calculator</source>
-        <translation type="unfinished">Calcolatore IV</translation>
+        <translation>Calcolatore IV</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="72"/>
         <source>Click to clear</source>
-        <translation type="unfinished">Clicca per pulire</translation>
+        <translation>Clicca per pulire</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="72"/>
         <source>Click holding ctrl to set 31</source>
-        <translation type="unfinished">Clicca tenendo premuto ctrl per impostare 31</translation>
+        <translation>Clicca tenendo premuto ctrl per impostare 31</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="72"/>
         <source>Click holding alt to set 30-31</source>
-        <translation type="unfinished">Clicca tenendo premuto alt per impostare 30-31</translation>
+        <translation>Clicca tenendo premuto alt per impostare 30-31</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="73"/>
         <source>Click holding ctrl+alt to set 0</source>
-        <translation type="unfinished">Clicca tenendo premuto ctrl+alt per impostare 0</translation>
+        <translation>Clicca tenendo premuto ctrl+alt per impostare 0</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="90"/>
         <source>Copy IVs to clipboard</source>
-        <translation type="unfinished">Copia le IVs negli appunti</translation>
+        <translation>Copia le IVs negli appunti</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="91"/>
         <source>Paste IVs from clipboard</source>
-        <translation type="unfinished">Incolla le IVs dagli appunti</translation>
+        <translation>Incolla le IVs dagli appunti</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="191"/>
@@ -4518,47 +4518,47 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <location filename="../Controls/IVFilter.cpp" line="219"/>
         <location filename="../Controls/IVFilter.cpp" line="226"/>
         <source>Invalid filter settings</source>
-        <translation type="unfinished">Impostazioni del filtro non valide</translation>
+        <translation>Impostazioni del filtro non valide</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="191"/>
         <source>HP minimum is greater than maximum</source>
-        <translation type="unfinished">I PS minimi sono maggiori dei massimi</translation>
+        <translation>I PS minimi sono maggiori dei massimi</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="198"/>
         <source>Atk minimum is greater than maximum</source>
-        <translation type="unfinished">L&apos;Att minimo è maggiore del massimo</translation>
+        <translation>L&apos;Att minimo è maggiore del massimo</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="205"/>
         <source>Def minimum is greater than maximum</source>
-        <translation type="unfinished">La Dif minima è maggiore della massima</translation>
+        <translation>La Dif minima è maggiore della massima</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="212"/>
         <source>SpA minimum is greater than maximum</source>
-        <translation type="unfinished">L&apos;AttSp minimo è maggiore del massimo</translation>
+        <translation>L&apos;AttSp minimo è maggiore del massimo</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="219"/>
         <source>SpD minimum is greater than maximum</source>
-        <translation type="unfinished">La DifSp minima è maggiore della massima</translation>
+        <translation>La DifSp minima è maggiore della massima</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="226"/>
         <source>Spe minimum is greater than maximum</source>
-        <translation type="unfinished">La Vel minima è maggiore della massima</translation>
+        <translation>La Vel minima è maggiore della massima</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="414"/>
         <source>Invalid Format</source>
-        <translation type="unfinished">Formato non valido</translation>
+        <translation>Formato non valido</translation>
     </message>
     <message>
         <location filename="../Controls/IVFilter.cpp" line="414"/>
         <source>The clipboard text did not match the expected format.</source>
-        <translation type="unfinished">Il testo negli appunti non corrisponde al formato previsto.</translation>
+        <translation>Il testo negli appunti non corrisponde al formato previsto.</translation>
     </message>
 </context>
 <context>
