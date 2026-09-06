@@ -20,6 +20,8 @@
 #ifndef STACKVECTOR_HPP
 #define STACKVECTOR_HPP
 
+#include <cstddef>
+
 // Stand-in until std::inplace_vector
 template <typename T, size_t N>
 class StackVector
