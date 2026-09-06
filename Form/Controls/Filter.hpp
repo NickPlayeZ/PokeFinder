@@ -21,6 +21,7 @@
 #define FILTER_HPP
 
 #include <Core/Global.hpp>
+#include <Core/Util/StackVector.hpp>
 #include <QWidget>
 
 enum class Controls : u16;
@@ -99,7 +100,7 @@ public:
      *
      * @return Array of encounter slots
      */
-    std::array<bool, 12> getEncounterSlots() const;
+    StackVector<bool, 12> getEncounterSlots() const;
 
     /**
      * @brief Constructs filter from the UI settings

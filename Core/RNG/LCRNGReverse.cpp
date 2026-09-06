@@ -33,7 +33,7 @@
  *
  * @return Array of origin seeds (Won't be higher than 6)
  */
-static RecoverySeeds<6> recoverPokeRNGIVMethod12(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe)
+static StackVector<u32, 6> recoverPokeRNGIVMethod12(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe)
 {
     constexpr u32 LAG0 = 0x67D3;
     constexpr u32 LAG1 = 0xC907;
@@ -48,7 +48,7 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod12(u8 hp, u8 atk, u8 def, u8 spa, 
     u32 mi = lo + LAG0;
     u32 up = ((tmp + UPPER) >> 15) * LAG0;
 
-    RecoverySeeds<6> seeds;
+    StackVector<u32, 6> seeds;
     for (u32 lbits = lo % LAG1; lbits < 0x10000; lbits += LAG1)
     {
         u32 seed = (first | lbits);
@@ -56,8 +56,8 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod12(u8 hp, u8 atk, u8 def, u8 spa, 
         PokeRNG rng(seed);
         if ((rng.next() & 0x7fff0000) == second)
         {
-            seeds[seeds.count++] = seed;
-            seeds[seeds.count++] = seed ^ 0x80000000;
+            seeds.push_back(seed);
+            seeds.push_back(seed ^ 0x80000000);
         }
     }
 
@@ -68,8 +68,8 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod12(u8 hp, u8 atk, u8 def, u8 spa, 
         PokeRNG rng(seed);
         if ((rng.next() & 0x7fff0000) == second)
         {
-            seeds[seeds.count++] = seed;
-            seeds[seeds.count++] = seed ^ 0x80000000;
+            seeds.push_back(seed);
+            seeds.push_back(seed ^ 0x80000000);
         }
     }
 
@@ -82,8 +82,8 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod12(u8 hp, u8 atk, u8 def, u8 spa, 
             PokeRNG rng(seed);
             if ((rng.next() & 0x7fff0000) == second)
             {
-                seeds[seeds.count++] = seed;
-                seeds[seeds.count++] = seed ^ 0x80000000;
+                seeds.push_back(seed);
+                seeds.push_back(seed ^ 0x80000000);
             }
         }
     }
@@ -104,7 +104,7 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod12(u8 hp, u8 atk, u8 def, u8 spa, 
  *
  * @return Array of origin seeds (Won't be higher than 6)
  */
-static RecoverySeeds<6> recoverPokeRNGIVMethod4(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe)
+static StackVector<u32, 6> recoverPokeRNGIVMethod4(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe)
 {
     constexpr u32 LAG0 = 0x6C31;
     constexpr u32 LAG1 = 0x2E90;
@@ -119,7 +119,7 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod4(u8 hp, u8 atk, u8 def, u8 spa, u
     u32 lo = (tmp + LOWER) >> 15;
     u32 up = (tmp + UPPER) >> 15;
 
-    RecoverySeeds<6> seeds;
+    StackVector<u32, 6> seeds;
     for (u32 lbits = (lo * LAG1) % LAG0; lbits < 0x10000; lbits += LAG0)
     {
         u32 seed = second | lbits;
@@ -127,8 +127,8 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod4(u8 hp, u8 atk, u8 def, u8 spa, u
         PokeRNGR rng(seed, 2);
         if ((rng.getSeed() & 0x7fff0000) == first)
         {
-            seeds[seeds.count++] = rng.getSeed();
-            seeds[seeds.count++] = rng.getSeed() ^ 0x80000000;
+            seeds.push_back(rng.getSeed());
+            seeds.push_back(rng.getSeed() ^ 0x80000000);
         }
     }
 
@@ -141,8 +141,8 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod4(u8 hp, u8 atk, u8 def, u8 spa, u
             PokeRNGR rng(seed, 2);
             if ((rng.getSeed() & 0x7fff0000) == first)
             {
-                seeds[seeds.count++] = rng.getSeed();
-                seeds[seeds.count++] = rng.getSeed() ^ 0x80000000;
+                seeds.push_back(rng.getSeed());
+                seeds.push_back(rng.getSeed() ^ 0x80000000);
             }
         }
     }
@@ -152,7 +152,7 @@ static RecoverySeeds<6> recoverPokeRNGIVMethod4(u8 hp, u8 atk, u8 def, u8 spa, u
 
 namespace LCRNGReverse
 {
-    RecoverySeeds<12> recoverChannelIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe)
+    StackVector<u32, 12> recoverChannelIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe)
     {
         // clang-format off
 
@@ -196,7 +196,7 @@ namespace LCRNGReverse
         };
         // clang-format on
 
-        RecoverySeeds<12> seeds;
+        StackVector<u32, 12> seeds;
         for (u32 x5 = min[5]; x5 != max[5]; x5 -= R[5])
         {
             for (u32 x4 = min[4]; x4 != max[4]; x4 += R[4])
@@ -241,7 +241,7 @@ namespace LCRNGReverse
                                     continue;
                                 }
 
-                                seeds[seeds.count++] = seed;
+                                seeds.push_back(seed);
                             }
                         }
                     }
@@ -252,7 +252,7 @@ namespace LCRNGReverse
         return seeds;
     }
 
-    RecoverySeeds<6> recoverPokeRNGIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe, Method method)
+    StackVector<u32, 6> recoverPokeRNGIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe, Method method)
     {
         if (method == Method::Method4)
         {
@@ -261,7 +261,7 @@ namespace LCRNGReverse
         return recoverPokeRNGIVMethod12(hp, atk, def, spa, spd, spe);
     }
 
-    RecoverySeeds<3> recoverPokeRNGPID(u32 pid)
+    StackVector<u32, 3> recoverPokeRNGPID(u32 pid)
     {
         constexpr u32 LAG0 = 0x7ED7;
         constexpr u32 LAG1 = 0xD33;
@@ -275,7 +275,7 @@ namespace LCRNGReverse
         u32 lo = (tmp + LOWER) >> 16;
         u32 up = (tmp + UPPER) >> 16;
 
-        RecoverySeeds<3> seeds;
+        StackVector<u32, 3> seeds;
         if (lo == up)
         {
             for (u32 lbits = (lo * LAG1) % LAG0; lbits < 0x10000; lbits += LAG0)
@@ -285,7 +285,7 @@ namespace LCRNGReverse
                 PokeRNGR rng(seed);
                 if ((rng.next() & 0xffff0000) == first)
                 {
-                    seeds[seeds.count++] = rng.getSeed();
+                    seeds.push_back(rng.getSeed());
                 }
             }
         }
@@ -293,7 +293,7 @@ namespace LCRNGReverse
         return seeds;
     }
 
-    RecoverySeeds<6> recoverXDRNGIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe)
+    StackVector<u32, 6> recoverXDRNGIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe)
     {
         constexpr u32 LAG0 = 0x44C5;
         constexpr u32 LAG1 = 0xE8D1;
@@ -308,7 +308,7 @@ namespace LCRNGReverse
         u32 mi = lo + LAG0;
         u32 up = ((tmp + UPPER) >> 15) * LAG0;
 
-        RecoverySeeds<6> seeds;
+        StackVector<u32, 6> seeds;
         for (u32 lbits = lo % LAG1; lbits < 0x10000; lbits += LAG1)
         {
             u32 seed = (second | lbits);
@@ -316,8 +316,8 @@ namespace LCRNGReverse
             XDRNGR rng(seed);
             if ((rng.next() & 0x7fff0000) == first)
             {
-                seeds[seeds.count++] = rng.getSeed();
-                seeds[seeds.count++] = rng.getSeed() ^ 0x80000000;
+                seeds.push_back(rng.getSeed());
+                seeds.push_back(rng.getSeed() ^ 0x80000000);
             }
         }
 
@@ -328,8 +328,8 @@ namespace LCRNGReverse
             XDRNGR rng(seed);
             if ((rng.next() & 0x7fff0000) == first)
             {
-                seeds[seeds.count++] = rng.getSeed();
-                seeds[seeds.count++] = rng.getSeed() ^ 0x80000000;
+                seeds.push_back(rng.getSeed());
+                seeds.push_back(rng.getSeed() ^ 0x80000000);
             }
         }
 
@@ -342,8 +342,8 @@ namespace LCRNGReverse
                 XDRNGR rng(seed);
                 if ((rng.next() & 0x7fff0000) == first)
                 {
-                    seeds[seeds.count++] = rng.getSeed();
-                    seeds[seeds.count++] = rng.getSeed() ^ 0x80000000;
+                    seeds.push_back(rng.getSeed());
+                    seeds.push_back(rng.getSeed() ^ 0x80000000);
                 }
             }
         }
@@ -351,7 +351,7 @@ namespace LCRNGReverse
         return seeds;
     }
 
-    RecoverySeeds<2> recoverXDRNGPID(u32 pid)
+    StackVector<u32, 2> recoverXDRNGPID(u32 pid)
     {
         constexpr u32 LAG0 = 0xE8D1;
         constexpr u32 LAG1 = 0x5F47;
@@ -365,7 +365,7 @@ namespace LCRNGReverse
         u32 lo = (tmp + LOWER) >> 16;
         u32 up = (tmp + UPPER) >> 16;
 
-        RecoverySeeds<2> seeds;
+        StackVector<u32, 2> seeds;
         for (u32 lbits = (lo * LAG1) % LAG0; lbits < 0x10000; lbits += LAG0)
         {
             u32 seed = second | lbits;
@@ -373,7 +373,7 @@ namespace LCRNGReverse
             XDRNGR rng(seed);
             if ((rng.next() & 0xffff0000) == first)
             {
-                seeds[seeds.count++] = rng.getSeed();
+                seeds.push_back(rng.getSeed());
             }
         }
 
@@ -386,7 +386,7 @@ namespace LCRNGReverse
                 XDRNGR rng(seed);
                 if ((rng.next() & 0xffff0000) == first)
                 {
-                    seeds[seeds.count++] = rng.getSeed();
+                    seeds.push_back(rng.getSeed());
                 }
             }
         }

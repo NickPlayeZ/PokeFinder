@@ -90,7 +90,7 @@ void WildSearcher3Test::search()
     std::array<bool, 16> powers;
     powers.fill(true);
 
-    std::array<bool, 12> encounterSlots;
+    StackVector<bool, 12> encounterSlots;
     encounterSlots.fill(true);
 
     Profile3 profile("-", version, 12345, 54321, false);

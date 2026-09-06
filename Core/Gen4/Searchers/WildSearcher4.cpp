@@ -202,11 +202,11 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
         || area.getEncounter() == Encounter::SuperRod;
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
+        PokeRNGR rng(origin);
 
-        PokeRNG forward(seeds[i], 1);
+        PokeRNG forward(origin, 1);
         u8 itemRand = forward.nextUShort(100);
         u8 unownForm = area.unownForm(forward.nextUShort());
 
@@ -598,11 +598,11 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
         || area.getEncounter() == Encounter::GoodRod || area.getEncounter() == Encounter::SuperRod;
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
+        PokeRNGR rng(origin);
 
-        PokeRNG forward(seeds[i], 1);
+        PokeRNG forward(origin, 1);
         u8 itemRand = forward.nextUShort(100);
 
         u8 form = 0;
@@ -890,10 +890,10 @@ std::vector<WildSearcherState4> WildSearcher4::searchHoneyTree(u8 hp, u8 atk, u8
     }
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 seed:seeds)
     {
-        PokeRNGR rng(seeds[i]);
-        u16 item = getItem((PokeRNG(seeds[i]).advance(2) >> 16) % 100, lead, info);
+        PokeRNGR rng(seed);
+        u16 item = getItem((PokeRNG(seed).advance(2) >> 16) % 100, lead, info);
 
         if (cuteCharm)
         {
@@ -1015,10 +1015,10 @@ std::vector<WildSearcherState4> WildSearcher4::searchPokeRadar(u8 hp, u8 atk, u8
     }
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
-        u16 item = getItem((PokeRNG(seeds[i]).advance(2) >> 16) % 100, lead, info);
+        PokeRNGR rng(origin);
+        u16 item = getItem((PokeRNG(origin).advance(2) >> 16) % 100, lead, info);
 
         if (cuteCharm)
         {
@@ -1125,10 +1125,10 @@ std::vector<WildSearcherState4> WildSearcher4::searchPokeRadarShiny(u8 hp, u8 at
     };
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
-        u16 item = getItem((PokeRNG(seeds[i]).advance(2) >> 16) % 100, lead, info);
+        PokeRNGR rng(origin);
+        u16 item = getItem((PokeRNG(origin).advance(2) >> 16) % 100, lead, info);
 
         auto shinyPID = [this](PokeRNGR &rng) {
             u16 low = 0;

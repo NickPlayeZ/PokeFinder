@@ -312,6 +312,7 @@ add_library(PokeFinderCore STATIC
     Util/IVToPIDCalculator.hpp
     Util/Nature.cpp
     Util/Nature.hpp
+    Util/StackVector.hpp
     Util/Translator.cpp
     Util/Translator.hpp
     Util/Utilities.cpp

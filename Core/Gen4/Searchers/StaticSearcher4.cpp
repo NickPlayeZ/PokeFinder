@@ -150,9 +150,9 @@ std::vector<SearcherState4> StaticSearcher4::searchMethod1(u8 hp, u8 atk, u8 def
     const PersonalInfo *info = staticTemplate->getInfo();
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
+        PokeRNGR rng(origin);
 
         u32 pid;
         if (staticTemplate->getShiny() == Shiny::Always)
@@ -208,9 +208,9 @@ std::vector<SearcherState4> StaticSearcher4::searchMethodJ(u8 hp, u8 atk, u8 def
     const PersonalInfo *info = staticTemplate->getInfo();
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
+        PokeRNGR rng(origin);
         if (lead == Lead::CuteCharmF || lead == Lead::CuteCharmM)
         {
             u8 nature = rng.nextUShort<false>(25);
@@ -304,9 +304,9 @@ std::vector<SearcherState4> StaticSearcher4::searchMethodK(u8 hp, u8 atk, u8 def
     const PersonalInfo *info = staticTemplate->getInfo();
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
+        PokeRNGR rng(origin);
         if (lead == Lead::CuteCharmF || lead == Lead::CuteCharmM)
         {
             u8 nature = rng.nextUShort(25);
