@@ -139,8 +139,8 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     connect(ui->comboBoxSearcherPokemon, &QComboBox::currentIndexChanged, this, &Wild5::searcherPokemonIndexChanged);
     connect(ui->comboBoxGeneratorSeason, &QComboBox::currentIndexChanged, this, &Wild5::generatorSeasonIndexChanged);
     connect(ui->comboBoxSearcherSeason, &QComboBox::currentIndexChanged, this, &Wild5::searcherSeasonIndexChanged);
-    connect(ui->checkBoxGeneratorSwarm, &QCheckBox::checkStateChanged, this, [=] { generatorEncounterIndexChanged(0); });
-    connect(ui->checkBoxSearcherSwarm, &QCheckBox::checkStateChanged, this, [=] { searcherEncounterIndexChanged(0); });
+    connect(ui->checkBoxGeneratorSwarm, &QCheckBox::checkStateChanged, this, [this] { generatorEncounterIndexChanged(0); });
+    connect(ui->checkBoxSearcherSwarm, &QCheckBox::checkStateChanged, this, [this] { searcherEncounterIndexChanged(0); });
     connect(ui->filterGenerator, &Filter::showStatsChanged, generatorModel, &WildGeneratorModel5::setShowStats);
     connect(ui->filterSearcher, &Filter::showStatsChanged, searcherModel, &WildSearcherModel5::setShowStats);
     connect(ui->filterSearcher, &Filter::ivsChanged, this, &Wild5::searcherFastSearchChanged);
