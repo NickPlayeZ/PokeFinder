@@ -91,44 +91,12 @@ static_assert(sizeof(WildEncounterGrotto) == 138);
 
 struct SwarmEncounter
 {
-    Game version;
     u8 location;
     u16 specie;
-    u8 minLevel;
     u8 maxLevel;
+    u8 minLevel;
 };
-
-constexpr SwarmEncounter swarms[] = {
-    { Game::White, 101, 46, 15, 55 }, { Game::BW, 106, 56, 15, 55 },    { Game::BW, 77, 83, 15, 55 },
-    { Game::BW, 102, 84, 15, 55 },    { Game::BW, 109, 102, 15, 55 },   { Game::BW, 88, 161, 15, 55 },
-    { Game::BW, 104, 193, 15, 55 },   { Game::BW, 107, 204, 15, 55 },   { Game::Black, 95, 228, 15, 55 },
-    { Game::BW, 83, 235, 15, 55 },    { Game::BW, 99, 236, 15, 55 },    { Game::White, 95, 261, 15, 55 },
-    { Game::Black, 101, 285, 15, 55 }, { Game::Black, 84, 311, 15, 55 }, { Game::White, 84, 312, 15, 55 },
-    { Game::Black, 79, 313, 15, 55 }, { Game::White, 79, 314, 15, 55 }, { Game::BW, 103, 353, 15, 55 },
-    { Game::BW, 78, 360, 15, 55 },    { Game::BW, 82, 449, 15, 55 },    { Game::BW, 93, 453, 15, 55 },
-
-    { Game::BW2, 124, 22, 40, 55 },      { Game::BW2, 123, 79, 40, 55 },      { Game::BW2, 99, 83, 40, 55 },
-    { Game::BW2, 120, 84, 40, 55 },      { Game::BW2, 6, 97, 40, 55 },        { Game::White2, 129, 122, 40, 55 },
-    { Game::BW2, 111, 162, 40, 55 },     { Game::White2, 130, 166, 40, 55 },  { Game::Black2, 130, 168, 40, 55 },
-    { Game::BW2, 106, 177, 40, 55 },     { Game::Black2, 129, 185, 40, 55 },  { Game::BW2, 127, 187, 40, 55 },
-    { Game::BW2, 116, 195, 40, 55 },     { Game::BW2, 125, 204, 40, 55 },     { Game::BW2, 121, 277, 40, 55 },
-    { Game::BW2, 119, 284, 40, 55 },     { Game::Black2, 107, 311, 40, 55 },  { Game::White2, 107, 312, 40, 55 },
-    { Game::Black2, 101, 313, 40, 55 },  { Game::White2, 101, 314, 40, 55 },  { Game::BW2, 118, 317, 40, 55 },
-    { Game::BW2, 48, 332, 40, 55 },      { Game::BW2, 11, 450, 40, 55 },
-};
-
-static Slot getSwarmSlot(Game version, u8 location)
-{
-    for (const auto &swarm : swarms)
-    {
-        if ((swarm.version & version) != Game::None && swarm.location == location)
-        {
-            return Slot(swarm.specie, swarm.minLevel, swarm.maxLevel, PersonalLoader::getPersonal(version, swarm.specie));
-        }
-    }
-
-    return {};
-}
+static_assert(sizeof(SwarmEncounter) == 6);
 
 namespace Encounters5
 {
@@ -151,22 +119,29 @@ namespace Encounters5
         u32 length;
         const u8 *data;
 
+        u32 length_swarm;
+        const SwarmEncounter *data_swarm;
+
         Game version = profile->getVersion();
         if (version == Game::Black)
         {
             data = Utilities::decompress<u8>(BLACK.data(), BLACK.size(), length);
+            data_swarm = Utilities::decompress<SwarmEncounter>(B_SWARM.data(), B_SWARM.size(), length_swarm);
         }
         else if (version == Game::Black2)
         {
             data = Utilities::decompress<u8>(BLACK2.data(), BLACK2.size(), length);
+            data_swarm = Utilities::decompress<SwarmEncounter>(B2_SWARM.data(), B2_SWARM.size(), length_swarm);
         }
         else if (version == Game::White)
         {
             data = Utilities::decompress<u8>(WHITE.data(), WHITE.size(), length);
+            data_swarm = Utilities::decompress<SwarmEncounter>(W_SWARM.data(), W_SWARM.size(), length_swarm);
         }
         else
         {
             data = Utilities::decompress<u8>(WHITE2.data(), WHITE2.size(), length);
+            data_swarm = Utilities::decompress<SwarmEncounter>(W2_SWARM.data(), W2_SWARM.size(), length_swarm);
         }
 
         std::vector<EncounterArea5> encounters;
@@ -195,7 +170,12 @@ namespace Encounters5
                     }
                     if (settings.swarm)
                     {
-                        slots[12] = getSwarmSlot(version, entry->location);
+                        auto it = std::find_if(data_swarm, data_swarm + length_swarm,
+                                               [entry](const auto &swarm) { return entry->location == swarm.location; });
+                        if (it != (data_swarm + length_swarm))
+                        {
+                            slots[12] = Slot(it->specie, it->minLevel, it->maxLevel, PersonalLoader::getPersonal(version, it->specie));
+                        }
                     }
                     encounters.emplace_back(entry->location, entrySeason->grassRate, seasons, encounter, slots);
                 }

@@ -220,7 +220,7 @@ WildStateFilter::WildStateFilter(u8 gender, u8 ability, u8 shiny, u8 levelMin, u
 
 bool WildStateFilter::compareEncounterSlot(u8 encounterSlot) const
 {
-    return skip || (encounterSlot < encounterSlots.size() && encounterSlots[encounterSlot]);
+    return skip || encounterSlots[encounterSlot];
 }
 
 bool WildStateFilter::compareState(const WildGeneratorState &state) const
