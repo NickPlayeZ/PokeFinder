@@ -50,6 +50,7 @@ void WildGenerator5Test::generate_data()
     QTest::addColumn<Lead>("lead");
     QTest::addColumn<Game>("version");
     QTest::addColumn<PassPower>("luckyPower");
+    QTest::addColumn<bool>("swarm");
     QTest::addColumn<int>("location");
     QTest::addColumn<std::string>("results");
 
@@ -58,7 +59,7 @@ void WildGenerator5Test::generate_data()
     {
         QTest::newRow(d["name"].get<std::string>().data())
             << d["seed"].get<u64>() << d["encounter"].get<Encounter>() << d["lead"].get<Lead>() << d["version"].get<Game>()
-            << d["luckyPower"].get<PassPower>() << d["location"].get<int>() << d["results"].get<json>().dump();
+            << d["luckyPower"].get<PassPower>() << d["swarm"].get<bool>() << d["location"].get<int>() << d["results"].get<json>().dump();
     }
 }
 
@@ -69,6 +70,7 @@ void WildGenerator5Test::generate()
     QFETCH(Lead, lead);
     QFETCH(Game, version);
     QFETCH(PassPower, luckyPower);
+    QFETCH(bool, swarm);
     QFETCH(int, location);
     QFETCH(std::string, results);
 
@@ -86,13 +88,15 @@ void WildGenerator5Test::generate()
     std::array<bool, 16> powers;
     powers.fill(true);
 
-    StackVector<bool, 12> encounterSlots;
+    StackVector<bool, 13> encounterSlots;
     encounterSlots.fill(true);
 
     Profile5 profile("-", version, 12345, 54321, "", "", 0, { false, false, false, false, false, false, false, false, false }, 0, 0, 0,
                      false, 0, 0, false, false, false, DSType::DS, Language::English);
+    EncounterSettings5 settings = { };
+    settings.swarm = swarm;
 
-    std::vector<EncounterArea5> encounterAreas = Encounters5::getEncounters(encounter, 0, &profile);
+    std::vector<EncounterArea5> encounterAreas = Encounters5::getEncounters(encounter, settings, &profile);
     auto encounterArea = std::ranges::find_if(
         encounterAreas, [location](const EncounterArea5 &encounterArea) { return encounterArea.getLocation() == location; });
 

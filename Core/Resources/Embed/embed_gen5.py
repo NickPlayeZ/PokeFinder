@@ -28,7 +28,7 @@ def embed_encounters5(parent_dir: str, input_dir: str, output_dir: str):
             string += " };"
             arrays.append(string)
 
-    files = ("black", "black2", "bw2_grotto", "white", "white2")
+    files = ("black", "b_swarm", "black2", "b2_swarm", "bw2_grotto", "white", "w_swarm", "white2", "w2_swarm")
     for file in files:
         with open(f"{input_dir}/{file}.bin", "rb") as f:
             data = f.read()

@@ -74,7 +74,7 @@ void PokeSpotGeneratorTest::generate()
     std::array<bool, 16> powers;
     powers.fill(true);
 
-    StackVector<bool, 12> encounterSlots;
+    StackVector<bool, 13> encounterSlots;
     encounterSlots.fill(true);
 
     Profile3 profile("-", Game::Gales, 12345, 54321, false);

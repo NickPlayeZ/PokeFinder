@@ -100,7 +100,7 @@ public:
      *
      * @return Array of encounter slots
      */
-    StackVector<bool, 12> getEncounterSlots() const;
+    StackVector<bool, 13> getEncounterSlots() const;
 
     /**
      * @brief Constructs filter from the UI settings

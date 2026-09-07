@@ -10004,50 +10004,54 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
         <translation>Seed Adiacenti</translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="386"/>
+        <location filename="../Gen5/Wild5.cpp" line="396"/>
         <source>Invalid date range</source>
         <translation>Intervallo di date non valido</translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="386"/>
+        <location filename="../Gen5/Wild5.cpp" line="396"/>
         <source>Start date is after end date</source>
         <translation>La data iniziale è successiva alla data finale</translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="493"/>
+        <location filename="../Gen5/Wild5.cpp" line="513"/>
         <source>Settings are configured for fast IV/SHA searching</source>
         <translation>Le impostazioni sono configurate per la ricerca rapida IV/SHA</translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="498"/>
+        <location filename="../Gen5/Wild5.cpp" line="518"/>
         <source>Settings are configured for fast IV searching.
 Profile is missing or has an incompatible SHA cache.</source>
         <translation>Le impostazioni sono configurate per la ricerca rapida IV.
 Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="505"/>
+        <location filename="../Gen5/Wild5.cpp" line="525"/>
         <source>Profile does not have a IV cache file configured</source>
         <translation>Il profilo non ha un file IV cache configurato</translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="510"/>
+        <location filename="../Gen5/Wild5.cpp" line="530"/>
         <source>Settings are not configured for fast searching</source>
         <translation>Le impostazioni non sono configurate per la ricerca rapida</translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="511"/>
+        <location filename="../Gen5/Wild5.cpp" line="531"/>
         <source>Keep initial/max advances below %1/%2</source>
         <translation>Mantieni gli avanzamenti iniziali/massimi sotto %1/%2</translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="512"/>
+        <location filename="../Gen5/Wild5.cpp" line="532"/>
         <source>Ensure IV filters are set to common spreads</source>
         <translation>Assicurati che i filtri IV siano impostati per spread comuni</translation>
     </message>
     <message>
         <source>Levels</source>
         <translation>Livelli</translation>
+    </message>
+    <message>
+        <source>Swarm</source>
+        <translation type="unfinished">Comparse Massiccie</translation>
     </message>
 </context>
 <context>
