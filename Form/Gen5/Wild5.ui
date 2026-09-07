@@ -124,17 +124,17 @@
             </item>
             <item>
              <property name="text">
-              <string>Lucky Power ↑</string>
+              <string notr="true">↑</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Lucky Power ↑↑</string>
+              <string notr="true">↑↑</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Lucky Power ↑↑↑/S</string>
+              <string notr="true">↑↑↑/S</string>
              </property>
             </item>
            </widget>
@@ -424,17 +424,17 @@
             </item>
             <item>
              <property name="text">
-              <string>Lucky Power ↑</string>
+              <string notr="true">↑</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Lucky Power ↑↑</string>
+              <string notr="true">↑↑</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Lucky Power ↑↑↑/S</string>
+              <string notr="true">↑↑↑/S</string>
              </property>
             </item>
            </widget>
