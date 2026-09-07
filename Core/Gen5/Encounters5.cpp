@@ -260,6 +260,7 @@ namespace Encounters5
             offset += sizeof(WildEncounter5) + entry->seasonCount * sizeof(WildEncounter5Season);
         }
         delete[] data;
+        delete[] data_swarm;
         return encounters;
     }
 
