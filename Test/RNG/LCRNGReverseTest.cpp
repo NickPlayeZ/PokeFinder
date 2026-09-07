@@ -44,8 +44,8 @@ void LCRNGReverseTest::recoverChannelIV()
 
     auto seeds = LCRNGReverse::recoverChannelIV(ivs[0], ivs[1], ivs[2], ivs[3], ivs[4], ivs[5]);
 
-    QCOMPARE(seeds.count, results.size());
-    for (int i = 0; i < seeds.count; i++)
+    QCOMPARE(seeds.size(), results.size());
+    for (int i = 0; i < seeds.size(); i++)
     {
         QCOMPARE(seeds[i], results[i]);
     }
@@ -73,8 +73,8 @@ void LCRNGReverseTest::recoverPokeRNGIV()
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(ivs[0], ivs[1], ivs[2], ivs[3], ivs[4], ivs[5], method);
 
-    QCOMPARE(seeds.count, results.size());
-    for (int i = 0; i < seeds.count; i++)
+    QCOMPARE(seeds.size(), results.size());
+    for (int i = 0; i < seeds.size(); i++)
     {
         QCOMPARE(seeds[i], results[i]);
     }
@@ -102,8 +102,8 @@ void LCRNGReverseTest::recoverPokeRNGPID()
 
     auto seeds = LCRNGReverse::recoverPokeRNGPID(pid);
 
-    QCOMPARE(seeds.count, results.size());
-    for (int i = 0; i < seeds.count; i++)
+    QCOMPARE(seeds.size(), results.size());
+    for (int i = 0; i < seeds.size(); i++)
     {
         QCOMPARE(seeds[i], results[i]);
     }
@@ -128,8 +128,8 @@ void LCRNGReverseTest::recoverXDRNGIV()
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(ivs[0], ivs[1], ivs[2], ivs[3], ivs[4], ivs[5]);
 
-    QCOMPARE(seeds.count, results.size());
-    for (int i = 0; i < seeds.count; i++)
+    QCOMPARE(seeds.size(), results.size());
+    for (int i = 0; i < seeds.size(); i++)
     {
         QCOMPARE(seeds[i], results[i]);
     }
@@ -154,8 +154,8 @@ void LCRNGReverseTest::recoverXDRNGPID()
 
     auto seeds = LCRNGReverse::recoverXDRNGPID(pid);
 
-    QCOMPARE(seeds.count, results.size());
-    for (int i = 0; i < seeds.count; i++)
+    QCOMPARE(seeds.size(), results.size());
+    for (int i = 0; i < seeds.size(); i++)
     {
         QCOMPARE(seeds[i], results[i]);
     }

@@ -60,6 +60,18 @@ static u8 getPercentRand(BWRNG &rng, bool bw)
     }
 }
 
+static bool getSwarmProc(BWRNG &rng, bool bw)
+{
+    if (bw)
+    {
+        return rng.nextUInt(1000) <= 400;
+    }
+    else
+    {
+        return rng.nextUInt(100) <= 40;
+    }
+}
+
 static u16 getItem(BWRNG &rng, bool bw, Lead lead, Encounter encounter, const PersonalInfo *info)
 {
     constexpr u8 ItemTable[2][3] = { { 50, 55, 0 }, { 60, 80, 0 } };
@@ -171,6 +183,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
     for (u32 cnt = start; cnt <= maxAdvances; cnt++)
     {
         BWRNG go(rng, jump);
+        bool valid = true;
 
         bool cuteCharm = false;
         bool magnetStatic = false;
@@ -215,12 +228,18 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
         if (area.getEncounter() == Encounter::SuperRod && getPercentRand(go, bw) > rate)
         {
-            rng.next();
-            continue;
+            valid = false;
         }
 
         u8 encounterSlot;
-        if (magnetStatic && !modifiedSlots.empty())
+        // Check for swarm encounter
+        if (area.getPokemon(12).getSpecie() != 0 && getSwarmProc(go, bw))
+        {
+            encounterSlot = 12;
+            // Rand call to determine slot even though there is only one
+            go.advance(1);
+        }
+        else if (magnetStatic && !modifiedSlots.empty())
         {
             encounterSlot = modifiedSlots[getEncounterRand(go, modifiedSlots.count, bw)];
         }
@@ -269,8 +288,8 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         for (const auto &iv : *validIVs)
         {
             WildState5 state(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, level, nature, shiny,
-                             encounterSlot, item, slot.getSpecie(), slot.getForm(), info);
-            if (filter.compareState(static_cast<const WildState &>(state)))
+                             encounterSlot, item, slot.getSpecie(), slot.getForm(), info, valid);
+            if (filter.compareState(static_cast<const WildGeneratorState &>(state)))
             {
                 states.emplace_back(state);
             }

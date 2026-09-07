@@ -28,6 +28,7 @@
 #include <Core/Parents/Slot.hpp>
 #include <Core/Resources/EncounterData5.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <algorithm>
 
 struct DynamicSlot
 {
@@ -89,6 +90,15 @@ struct WildEncounterGrotto
 };
 static_assert(sizeof(WildEncounterGrotto) == 138);
 
+struct SwarmEncounter
+{
+    u8 location;
+    u16 specie;
+    u8 maxLevel;
+    u8 minLevel;
+};
+static_assert(sizeof(SwarmEncounter) == 6);
+
 namespace Encounters5
 {
     const DreamRadarTemplate *getDreamRadarEncounters(int *size)
@@ -105,27 +115,34 @@ namespace Encounters5
         return &DREAMRADAR[index];
     }
 
-    std::vector<EncounterArea5> getEncounters(Encounter encounter, u8 season, const Profile5 *profile)
+    std::vector<EncounterArea5> getEncounters(Encounter encounter, const EncounterSettings5 &settings, const Profile5 *profile)
     {
         u32 length;
         const u8 *data;
+
+        u32 length_swarm;
+        const SwarmEncounter *data_swarm;
 
         Game version = profile->getVersion();
         if (version == Game::Black)
         {
             data = Utilities::decompress<u8>(BLACK.data(), BLACK.size(), length);
+            data_swarm = Utilities::decompress<SwarmEncounter>(B_SWARM.data(), B_SWARM.size(), length_swarm);
         }
         else if (version == Game::Black2)
         {
             data = Utilities::decompress<u8>(BLACK2.data(), BLACK2.size(), length);
+            data_swarm = Utilities::decompress<SwarmEncounter>(B2_SWARM.data(), B2_SWARM.size(), length_swarm);
         }
         else if (version == Game::White)
         {
             data = Utilities::decompress<u8>(WHITE.data(), WHITE.size(), length);
+            data_swarm = Utilities::decompress<SwarmEncounter>(W_SWARM.data(), W_SWARM.size(), length_swarm);
         }
         else
         {
             data = Utilities::decompress<u8>(WHITE2.data(), WHITE2.size(), length);
+            data_swarm = Utilities::decompress<SwarmEncounter>(W2_SWARM.data(), W2_SWARM.size(), length_swarm);
         }
 
         std::vector<EncounterArea5> encounters;
@@ -135,12 +152,12 @@ namespace Encounters5
 
             const auto *entrySeason = &entry->seasons[0];
             bool seasons = entry->seasonCount > 1;
-            if (season < entry->seasonCount)
+            if (settings.season < entry->seasonCount)
             {
-                entrySeason = &entry->seasons[season];
+                entrySeason = &entry->seasons[settings.season];
             }
 
-            std::array<Slot, 12> slots;
+            std::array<Slot, 13> slots;
             switch (encounter)
             {
             case Encounter::Grass:
@@ -151,6 +168,15 @@ namespace Encounters5
                         const auto &slot = entrySeason->grass[i];
                         slots[i] = Slot(slot.specie & 0x7ff, slot.specie >> 11, slot.level, slot.level,
                                         PersonalLoader::getPersonal(version, slot.specie & 0x7ff, slot.specie >> 11));
+                    }
+                    if (settings.swarm)
+                    {
+                        auto it = std::find_if(data_swarm, data_swarm + length_swarm,
+                                               [entry](const auto &swarm) { return entry->location == swarm.location; });
+                        if (it != (data_swarm + length_swarm))
+                        {
+                            slots[12] = Slot(it->specie, it->minLevel, it->maxLevel, PersonalLoader::getPersonal(version, it->specie));
+                        }
                     }
                     encounters.emplace_back(entry->location, entrySeason->grassRate, seasons, encounter, slots);
                 }
@@ -234,6 +260,7 @@ namespace Encounters5
             offset += sizeof(WildEncounter5) + entry->seasonCount * sizeof(WildEncounter5Season);
         }
         delete[] data;
+        delete[] data_swarm;
         return encounters;
     }
 

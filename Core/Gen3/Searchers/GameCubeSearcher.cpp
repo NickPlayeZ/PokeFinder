@@ -129,8 +129,24 @@ GameCubeSearcher::GameCubeSearcher(Method method, bool unset, const Profile3 &pr
 
 void GameCubeSearcher::startSearch(const std::array<u8, 6> &min, const std::array<u8, 6> &max, const ShadowTemplate *shadowTemplate)
 {
-    searching = true;
+    activeThreads.store(1);
+    threadContainer.emplace_back([this, min, max, shadowTemplate] {
+        search(min, max, shadowTemplate);
+        activeThreads.fetch_sub(1);
+    });
+}
 
+void GameCubeSearcher::startSearch(const std::array<u8, 6> &min, const std::array<u8, 6> &max, const StaticTemplate3 *staticTemplate)
+{
+    activeThreads.store(1);
+    threadContainer.emplace_back([this, min, max, staticTemplate] {
+        search(min, max, staticTemplate);
+        activeThreads.fetch_sub(1);
+    });
+}
+
+void GameCubeSearcher::search(const std::array<u8, 6> &min, const std::array<u8, 6> &max, const ShadowTemplate *shadowTemplate)
+{
     for (u8 hp = min[0]; hp <= max[0]; hp++)
     {
         for (u8 atk = min[1]; atk <= max[1]; atk++)
@@ -143,7 +159,7 @@ void GameCubeSearcher::startSearch(const std::array<u8, 6> &min, const std::arra
                     {
                         for (u8 spe = min[5]; spe <= max[5]; spe++)
                         {
-                            if (!searching)
+                            if (cancelled.load(std::memory_order_relaxed))
                             {
                                 return;
                             }
@@ -158,9 +174,12 @@ void GameCubeSearcher::startSearch(const std::array<u8, 6> &min, const std::arra
                                 states = searchGalesShadow(hp, atk, def, spa, spd, spe, shadowTemplate);
                             }
 
-                            std::lock_guard<std::mutex> guard(mutex);
-                            results.insert(results.end(), states.begin(), states.end());
-                            progress++;
+                            if (!states.empty())
+                            {
+                                std::lock_guard<std::mutex> guard(mutex);
+                                results.insert(results.end(), states.begin(), states.end());
+                            }
+                            progress.fetch_add(1, std::memory_order_relaxed);
                         }
                     }
                 }
@@ -169,10 +188,8 @@ void GameCubeSearcher::startSearch(const std::array<u8, 6> &min, const std::arra
     }
 }
 
-void GameCubeSearcher::startSearch(const std::array<u8, 6> &min, const std::array<u8, 6> &max, const StaticTemplate3 *staticTemplate)
+void GameCubeSearcher::search(const std::array<u8, 6> &min, const std::array<u8, 6> &max, const StaticTemplate3 *staticTemplate)
 {
-    searching = true;
-
     // Ageto Pikachu/Celebi
     if (staticTemplate->getSpecie() == 25 || staticTemplate->getSpecie() == 251)
     {
@@ -196,7 +213,7 @@ void GameCubeSearcher::startSearch(const std::array<u8, 6> &min, const std::arra
                     {
                         for (u8 spe = min[5]; spe <= max[5]; spe++)
                         {
-                            if (!searching)
+                            if (cancelled.load(std::memory_order_relaxed))
                             {
                                 return;
                             }
@@ -211,9 +228,12 @@ void GameCubeSearcher::startSearch(const std::array<u8, 6> &min, const std::arra
                                 states = searchNonLock(hp, atk, def, spa, spd, spe, staticTemplate);
                             }
 
-                            std::lock_guard<std::mutex> guard(mutex);
-                            results.insert(results.end(), states.begin(), states.end());
-                            progress++;
+                            if (!states.empty())
+                            {
+                                std::lock_guard<std::mutex> guard(mutex);
+                                results.insert(results.end(), states.begin(), states.end());
+                            }
+                            progress.fetch_add(1, std::memory_order_relaxed);
                         }
                     }
                 }
@@ -230,9 +250,9 @@ std::vector<SearcherState> GameCubeSearcher::searchChannel(u8 hp, u8 atk, u8 def
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverChannelIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        XDRNGR rng(seeds[i]);
+        XDRNGR rng(origin);
 
         rng.advance(3);
         u16 low = rng.nextUShort();
@@ -253,13 +273,13 @@ std::vector<SearcherState> GameCubeSearcher::searchChannel(u8 hp, u8 atk, u8 def
             continue;
         }
 
-        u32 origin = rng.next();
-        if (!validateJirachi(origin))
+        u32 seed = rng.next();
+        if (!validateJirachi(seed))
         {
             continue;
         }
 
-        SearcherState state(origin, pid, ivs, pid & 1, 2, staticTemplate->getLevel(), nature, Utilities::getShiny<true>(pid, tid ^ sid),
+        SearcherState state(seed, pid, ivs, pid & 1, 2, staticTemplate->getLevel(), nature, Utilities::getShiny<true>(pid, tid ^ sid),
                             info);
         if (filter.compareState(static_cast<const SearcherState &>(state)))
         {
@@ -287,7 +307,7 @@ std::vector<SearcherState> GameCubeSearcher::searchColoShadow(u8 hp, u8 atk, u8 
     }
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         XDRNG rng(seeds[i]);
 
@@ -343,7 +363,7 @@ std::vector<SearcherState> GameCubeSearcher::searchGalesShadow(u8 hp, u8 atk, u8
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         XDRNG rng(seeds[i]);
 
@@ -424,11 +444,11 @@ std::vector<SearcherState> GameCubeSearcher::searchNonLock(u8 hp, u8 atk, u8 def
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        XDRNG rng(seeds[i]);
+        XDRNG rng(origin);
 
-        u32 seed = XDRNGR(seeds[i]).next();
+        u32 seed = XDRNGR(origin).next();
         u8 ability;
         u16 high;
         u16 low;

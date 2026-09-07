@@ -7,6 +7,7 @@
             "lead": "None",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 41,
             "results": [
                 {
@@ -41,7 +42,8 @@
                         36,
                         37,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -75,7 +77,8 @@
                         35,
                         25,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -109,7 +112,8 @@
                         35,
                         28,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -143,7 +147,8 @@
                         36,
                         42,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -177,7 +182,8 @@
                         30,
                         39,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -211,7 +217,8 @@
                         34,
                         35,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -245,7 +252,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -279,7 +287,8 @@
                         35,
                         28,
                         23
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -313,7 +322,8 @@
                         34,
                         39,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -347,7 +357,8 @@
                         38,
                         33,
                         42
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -358,6 +369,7 @@
             "lead": "CompoundEyes",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 41,
             "results": [
                 {
@@ -392,7 +404,8 @@
                         36,
                         42,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -426,7 +439,8 @@
                         36,
                         37,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -460,7 +474,8 @@
                         35,
                         25,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -494,7 +509,8 @@
                         35,
                         28,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -528,7 +544,8 @@
                         36,
                         42,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -562,7 +579,8 @@
                         30,
                         39,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -596,7 +614,8 @@
                         34,
                         35,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -630,7 +649,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -664,7 +684,8 @@
                         35,
                         28,
                         23
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -698,7 +719,8 @@
                         34,
                         39,
                         26
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -709,6 +731,7 @@
             "lead": "CuteCharmF",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 41,
             "results": [
                 {
@@ -743,7 +766,8 @@
                         35,
                         25,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -777,7 +801,8 @@
                         35,
                         28,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -811,7 +836,8 @@
                         35,
                         28,
                         23
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -845,7 +871,8 @@
                         36,
                         42,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -879,7 +906,8 @@
                         34,
                         35,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -913,7 +941,8 @@
                         34,
                         35,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -947,7 +976,8 @@
                         40,
                         34,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -981,7 +1011,8 @@
                         35,
                         28,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1015,7 +1046,8 @@
                         34,
                         39,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1049,7 +1081,8 @@
                         38,
                         29,
                         46
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -1060,6 +1093,7 @@
             "lead": "MagnetPull",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 41,
             "results": [
                 {
@@ -1094,7 +1128,8 @@
                         20,
                         55,
                         16
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -1128,7 +1163,8 @@
                         35,
                         25,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1162,7 +1198,8 @@
                         23,
                         50,
                         16
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -1196,7 +1233,8 @@
                         36,
                         42,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1230,7 +1268,8 @@
                         31,
                         41,
                         29
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1264,7 +1303,8 @@
                         34,
                         35,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -1298,7 +1338,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1332,7 +1373,8 @@
                         35,
                         28,
                         23
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1366,7 +1408,8 @@
                         36,
                         42,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1400,7 +1443,8 @@
                         38,
                         33,
                         42
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -1411,6 +1455,7 @@
             "lead": "Pressure",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 41,
             "results": [
                 {
@@ -1445,7 +1490,8 @@
                         38,
                         40,
                         47
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -1479,7 +1525,8 @@
                         35,
                         25,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1513,7 +1560,8 @@
                         35,
                         28,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -1547,7 +1595,8 @@
                         36,
                         42,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1581,7 +1630,8 @@
                         32,
                         42,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1615,7 +1665,8 @@
                         34,
                         35,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -1649,7 +1700,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1683,7 +1735,8 @@
                         35,
                         28,
                         23
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1717,7 +1770,8 @@
                         36,
                         42,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1751,7 +1805,8 @@
                         38,
                         33,
                         42
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -1762,6 +1817,7 @@
             "lead": "Static",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 41,
             "results": [
                 {
@@ -1796,7 +1852,8 @@
                         32,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -1830,7 +1887,8 @@
                         35,
                         25,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1864,7 +1922,8 @@
                         43,
                         37,
                         47
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -1898,7 +1957,8 @@
                         36,
                         31,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1932,7 +1992,8 @@
                         36,
                         35,
                         49
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -1966,7 +2027,8 @@
                         34,
                         35,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -2000,7 +2062,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2034,7 +2097,8 @@
                         35,
                         28,
                         23
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2068,7 +2132,8 @@
                         43,
                         37,
                         47
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2102,7 +2167,8 @@
                         38,
                         33,
                         42
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -2113,6 +2179,7 @@
             "lead": "Synchronize",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 41,
             "results": [
                 {
@@ -2147,7 +2214,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -2181,7 +2249,8 @@
                         35,
                         25,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2215,7 +2284,8 @@
                         35,
                         28,
                         21
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -2249,7 +2319,8 @@
                         36,
                         42,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2283,7 +2354,8 @@
                         34,
                         39,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2317,7 +2389,8 @@
                         34,
                         35,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -2351,7 +2424,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2385,7 +2459,8 @@
                         35,
                         28,
                         23
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2419,7 +2494,8 @@
                         34,
                         39,
                         26
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2453,7 +2529,370 @@
                         38,
                         33,
                         42
-                    ]
+                    ],
+                    "valid": true
+                }
+            ]
+        },
+        {
+            "name": "Black Route 1 Swarm",
+            "seed": 0,
+            "encounter": "Grass",
+            "lead": "None",
+            "version": "Black",
+            "luckyPower": "None",
+            "swarm": true,
+            "location": 77,
+            "results": [
+                {
+                    "ability": 0,
+                    "abilityIndex": 72,
+                    "advances": 39,
+                    "characteristic": 17,
+                    "chatot": 95,
+                    "encounterSlot": 3,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 3,
+                    "nature": 9,
+                    "pid": 1913918052,
+                    "shiny": 0,
+                    "specie": 506,
+                    "stats": [
+                        16,
+                        9,
+                        8,
+                        7,
+                        7,
+                        9
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 53,
+                    "advances": 40,
+                    "characteristic": 22,
+                    "chatot": 41,
+                    "encounterSlot": 3,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 3,
+                    "nature": 6,
+                    "pid": 1655374114,
+                    "shiny": 0,
+                    "specie": 506,
+                    "stats": [
+                        16,
+                        9,
+                        8,
+                        7,
+                        8,
+                        9
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 72,
+                    "advances": 41,
+                    "characteristic": 22,
+                    "chatot": 59,
+                    "encounterSlot": 9,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 4,
+                    "nature": 10,
+                    "pid": 1199726212,
+                    "shiny": 0,
+                    "specie": 506,
+                    "stats": [
+                        18,
+                        9,
+                        9,
+                        8,
+                        9,
+                        11
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 53,
+                    "advances": 42,
+                    "characteristic": 17,
+                    "chatot": 51,
+                    "encounterSlot": 1,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 2,
+                    "nature": 13,
+                    "pid": 1721880608,
+                    "shiny": 0,
+                    "specie": 506,
+                    "stats": [
+                        14,
+                        7,
+                        7,
+                        5,
+                        7,
+                        7
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 39,
+                    "advances": 43,
+                    "characteristic": 17,
+                    "chatot": 94,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 55,
+                    "nature": 9,
+                    "pid": 2386258945,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        131,
+                        86,
+                        84,
+                        83,
+                        74,
+                        85
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 51,
+                    "advances": 44,
+                    "characteristic": 22,
+                    "chatot": 38,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 29,
+                    "nature": 0,
+                    "pid": 1689394930,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        74,
+                        47,
+                        43,
+                        46,
+                        46,
+                        47
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 39,
+                    "advances": 45,
+                    "characteristic": 17,
+                    "chatot": 27,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 54,
+                    "nature": 10,
+                    "pid": 2244597635,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        129,
+                        75,
+                        76,
+                        82,
+                        82,
+                        92
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 53,
+                    "advances": 46,
+                    "characteristic": 17,
+                    "chatot": 40,
+                    "encounterSlot": 1,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 2,
+                    "nature": 1,
+                    "pid": 4005103545,
+                    "shiny": 0,
+                    "specie": 506,
+                    "stats": [
+                        14,
+                        7,
+                        6,
+                        6,
+                        7,
+                        7
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 39,
+                    "advances": 47,
+                    "characteristic": 17,
+                    "chatot": 55,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 17,
+                    "nature": 24,
+                    "pid": 2433719171,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        47,
+                        30,
+                        27,
+                        29,
+                        29,
+                        29
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 51,
+                    "advances": 48,
+                    "characteristic": 17,
+                    "chatot": 39,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 21,
+                    "nature": 14,
+                    "pid": 4271269493,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        56,
+                        36,
+                        32,
+                        35,
+                        31,
+                        38
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -2464,6 +2903,7 @@
             "lead": "None",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 101,
             "results": [
                 {
@@ -2498,7 +2938,8 @@
                         93,
                         80,
                         123
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -2532,7 +2973,8 @@
                         89,
                         56,
                         105
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2566,7 +3008,8 @@
                         53,
                         38,
                         62
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -2600,7 +3043,8 @@
                         64,
                         46,
                         83
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2634,7 +3078,8 @@
                         91,
                         72,
                         132
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2668,7 +3113,8 @@
                         68,
                         43,
                         80
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -2702,7 +3148,8 @@
                         96,
                         68,
                         114
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2736,7 +3183,8 @@
                         66,
                         47,
                         85
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2770,7 +3218,8 @@
                         55,
                         39,
                         65
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2804,7 +3253,8 @@
                         74,
                         52,
                         87
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -2815,6 +3265,7 @@
             "lead": "None",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 101,
             "results": [
                 {
@@ -2849,7 +3300,113 @@
                         87,
                         54,
                         103
-                    ]
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 91,
+                    "advances": 40,
+                    "characteristic": 22,
+                    "chatot": 41,
+                    "encounterSlot": 1,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 45,
+                    "nature": 6,
+                    "pid": 1655374114,
+                    "shiny": 0,
+                    "specie": 550,
+                    "stats": [
+                        125,
+                        95,
+                        73,
+                        89,
+                        63,
+                        105
+                    ],
+                    "valid": false
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 33,
+                    "advances": 41,
+                    "characteristic": 22,
+                    "chatot": 59,
+                    "encounterSlot": 2,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 52,
+                    "nature": 10,
+                    "pid": 1199726212,
+                    "shiny": 0,
+                    "specie": 118,
+                    "stats": [
+                        117,
+                        75,
+                        78,
+                        55,
+                        66,
+                        92
+                    ],
+                    "valid": false
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 41,
+                    "advances": 42,
+                    "characteristic": 17,
+                    "chatot": 51,
+                    "encounterSlot": 0,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 41,
+                    "nature": 13,
+                    "pid": 1721880608,
+                    "shiny": 0,
+                    "specie": 118,
+                    "stats": [
+                        94,
+                        67,
+                        63,
+                        39,
+                        53,
+                        73
+                    ],
+                    "valid": false
                 },
                 {
                     "ability": 1,
@@ -2883,7 +3440,8 @@
                         57,
                         62,
                         87
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -2917,7 +3475,8 @@
                         94,
                         66,
                         112
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -2951,7 +3510,43 @@
                         104,
                         73,
                         135
-                    ]
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 41,
+                    "advances": 46,
+                    "characteristic": 17,
+                    "chatot": 40,
+                    "encounterSlot": 0,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 13,
+                    "hiddenPowerStrength": 69,
+                    "item": 0,
+                    "ivs": [
+                        17,
+                        18,
+                        22,
+                        27,
+                        19,
+                        27
+                    ],
+                    "level": 37,
+                    "nature": 1,
+                    "pid": 4005103545,
+                    "shiny": 0,
+                    "specie": 118,
+                    "stats": [
+                        86,
+                        67,
+                        51,
+                        40,
+                        49,
+                        61
+                    ],
+                    "valid": false
                 },
                 {
                     "ability": 1,
@@ -2985,7 +3580,8 @@
                         39,
                         47,
                         60
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3019,7 +3615,8 @@
                         81,
                         51,
                         105
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -3030,6 +3627,7 @@
             "lead": "SuctionCups",
             "version": "Black",
             "luckyPower": "None",
+            "swarm": false,
             "location": 101,
             "results": [
                 {
@@ -3064,7 +3662,8 @@
                         91,
                         79,
                         120
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3098,7 +3697,8 @@
                         87,
                         54,
                         103
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3132,7 +3732,8 @@
                         89,
                         63,
                         105
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3166,7 +3767,8 @@
                         55,
                         66,
                         92
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3200,7 +3802,8 @@
                         39,
                         53,
                         73
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3234,7 +3837,8 @@
                         57,
                         62,
                         87
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3268,7 +3872,8 @@
                         94,
                         66,
                         112
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3302,7 +3907,8 @@
                         104,
                         73,
                         135
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3336,7 +3942,8 @@
                         40,
                         49,
                         61
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3370,7 +3977,8 @@
                         39,
                         47,
                         60
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -3381,6 +3989,7 @@
             "lead": "None",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 20,
             "results": [
                 {
@@ -3415,7 +4024,8 @@
                         36,
                         58,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3449,7 +4059,8 @@
                         35,
                         40,
                         27
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3483,7 +4094,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3517,7 +4129,8 @@
                         41,
                         31,
                         49
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3551,7 +4164,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3585,7 +4199,8 @@
                         37,
                         28,
                         46
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3619,7 +4234,8 @@
                         36,
                         58,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3653,7 +4269,8 @@
                         44,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3687,7 +4304,8 @@
                         40,
                         34,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3721,7 +4339,8 @@
                         36,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -3732,6 +4351,7 @@
             "lead": "None",
             "version": "Black2",
             "luckyPower": "Level1",
+            "swarm": false,
             "location": 20,
             "results": []
         },
@@ -3742,6 +4362,7 @@
             "lead": "None",
             "version": "Black2",
             "luckyPower": "Level2",
+            "swarm": false,
             "location": 20,
             "results": []
         },
@@ -3752,6 +4373,7 @@
             "lead": "None",
             "version": "Black2",
             "luckyPower": "Level3",
+            "swarm": false,
             "location": 20,
             "results": []
         },
@@ -3762,6 +4384,7 @@
             "lead": "CompoundEyes",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 20,
             "results": [
                 {
@@ -3796,7 +4419,8 @@
                         41,
                         35,
                         45
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3830,7 +4454,8 @@
                         36,
                         58,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3864,7 +4489,8 @@
                         35,
                         40,
                         27
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3898,7 +4524,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -3932,7 +4559,8 @@
                         41,
                         31,
                         49
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -3966,7 +4594,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4000,7 +4629,8 @@
                         37,
                         28,
                         46
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4034,7 +4664,8 @@
                         36,
                         58,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4068,7 +4699,8 @@
                         44,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4102,7 +4734,8 @@
                         40,
                         34,
                         48
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -4113,6 +4746,7 @@
             "lead": "CuteCharmF",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 20,
             "results": [
                 {
@@ -4147,7 +4781,8 @@
                         36,
                         58,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4181,7 +4816,8 @@
                         35,
                         40,
                         27
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4215,7 +4851,8 @@
                         40,
                         30,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4249,7 +4886,8 @@
                         41,
                         35,
                         45
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4283,7 +4921,8 @@
                         40,
                         30,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4317,7 +4956,8 @@
                         37,
                         32,
                         46
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4351,7 +4991,8 @@
                         44,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4385,7 +5026,8 @@
                         40,
                         34,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4419,7 +5061,8 @@
                         36,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4453,7 +5096,8 @@
                         40,
                         34,
                         39
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -4464,6 +5108,7 @@
             "lead": "MagnetPull",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 20,
             "results": [
                 {
@@ -4498,7 +5143,8 @@
                         36,
                         58,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4532,7 +5178,8 @@
                         24,
                         54,
                         17
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4566,7 +5213,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4600,7 +5248,8 @@
                         41,
                         31,
                         49
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4634,7 +5283,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4668,7 +5318,8 @@
                         37,
                         28,
                         46
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4702,7 +5353,8 @@
                         25,
                         56,
                         17
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4736,7 +5388,8 @@
                         38,
                         40,
                         27
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4770,7 +5423,8 @@
                         40,
                         34,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4804,7 +5458,8 @@
                         36,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -4815,6 +5470,7 @@
             "lead": "Pressure",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 20,
             "results": [
                 {
@@ -4849,7 +5505,8 @@
                         36,
                         58,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4883,7 +5540,8 @@
                         37,
                         43,
                         29
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4917,7 +5575,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -4951,7 +5610,8 @@
                         41,
                         31,
                         49
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -4985,7 +5645,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5019,7 +5680,8 @@
                         37,
                         28,
                         46
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5053,7 +5715,8 @@
                         36,
                         58,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5087,7 +5750,8 @@
                         48,
                         37,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5121,7 +5785,8 @@
                         40,
                         34,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5155,7 +5820,8 @@
                         36,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -5166,6 +5832,7 @@
             "lead": "Static",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 20,
             "results": [
                 {
@@ -5200,7 +5867,8 @@
                         36,
                         58,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5234,7 +5902,8 @@
                         43,
                         36,
                         47
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5268,7 +5937,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5302,7 +5972,8 @@
                         41,
                         31,
                         49
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5336,7 +6007,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5370,7 +6042,8 @@
                         37,
                         28,
                         46
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5404,7 +6077,8 @@
                         44,
                         37,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5438,7 +6112,8 @@
                         44,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5472,7 +6147,8 @@
                         40,
                         34,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5506,7 +6182,8 @@
                         36,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -5517,6 +6194,7 @@
             "lead": "Synchronize",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 20,
             "results": [
                 {
@@ -5551,7 +6229,8 @@
                         36,
                         58,
                         30
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5585,7 +6264,8 @@
                         35,
                         40,
                         27
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5619,7 +6299,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5653,7 +6334,8 @@
                         41,
                         31,
                         49
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5687,7 +6369,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5721,7 +6404,8 @@
                         37,
                         28,
                         46
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5755,7 +6439,8 @@
                         36,
                         58,
                         28
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5789,7 +6474,8 @@
                         40,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5823,7 +6509,8 @@
                         40,
                         34,
                         48
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -5857,7 +6544,370 @@
                         36,
                         34,
                         44
-                    ]
+                    ],
+                    "valid": true
+                }
+            ]
+        },
+        {
+            "name": "Black2 Route 1 Swarm",
+            "seed": 0,
+            "encounter": "Grass",
+            "lead": "None",
+            "version": "Black2",
+            "luckyPower": "None",
+            "swarm": true,
+            "location": 99,
+            "results": [
+                {
+                    "ability": 1,
+                    "abilityIndex": 146,
+                    "advances": 46,
+                    "characteristic": 17,
+                    "chatot": 40,
+                    "encounterSlot": 1,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 56,
+                    "nature": 1,
+                    "pid": 4005103545,
+                    "shiny": 0,
+                    "specie": 507,
+                    "stats": [
+                        151,
+                        119,
+                        79,
+                        59,
+                        87,
+                        87
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 39,
+                    "advances": 47,
+                    "characteristic": 7,
+                    "chatot": 55,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 51,
+                    "nature": 24,
+                    "pid": 2433719171,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        125,
+                        85,
+                        70,
+                        77,
+                        76,
+                        79
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 51,
+                    "advances": 48,
+                    "characteristic": 7,
+                    "chatot": 39,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 46,
+                    "nature": 14,
+                    "pid": 4271269493,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        113,
+                        77,
+                        64,
+                        70,
+                        62,
+                        79
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 51,
+                    "advances": 49,
+                    "characteristic": 17,
+                    "chatot": 2,
+                    "encounterSlot": 0,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 56,
+                    "nature": 1,
+                    "pid": 2546407467,
+                    "shiny": 0,
+                    "specie": 505,
+                    "stats": [
+                        145,
+                        126,
+                        82,
+                        87,
+                        91,
+                        106
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 51,
+                    "advances": 50,
+                    "characteristic": 7,
+                    "chatot": 43,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 51,
+                    "nature": 4,
+                    "pid": 2383296959,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        125,
+                        93,
+                        70,
+                        77,
+                        68,
+                        79
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 22,
+                    "advances": 51,
+                    "characteristic": 17,
+                    "chatot": 6,
+                    "encounterSlot": 3,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 57,
+                    "nature": 0,
+                    "pid": 750536468,
+                    "shiny": 0,
+                    "specie": 507,
+                    "stats": [
+                        153,
+                        111,
+                        89,
+                        60,
+                        88,
+                        88
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 51,
+                    "advances": 52,
+                    "characteristic": 17,
+                    "chatot": 99,
+                    "encounterSlot": 0,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 56,
+                    "nature": 15,
+                    "pid": 2281511253,
+                    "shiny": 0,
+                    "specie": 505,
+                    "stats": [
+                        145,
+                        103,
+                        92,
+                        95,
+                        91,
+                        106
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 39,
+                    "advances": 53,
+                    "characteristic": 17,
+                    "chatot": 59,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 43,
+                    "nature": 10,
+                    "pid": 2642215467,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        107,
+                        64,
+                        60,
+                        66,
+                        65,
+                        74
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 51,
+                    "advances": 54,
+                    "characteristic": 7,
+                    "chatot": 5,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 53,
+                    "nature": 8,
+                    "pid": 1886438064,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        129,
+                        88,
+                        80,
+                        72,
+                        79,
+                        82
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 51,
+                    "advances": 55,
+                    "characteristic": 7,
+                    "chatot": 17,
+                    "encounterSlot": 12,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 51,
+                    "nature": 7,
+                    "pid": 3649475039,
+                    "shiny": 0,
+                    "specie": 83,
+                    "stats": [
+                        125,
+                        85,
+                        77,
+                        77,
+                        76,
+                        71
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -5868,6 +6918,7 @@
             "lead": "None",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 119,
             "results": [
                 {
@@ -5902,7 +6953,8 @@
                         64,
                         45,
                         83
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5936,7 +6988,8 @@
                         55,
                         39,
                         65
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -5970,7 +7023,8 @@
                         72,
                         50,
                         85
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6004,7 +7058,8 @@
                         62,
                         39,
                         81
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6038,7 +7093,8 @@
                         57,
                         40,
                         67
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6072,7 +7128,8 @@
                         68,
                         43,
                         80
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6106,7 +7163,8 @@
                         61,
                         43,
                         71
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6140,7 +7198,8 @@
                         58,
                         38,
                         62
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6174,7 +7233,8 @@
                         57,
                         40,
                         73
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6208,7 +7268,8 @@
                         68,
                         53,
                         89
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -6219,8 +7280,44 @@
             "lead": "None",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 119,
             "results": [
+                {
+                    "ability": 1,
+                    "abilityIndex": 41,
+                    "advances": 46,
+                    "characteristic": 17,
+                    "chatot": 40,
+                    "encounterSlot": 0,
+                    "form": 0,
+                    "gender": 0,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 42,
+                    "nature": 1,
+                    "pid": 4005103545,
+                    "shiny": 0,
+                    "specie": 118,
+                    "stats": [
+                        99,
+                        79,
+                        56,
+                        45,
+                        54,
+                        69
+                    ],
+                    "valid": false
+                },
                 {
                     "ability": 1,
                     "abilityIndex": 41,
@@ -6253,7 +7350,8 @@
                         53,
                         63,
                         81
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6287,7 +7385,8 @@
                         91,
                         56,
                         117
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6321,7 +7420,8 @@
                         43,
                         51,
                         66
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6355,7 +7455,78 @@
                         57,
                         61,
                         87
-                    ]
+                    ],
+                    "valid": true
+                },
+                {
+                    "ability": 0,
+                    "abilityIndex": 120,
+                    "advances": 51,
+                    "characteristic": 17,
+                    "chatot": 6,
+                    "encounterSlot": 1,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 45,
+                    "nature": 0,
+                    "pid": 750536468,
+                    "shiny": 0,
+                    "specie": 550,
+                    "stats": [
+                        127,
+                        99,
+                        72,
+                        89,
+                        62,
+                        105
+                    ],
+                    "valid": false
+                },
+                {
+                    "ability": 1,
+                    "abilityIndex": 41,
+                    "advances": 52,
+                    "characteristic": 17,
+                    "chatot": 99,
+                    "encounterSlot": 0,
+                    "form": 0,
+                    "gender": 1,
+                    "hiddenPower": 14,
+                    "hiddenPowerStrength": 49,
+                    "item": 0,
+                    "ivs": [
+                        22,
+                        27,
+                        19,
+                        27,
+                        17,
+                        27
+                    ],
+                    "level": 46,
+                    "nature": 15,
+                    "pid": 2281511253,
+                    "shiny": 0,
+                    "specie": 118,
+                    "stats": [
+                        107,
+                        71,
+                        68,
+                        53,
+                        58,
+                        75
+                    ],
+                    "valid": false
                 },
                 {
                     "ability": 1,
@@ -6389,7 +7560,8 @@
                         46,
                         55,
                         77
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6423,7 +7595,8 @@
                         44,
                         58,
                         75
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6457,7 +7630,8 @@
                         98,
                         68,
                         104
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         },
@@ -6468,6 +7642,7 @@
             "lead": "SuctionCups",
             "version": "Black2",
             "luckyPower": "None",
+            "swarm": false,
             "location": 119,
             "results": [
                 {
@@ -6502,7 +7677,8 @@
                         91,
                         63,
                         117
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6536,7 +7712,8 @@
                         45,
                         54,
                         69
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6570,7 +7747,8 @@
                         53,
                         63,
                         81
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6604,7 +7782,8 @@
                         91,
                         56,
                         117
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6638,7 +7817,8 @@
                         43,
                         51,
                         66
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6672,7 +7852,8 @@
                         57,
                         61,
                         87
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6706,7 +7887,8 @@
                         89,
                         62,
                         105
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6740,7 +7922,8 @@
                         53,
                         58,
                         75
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 1,
@@ -6774,7 +7957,8 @@
                         46,
                         55,
                         77
-                    ]
+                    ],
+                    "valid": true
                 },
                 {
                     "ability": 0,
@@ -6808,7 +7992,8 @@
                         44,
                         58,
                         75
-                    ]
+                    ],
+                    "valid": true
                 }
             ]
         }

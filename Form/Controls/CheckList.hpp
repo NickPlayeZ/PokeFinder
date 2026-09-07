@@ -21,6 +21,7 @@
 #define CHECKLIST
 
 #include <Core/Global.hpp>
+#include <Core/Util/StackVector.hpp>
 #include <QComboBox>
 
 class CheckListProxyModel;
@@ -102,6 +103,22 @@ public:
         auto checked = getChecked();
         std::array<bool, size> array;
         std::ranges::copy(checked, array.begin());
+        return array;
+    }
+
+    /**
+     * @brief Determines which of the check boxes are checked
+     *
+     * @tparam size Size of the array
+     *
+     * @return Array of true/false to signify which check boxes are checked
+     */
+    template <size_t size>
+    StackVector<bool, size> getCheckedVector() const
+    {
+        auto checked = getChecked();
+        StackVector<bool, size> array;
+        std::ranges::copy(checked, std::back_inserter(array));
         return array;
     }
 
