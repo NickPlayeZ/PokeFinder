@@ -250,9 +250,9 @@ std::vector<SearcherState> GameCubeSearcher::searchChannel(u8 hp, u8 atk, u8 def
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverChannelIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        XDRNGR rng(seeds[i]);
+        XDRNGR rng(origin);
 
         rng.advance(3);
         u16 low = rng.nextUShort();
@@ -273,13 +273,13 @@ std::vector<SearcherState> GameCubeSearcher::searchChannel(u8 hp, u8 atk, u8 def
             continue;
         }
 
-        u32 origin = rng.next();
-        if (!validateJirachi(origin))
+        u32 seed = rng.next();
+        if (!validateJirachi(seed))
         {
             continue;
         }
 
-        SearcherState state(origin, pid, ivs, pid & 1, 2, staticTemplate->getLevel(), nature, Utilities::getShiny<true>(pid, tid ^ sid),
+        SearcherState state(seed, pid, ivs, pid & 1, 2, staticTemplate->getLevel(), nature, Utilities::getShiny<true>(pid, tid ^ sid),
                             info);
         if (filter.compareState(static_cast<const SearcherState &>(state)))
         {
@@ -307,7 +307,7 @@ std::vector<SearcherState> GameCubeSearcher::searchColoShadow(u8 hp, u8 atk, u8 
     }
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         XDRNG rng(seeds[i]);
 
@@ -363,7 +363,7 @@ std::vector<SearcherState> GameCubeSearcher::searchGalesShadow(u8 hp, u8 atk, u8
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         XDRNG rng(seeds[i]);
 
@@ -444,11 +444,11 @@ std::vector<SearcherState> GameCubeSearcher::searchNonLock(u8 hp, u8 atk, u8 def
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        XDRNG rng(seeds[i]);
+        XDRNG rng(origin);
 
-        u32 seed = XDRNGR(seeds[i]).next();
+        u32 seed = XDRNGR(origin).next();
         u8 ability;
         u16 high;
         u16 low;

@@ -43,9 +43,9 @@ static void calcMethod12(std::vector<IVToPIDState> &states, u8 hp, u8 atk, u8 de
 {
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
 
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
+        PokeRNGR rng(origin);
 
         u16 high = rng.nextUShort();
         u16 low = rng.nextUShort();
@@ -85,9 +85,9 @@ static void calcMethod12(std::vector<IVToPIDState> &states, u8 hp, u8 atk, u8 de
         }
     }
 
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i], 1);
+        PokeRNGR rng(origin, 1);
 
         u16 high = rng.nextUShort();
         u16 low = rng.nextUShort();
@@ -120,9 +120,9 @@ static void calcMethod4(std::vector<IVToPIDState> &states, u8 hp, u8 atk, u8 def
 {
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method4);
 
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        PokeRNGR rng(seeds[i]);
+        PokeRNGR rng(origin);
 
         u16 high = rng.nextUShort();
         u16 low = rng.nextUShort();
@@ -154,9 +154,9 @@ static void calcMethodChannel(std::vector<IVToPIDState> &states, u8 hp, u8 atk, 
 {
     auto seeds = LCRNGReverse::recoverChannelIV(hp, atk, def, spa, spd, spe);
 
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        XDRNGR rng(seeds[i], 3);
+        XDRNGR rng(origin, 3);
 
         u16 low = rng.nextUShort();
         u16 high = rng.nextUShort();
@@ -195,11 +195,11 @@ static void calcMethodXDColo(std::vector<IVToPIDState> &states, u8 hp, u8 atk, u
 {
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
 
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        u32 seed = XDRNGR(seeds[i]).next();
+        u32 seed = XDRNGR(origin).next();
 
-        XDRNG rng(seeds[i], 2);
+        XDRNG rng(origin, 2);
 
         u16 high = rng.nextUShort();
         u16 low = rng.nextUShort();
