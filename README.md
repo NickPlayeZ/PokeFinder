@@ -17,6 +17,7 @@ Gen 3 Emerald
 - added multi lead search so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once
 
 Gen 4
+- added full DPPt Poké Radar RNG support
 - added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)
 - added items to HGSS Rock Smash generator
 - PokeFinder now shows all Advances advance number, Chatot Pitch and Call Letter, even those that do not yield an encounter for things like Fishing or Rock Smash RNG, so that users can easier track what Advance they're on at all times 
