@@ -2767,10 +2767,6 @@
         <translation>Espacio de encuentro</translation>
     </message>
     <message>
-        <source>Swarm</source>
-        <translation>Manadas</translation>
-    </message>
-    <message>
         <source>Hidden Power</source>
         <translation>Poder Oculto</translation>
     </message>
@@ -10013,49 +10009,53 @@ Profile is missing or has an incompatible SHA cache.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="386"/>
+        <location filename="../Gen5/Wild5.cpp" line="396"/>
         <source>Invalid date range</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="386"/>
+        <location filename="../Gen5/Wild5.cpp" line="396"/>
         <source>Start date is after end date</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="493"/>
+        <location filename="../Gen5/Wild5.cpp" line="513"/>
         <source>Settings are configured for fast IV/SHA searching</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="498"/>
+        <location filename="../Gen5/Wild5.cpp" line="518"/>
         <source>Settings are configured for fast IV searching.
 Profile is missing or has an incompatible SHA cache.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="505"/>
+        <location filename="../Gen5/Wild5.cpp" line="525"/>
         <source>Profile does not have a IV cache file configured</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="510"/>
+        <location filename="../Gen5/Wild5.cpp" line="530"/>
         <source>Settings are not configured for fast searching</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="511"/>
+        <location filename="../Gen5/Wild5.cpp" line="531"/>
         <source>Keep initial/max advances below %1/%2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../Gen5/Wild5.cpp" line="512"/>
+        <location filename="../Gen5/Wild5.cpp" line="532"/>
         <source>Ensure IV filters are set to common spreads</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Levels</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Swarm</source>
+        <translation type="unfinished">Manadas</translation>
     </message>
 </context>
 <context>
@@ -10515,10 +10515,6 @@ Profile is missing or has an incompatible SHA cache.</source>
 <context>
     <name>WildGeneratorModel5</name>
     <message>
-<source>S</source>
-        <translation>S</translation>
-    </message>
-    <message>
         <location filename="../../Model/Gen5/WildModel5.cpp" line="81"/>
         <source>Square</source>
         <translation type="unfinished"></translation>
@@ -10975,10 +10971,6 @@ Profile is missing or has an incompatible SHA cache.</source>
 </context>
 <context>
     <name>WildSearcherModel5</name>
-    <message>
-<source>S</source>
-        <translation>S</translation>
-    </message>
     <message>
         <location filename="../../Model/Gen5/WildModel5.cpp" line="169"/>
         <source>Square</source>
