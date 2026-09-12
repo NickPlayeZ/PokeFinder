@@ -54,6 +54,11 @@ static u16 getItem(u8 rand, Lead lead, const PersonalInfo *info)
     }
 }
 
+static constexpr u64 synchronizeMask()
+{
+    return (1ULL << 25) - 1;
+}
+
 static bool isStepModifier(Lead lead)
 {
     return lead == Lead::ArenaTrap;
@@ -616,7 +621,14 @@ static void addOrMerge(std::vector<WildSearcherState4> &states, const WildSearch
     {
         if (matches(existing, state))
         {
-            existing.addLead(state.getLead());
+            if ((state.getLeadMask() & getLeadFlag(Lead::None)) != 0)
+            {
+                existing.setLeadMask(getLeadFlag(Lead::None));
+            }
+            else if ((existing.getLeadMask() & getLeadFlag(Lead::None)) == 0)
+            {
+                existing.setLeadMask(existing.getLeadMask() | state.getLeadMask());
+            }
             return;
         }
     }
@@ -671,42 +683,55 @@ void WildSearcher4::search(const std::array<u8, 6> &min, const std::array<u8, 6>
                                 return;
                             }
 
-                            std::vector<WildSearcherState4> mergedStates;
-                            for (Lead activeLead : leads)
+                            if (searchStepEncounter)
                             {
-                                lead = activeLead;
-                                modifiedSlots = area.getSlots(activeLead);
-                                thresh = area.getRate();
-                                if ((profile.getVersion() & Game::HGSS) != Game::None)
+                                std::vector<WildSearcherState4> mergedStates;
+                                const std::vector<Lead> selectedLeads = leads;
+                                for (Lead activeLead : selectedLeads)
                                 {
-                                    if (area.getEncounter() == Encounter::OldRod || area.getEncounter() == Encounter::GoodRod
-                                        || area.getEncounter() == Encounter::SuperRod)
+                                    lead = activeLead;
+                                    leads = { activeLead };
+                                    modifiedSlots = area.getSlots(activeLead);
+                                    thresh = area.getRate();
+                                    if ((profile.getVersion() & Game::HGSS) != Game::None)
                                     {
-                                        thresh += happiness;
-                                        if (activeLead == Lead::SuctionCups)
+                                        if (area.getEncounter() == Encounter::OldRod || area.getEncounter() == Encounter::GoodRod
+                                            || area.getEncounter() == Encounter::SuperRod)
+                                        {
+                                            thresh += happiness;
+                                            if (activeLead == Lead::SuctionCups)
+                                            {
+                                                thresh *= 2;
+                                            }
+                                        }
+                                        else if (activeLead == Lead::ArenaTrap && area.getEncounter() == Encounter::RockSmash)
                                         {
                                             thresh *= 2;
                                         }
                                     }
-                                    else if (activeLead == Lead::ArenaTrap && area.getEncounter() == Encounter::RockSmash)
+
+                                    auto states = search(hp, atk, def, spa, spd, spe, index);
+                                    for (auto &state : states)
                                     {
-                                        thresh *= 2;
+                                        state.setLead(activeLead);
+                                        addOrMerge(mergedStates, state);
                                     }
-                                }
 
-                                auto states = search(hp, atk, def, spa, spd, spe, index);
-                                for (auto &state : states)
+                                    progress.fetch_add(1, std::memory_order_relaxed);
+                                }
+                                leads = selectedLeads;
+
                                 {
-                                    state.setLead(activeLead);
-                                    addOrMerge(mergedStates, state);
+                                    std::lock_guard<std::mutex> guard(mutex);
+                                    results.insert(results.end(), mergedStates.begin(), mergedStates.end());
                                 }
-
-                                progress.fetch_add(1, std::memory_order_relaxed);
                             }
-
+                            else
                             {
+                                auto states = search(hp, atk, def, spa, spd, spe, index);
                                 std::lock_guard<std::mutex> guard(mutex);
-                                results.insert(results.end(), mergedStates.begin(), mergedStates.end());
+                                results.insert(results.end(), states.begin(), states.end());
+                                progress.fetch_add(1, std::memory_order_relaxed);
                             }
                         }
                     }
@@ -930,9 +955,10 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                     u32 pid = nature + buffer;
                     WildSearcherState4 state(rng.next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
                                              Utilities::getShiny<true>(pid, tsv), encounterSlot, item, slot.getSpecie(), form, info);
+                    state.setLeadMask(getLeadFlag(lead));
                     if (filter.compareState(static_cast<const WildSearcherState &>(state)))
                     {
-                        states.emplace_back(state);
+                        addOrMerge(states, state);
                     }
                 }
             }
@@ -951,6 +977,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                 u16 levelRand[2];
                 PokeRNGR test[2] = { rng, rng };
                 bool valid[2] = { false, false };
+                u64 leadMask[2] = { getLeadFlag(lead), getLeadFlag(lead) };
 
                 Lead leadCategory = isSynchronizeLead(lead) ? Lead::Synchronize : lead;
                 switch (leadCategory)
@@ -999,7 +1026,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                     }
                     break;
                 case Lead::Synchronize:
-                    if ((nextRNG / 0x8000) == 0 && toInt(lead) == nature)
+                    if ((nextRNG / 0x8000) == 0)
                     {
                         if (grass)
                         {
@@ -1210,9 +1237,10 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
 
                         WildSearcherState4 state(test[i].next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
                                                  Utilities::getShiny<true>(pid, tsv), encounterSlot[i], item, slot.getSpecie(), form, info);
+                        state.setLeadMask(leadMask[i]);
                         if (filter.compareState(static_cast<const WildSearcherState &>(state)))
                         {
-                            states.emplace_back(state);
+                            addOrMerge(states, state);
                         }
                     }
                 }
@@ -1385,9 +1413,10 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                     WildSearcherState4 state(rng.next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
                                              Utilities::getShiny<true>(pid, tsv), encounterSlot, item, slot.getSpecie(),
                                              slot.getSpecie() == 201 ? form : 0, info);
+                    state.setLeadMask(getLeadFlag(lead));
                     if (filter.compareState(static_cast<const WildSearcherState &>(state)))
                     {
-                        states.emplace_back(state);
+                        addOrMerge(states, state);
                     }
                 }
             }
@@ -1406,6 +1435,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                 u16 levelRand[2];
                 PokeRNGR test[2] = { rng, rng };
                 bool valid[2] = { false, false };
+                u64 leadMask[2] = { getLeadFlag(lead), getLeadFlag(lead) };
 
                 Lead leadCategory = isSynchronizeLead(lead) ? Lead::Synchronize : lead;
                 switch (leadCategory)
@@ -1433,7 +1463,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                     }
                     break;
                 case Lead::Synchronize:
-                    if ((nextRNG % 2) == 0 && toInt(lead) == nature)
+                    if ((nextRNG % 2) == 0)
                     {
                         if (safari)
                         {
@@ -1547,9 +1577,10 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                         WildSearcherState4 state(test[i].next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
                                                  Utilities::getShiny<true>(pid, tsv), encounterSlot[i], item, slot.getSpecie(),
                                                  slot.getSpecie() == 201 ? form : 0, info);
+                        state.setLeadMask(leadMask[i]);
                         if (filter.compareState(static_cast<const WildSearcherState &>(state)))
                         {
-                            states.emplace_back(state);
+                            addOrMerge(states, state);
                         }
                     }
                 }

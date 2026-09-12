@@ -40,7 +40,14 @@ static void mergeLeadState(std::vector<SearcherState4> &states, const SearcherSt
     auto state = std::find_if(states.begin(), states.end(), [&newState](const auto &state) { return sameTarget(state, newState); });
     if (state != states.end())
     {
-        state->setLeadMask(state->getLeadMask() | newState.getLeadMask());
+        if ((newState.getLeadMask() & getLeadFlag(Lead::None)) != 0)
+        {
+            state->setLeadMask(getLeadFlag(Lead::None));
+        }
+        else if ((state->getLeadMask() & getLeadFlag(Lead::None)) == 0)
+        {
+            state->setLeadMask(state->getLeadMask() | newState.getLeadMask());
+        }
     }
     else
     {

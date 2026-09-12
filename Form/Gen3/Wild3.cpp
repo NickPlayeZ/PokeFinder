@@ -384,7 +384,7 @@ void Wild3::search()
     {
         maxProgress *= max[i] - min[i] + 1;
     }
-    searcher->setMaxProgress(maxProgress * static_cast<int>(leads.size()));
+    searcher->setMaxProgress(maxProgress);
 
     auto *timer = new QTimer(this);
     connect(ui->pushButtonCancel, &QPushButton::clicked, timer, [this, searcher] {
