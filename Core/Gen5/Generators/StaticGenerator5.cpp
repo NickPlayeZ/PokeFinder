@@ -247,27 +247,22 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
             continue;
         }
 
-        for (Lead activeLead : leads)
+        auto powerStates = generateWild(seed, powerIVs, activeLuckyPower);
+        states.reserve(states.size() + powerStates.size());
+        for (const auto &state : powerStates)
         {
-            auto leadStates = generateWild(seed, powerIVs, activeLuckyPower, activeLead);
-            states.reserve(states.size() + leadStates.size());
-            for (auto state : leadStates)
+            if (!filter.compareState(static_cast<const State &>(state)))
             {
-                if (!filter.compareState(static_cast<const State &>(state)))
-                {
-                    continue;
-                }
-
-                addState(states, state, activeLead);
+                continue;
             }
+            addState(states, state, state.getLead());
         }
     }
 
     return states;
 }
 
-std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 luckyPower,
-                                                   Lead lead) const
+std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 luckyPower) const
 {
     u32 advances = Utilities5::initialAdvances(seed, profile);
     BWRNG rng(seed, advances + initialAdvances);
@@ -290,23 +285,48 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
         }
     }
 
+    u64 selectedLeadMask = 0;
+    u64 synchronizeLeadMask = 0;
+    u64 filteredSynchronizeMask = 0;
+    Lead synchronizeLead = Lead::None;
+    for (Lead selectedLead : leads)
+    {
+        selectedLeadMask |= getLeadFlag(selectedLead);
+        if (selectedLead <= Lead::SynchronizeEnd)
+        {
+            if (synchronizeLeadMask == 0)
+            {
+                synchronizeLead = selectedLead;
+            }
+            synchronizeLeadMask |= getLeadFlag(selectedLead);
+            if (filter.compareNature(toInt(selectedLead)))
+            {
+                filteredSynchronizeMask |= getLeadFlag(selectedLead);
+                synchronizeLead = selectedLead;
+            }
+        }
+    }
+    auto hasLead = [selectedLeadMask](Lead currentLead) { return (selectedLeadMask & getLeadFlag(currentLead)) != 0; };
+
     std::vector<State5> states;
     for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
     {
+        u32 prng = BWRNG(rng).nextUInt();
+        auto evaluateLead = [&](Lead currentLead) {
         BWRNG go(rng, jump);
 
         bool cuteCharm = false;
         bool sync = false;
 
         // Failed cute charm continues to check for other leads
-        if ((lead == Lead::CuteCharmM || lead == Lead::CuteCharmF) && getPercentRand(go, bw) < 67)
+        if ((currentLead == Lead::CuteCharmM || currentLead == Lead::CuteCharmF) && getPercentRand(go, bw) < 67)
         {
             cuteCharm = true;
         }
         else
         {
             bool flag = getPercentRand(go, bw) >= 50;
-            if (lead <= Lead::SynchronizeEnd)
+            if (currentLead <= Lead::SynchronizeEnd)
             {
                 sync = flag;
             }
@@ -321,7 +341,7 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
             // Only override the gender with cutecharm if the template doesn't have a forced gender
             if (cuteCharm && gender == 255)
             {
-                gender = lead == Lead::CuteCharmF ? 0 : 1;
+                gender = currentLead == Lead::CuteCharmF ? 0 : 1;
             }
         }
 
@@ -342,19 +362,36 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
         u8 nature = go.nextUInt(25);
         if (sync)
         {
-            nature = toInt(lead);
+            nature = toInt(currentLead);
         }
 
-        u32 prng = rng.nextUInt();
+        u64 resultLeadMask = getLeadFlag(currentLead);
+        if (currentLead <= Lead::SynchronizeEnd)
+        {
+            resultLeadMask = sync ? filteredSynchronizeMask : synchronizeLeadMask;
+            if (resultLeadMask == 0)
+            {
+                return;
+            }
+        }
+
         for (const auto &iv : ivs)
         {
             State5 state(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, staticTemplate.getLevel(),
-                         nature, shiny, info, luckyPower, lead, sync);
+                         nature, shiny, info, luckyPower, currentLead, sync);
+            state.setLeadMask(resultLeadMask);
             if (filter.compareState(static_cast<const State &>(state)))
             {
-                states.emplace_back(state);
+                addState(states, state, currentLead);
             }
         }
+        };
+
+        if (hasLead(Lead::None)) evaluateLead(Lead::None);
+        if (hasLead(Lead::CuteCharmF)) evaluateLead(Lead::CuteCharmF);
+        if (hasLead(Lead::CuteCharmM)) evaluateLead(Lead::CuteCharmM);
+        if (synchronizeLeadMask != 0) evaluateLead(synchronizeLead);
+        rng.next();
     }
 
     return states;

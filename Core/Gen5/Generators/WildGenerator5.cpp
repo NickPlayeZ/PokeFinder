@@ -457,29 +457,26 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             continue;
         }
 
-        for (Lead activeLead : leads)
+        auto powerStates = generate(seed, powerIVs, activePassPower);
+        states.reserve(states.size() + powerStates.size());
+        for (const auto &state : powerStates)
         {
-            auto leadStates = generate(seed, powerIVs, activePassPower, activeLead);
-            states.reserve(states.size() + leadStates.size());
-            for (auto state : leadStates)
+            if (requireMovingTrigger && !state.isValid())
             {
-                if (requireMovingTrigger && !state.isValid())
-                {
-                    continue;
-                }
-
-                if (filterNonRequiredLeads && state.getLead() != Lead::None && !state.getLeadRequired())
-                {
-                    continue;
-                }
-
-                if (!state.getPhenomenonItem() && !filter.compareState(static_cast<const WildState &>(state)))
-                {
-                    continue;
-                }
-
-                addState(states, state, activeLead);
+                continue;
             }
+
+            if (filterNonRequiredLeads && state.getLead() != Lead::None && !state.getLeadRequired())
+            {
+                continue;
+            }
+
+            if (!state.getPhenomenonItem() && !filter.compareState(static_cast<const WildState &>(state)))
+            {
+                continue;
+            }
+
+            addState(states, state, state.getLead());
         }
     }
 
@@ -509,8 +506,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
     return states;
 }
 
-std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower,
-                                                 Lead lead) const
+std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower) const
 {
     u8 luckyPower = getLuckyPower(passPower);
     u32 advances = Utilities5::initialAdvances(seed, profile);
@@ -518,29 +514,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
     bool bw2 = (profile.getVersion() & Game::BW2) != Game::None;
     bool bw = (profile.getVersion() & Game::BW) != Game::None;
     BWRNG rng(seed, start);
-    BWRNG encounterRNG(seed, start);
-    u32 triggerOffset = 0;
-    if (searchMovingTrigger)
-    {
-        if (bw2)
-        {
-            triggerOffset = isStepModifier(lead) ? 0 : 1;
-        }
-        else if (bw && (lead == Lead::None || lead <= Lead::SynchronizeEnd))
-        {
-            triggerOffset = 1;
-        }
-    }
-    BWRNG triggerRNG(seed, start + triggerOffset);
     auto jump = rng.getJump(offset);
-
-    auto modifiedSlots = area.getSlots(lead);
-
-    u8 rate = area.getRate();
-    if (area.getEncounter() == Encounter::SuperRod && lead == Lead::SuctionCups)
-    {
-        rate *= 2;
-    }
 
     u8 shinyRolls = 1;
     if ((profile.getVersion() & Game::BW2) != Game::None)
@@ -556,12 +530,35 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         }
     }
 
+    u64 selectedLeadMask = 0;
+    u64 synchronizeLeadMask = 0;
+    u64 filteredSynchronizeMask = 0;
+    Lead synchronizeLead = Lead::None;
+    for (Lead selectedLead : leads)
+    {
+        selectedLeadMask |= getLeadFlag(selectedLead);
+        if (selectedLead <= Lead::SynchronizeEnd)
+        {
+            if (synchronizeLeadMask == 0)
+            {
+                synchronizeLead = selectedLead;
+            }
+            synchronizeLeadMask |= getLeadFlag(selectedLead);
+            if (filter.compareNature(toInt(selectedLead)))
+            {
+                filteredSynchronizeMask |= getLeadFlag(selectedLead);
+                synchronizeLead = selectedLead;
+            }
+        }
+    }
+    auto hasLead = [selectedLeadMask](Lead currentLead) { return (selectedLeadMask & getLeadFlag(currentLead)) != 0; };
+
     std::vector<WildState5> states;
     bool nsPokemonReleasedOffset
         = profile.getMemoryLink() && profile.getNsPokemonReleased() && usesNsPokemonReleasedOffset(area.getEncounter());
     for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
     {
-        BWRNG payloadRng(searchMovingTrigger ? encounterRNG : rng);
+        BWRNG payloadRng(searchMovingTrigger ? BWRNG(seed, start + cnt) : rng);
         if (searchMovingTrigger && bw && start + cnt > 0)
         {
             payloadRng = BWRNG(seed, start + cnt - 1);
@@ -572,7 +569,28 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             payloadRng.next();
         }
 
+        auto evaluateLead = [&](Lead currentLead) {
         BWRNG go(payloadRng, jump);
+        u32 triggerOffset = 0;
+        if (searchMovingTrigger)
+        {
+            if (bw2)
+            {
+                triggerOffset = isStepModifier(currentLead) ? 0 : 1;
+            }
+            else if (bw && (currentLead == Lead::None || currentLead <= Lead::SynchronizeEnd))
+            {
+                triggerOffset = 1;
+            }
+        }
+        BWRNG triggerGo(seed, start + cnt + triggerOffset);
+        triggerGo.jump(jump);
+        auto modifiedSlots = area.getSlots(currentLead);
+        u8 rate = area.getRate();
+        if (area.getEncounter() == Encounter::SuperRod && currentLead == Lead::SuctionCups)
+        {
+            rate *= 2;
+        }
         bool valid = true;
 
         bool cuteCharm = false;
@@ -592,17 +610,17 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         }
 
         if (searchMovingTrigger && bw
-            && (lead == Lead::None || lead <= Lead::SynchronizeEnd || isStepModifier(lead) || lead == Lead::CompoundEyes
-                || lead == Lead::SuctionCups))
+            && (currentLead == Lead::None || currentLead <= Lead::SynchronizeEnd || isStepModifier(currentLead)
+                || currentLead == Lead::CompoundEyes || currentLead == Lead::SuctionCups))
         {
             getPercentRand(go, bw);
         }
 
-        if (area.getEncounter() == Encounter::FlyingShadow && !skipsLeadCheck(area.getEncounter(), lead))
+        if (area.getEncounter() == Encounter::FlyingShadow && !skipsLeadCheck(area.getEncounter(), currentLead))
         {
-            if (lead == Lead::CuteCharmM || lead == Lead::CuteCharmF)
+            if (currentLead == Lead::CuteCharmM || currentLead == Lead::CuteCharmF)
             {
-                cuteCharm = checkFlyingShadowLead(go, lead);
+                cuteCharm = checkFlyingShadowLead(go, currentLead);
                 if (!cuteCharm)
                 {
                     go.advance(1);
@@ -610,25 +628,26 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             }
             else
             {
-                bool flag = checkFlyingShadowLead(go, lead);
-                if (lead == Lead::MagnetPull || lead == Lead::Static)
+                bool flag = checkFlyingShadowLead(go, currentLead);
+                if (currentLead == Lead::MagnetPull || currentLead == Lead::Static)
                 {
                     magnetStatic = flag;
                 }
-                else if (lead == Lead::Pressure)
+                else if (currentLead == Lead::Pressure)
                 {
                     pressure = flag;
                 }
-                else if (lead <= Lead::SynchronizeEnd)
+                else if (currentLead <= Lead::SynchronizeEnd)
                 {
                     sync = flag;
                 }
             }
         }
-        else if (!phenomenonItem && !skipsLeadCheck(area.getEncounter(), lead) && (!searchMovingTrigger || !isStepModifier(lead)))
+        else if (!phenomenonItem && !skipsLeadCheck(area.getEncounter(), currentLead)
+                 && (!searchMovingTrigger || !isStepModifier(currentLead)))
         {
             // Failed cute charm continues to check for other leads
-            if ((lead == Lead::CuteCharmM || lead == Lead::CuteCharmF) && getPercentRand(go, bw) < 67)
+            if ((currentLead == Lead::CuteCharmM || currentLead == Lead::CuteCharmF) && getPercentRand(go, bw) < 67)
             {
                 cuteCharm = true;
             }
@@ -637,15 +656,15 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                 bool flag;
                 flag = getPercentRand(go, bw) >= 50;
 
-                if (lead == Lead::MagnetPull || lead == Lead::Static)
+                if (currentLead == Lead::MagnetPull || currentLead == Lead::Static)
                 {
                     magnetStatic = flag;
                 }
-                else if (lead == Lead::Pressure)
+                else if (currentLead == Lead::Pressure)
                 {
                     pressure = flag;
                 }
-                else if (lead <= Lead::SynchronizeEnd)
+                else if (currentLead <= Lead::SynchronizeEnd)
                 {
                     sync = flag;
                 }
@@ -663,19 +682,14 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             valid = false;
         }
 
-        BWRNG triggerGo(triggerRNG, jump);
-        u8 movingTrigger = searchMovingTrigger ? (bw2 ? getMovingTrigger(go) : getMovingTrigger(triggerGo, bw, lead, area.getEncounter()))
+        u8 movingTrigger = searchMovingTrigger
+            ? (bw2 ? getMovingTrigger(go) : getMovingTrigger(triggerGo, bw, currentLead, area.getEncounter()))
                                                : StepEncounter5::impossible;
         u8 movingSteps = searchMovingTrigger
             ? StepEncounter5::getSteps(profile.getVersion(), area.getEncounter(), area.getRate(), movingTrigger,
-                                       getStepEncounterModifier(lead, passPower))
+                                       getStepEncounterModifier(currentLead, passPower))
             : StepEncounter5::impossible;
         valid &= !searchMovingTrigger || movingSteps != StepEncounter5::impossible;
-        if (requireMovingTrigger && !valid)
-        {
-            rng.nextUInt(0x1fff);
-        }
-
         if (searchMovingTrigger && !bw2)
         {
             getMovingTrigger(go);
@@ -727,7 +741,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         for (u8 i = 0; i < shinyRolls; i++)
         {
             // Only allow cute charm if the target isn't fixed gender
-            u8 gender = cuteCharm && !info->getFixedGender() ? (lead == Lead::CuteCharmF ? 0 : 1) : 255;
+            u8 gender = cuteCharm && !info->getFixedGender() ? (currentLead == Lead::CuteCharmF ? 0 : 1) : 255;
 
             pid = Utilities5::createPID(tsv, 2, gender, Shiny::Random, true, info->getGender(), go);
             if (Utilities::isShiny<true>(pid, tsv))
@@ -744,35 +758,62 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
         bool variableNature = sync;
         if (sync)
         {
-            nature = toInt(lead);
+            nature = toInt(currentLead);
         }
 
-        bool leadRequired = lead == Lead::None || lead == Lead::CuteCharmF || lead == Lead::CuteCharmM || magnetStatic || pressure || sync
-            || lead == Lead::CompoundEyes || (lead == Lead::SuctionCups && area.getEncounter() == Encounter::SuperRod)
-            || (lead == Lead::ArenaTrap && searchMovingTrigger);
+        bool leadRequired = currentLead == Lead::None || currentLead == Lead::CuteCharmF || currentLead == Lead::CuteCharmM || magnetStatic
+            || pressure || sync || currentLead == Lead::CompoundEyes
+            || (currentLead == Lead::SuctionCups && area.getEncounter() == Encounter::SuperRod)
+            || (currentLead == Lead::ArenaTrap && searchMovingTrigger);
 
         if (!phenomenonItem)
         {
-            item = getItem(go, bw, lead, area.getEncounter(), info);
+            item = getItem(go, bw, currentLead, area.getEncounter(), info);
         }
 
-        bool phenomenon = canTriggerPhenomenon(area.getEncounter()) && BWRNG(rng).nextUInt(1000) < getPhenomenonRate(area.getEncounter());
-        u32 prng = rng.nextUInt();
-        if (searchMovingTrigger)
+        BWRNG resultRng(rng);
+        if (requireMovingTrigger && !valid)
         {
-            encounterRNG.next();
-            triggerRNG.next();
+            resultRng.nextUInt(0x1fff);
         }
+        bool phenomenon
+            = canTriggerPhenomenon(area.getEncounter()) && BWRNG(resultRng).nextUInt(1000) < getPhenomenonRate(area.getEncounter());
+        u32 prng = resultRng.nextUInt();
+
+        u64 resultLeadMask = getLeadFlag(currentLead);
+        if (currentLead <= Lead::SynchronizeEnd)
+        {
+            resultLeadMask = sync ? filteredSynchronizeMask : synchronizeLeadMask;
+            if (resultLeadMask == 0)
+            {
+                return;
+            }
+        }
+
         for (const auto &iv : ivs)
         {
             WildState5 state(prng, movingTrigger, movingSteps, phenomenon, phenomenonItem, advances + initialAdvances + cnt, iv.first, pid,
                              iv.second, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(), slot.getForm(), info, valid,
-                             passPower, lead, variableNature, leadRequired);
+                             passPower, currentLead, variableNature, leadRequired);
+            state.setLeadMask(resultLeadMask);
             if (!valid || phenomenonItem || filter.compareState(static_cast<const WildState &>(state)))
             {
-                states.emplace_back(state);
+                addState(states, state, currentLead);
             }
         }
+        };
+
+        if (hasLead(Lead::None)) evaluateLead(Lead::None);
+        if (hasLead(Lead::CuteCharmF)) evaluateLead(Lead::CuteCharmF);
+        if (hasLead(Lead::CuteCharmM)) evaluateLead(Lead::CuteCharmM);
+        if (synchronizeLeadMask != 0) evaluateLead(synchronizeLead);
+        if (hasLead(Lead::MagnetPull)) evaluateLead(Lead::MagnetPull);
+        if (hasLead(Lead::Static)) evaluateLead(Lead::Static);
+        if (hasLead(Lead::Pressure)) evaluateLead(Lead::Pressure);
+        if (hasLead(Lead::CompoundEyes)) evaluateLead(Lead::CompoundEyes);
+        if (hasLead(Lead::SuctionCups)) evaluateLead(Lead::SuctionCups);
+        if (hasLead(Lead::ArenaTrap)) evaluateLead(Lead::ArenaTrap);
+        rng.next();
     }
 
     return states;

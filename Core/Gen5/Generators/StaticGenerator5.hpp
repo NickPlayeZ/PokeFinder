@@ -106,7 +106,7 @@ private:
      */
     std::vector<State5> generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const;
 
-    std::vector<State5> generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 luckyPower, Lead lead) const;
+    std::vector<State5> generateWild(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 luckyPower) const;
 };
 
 #endif // STATICGENERATOR5_HPP

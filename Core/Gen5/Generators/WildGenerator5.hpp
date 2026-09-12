@@ -132,7 +132,7 @@ private:
     bool requirePassPowerIVAdvance;
     bool filterNonRequiredLeads;
 
-    std::vector<WildState5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower, Lead lead) const;
+    std::vector<WildState5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower) const;
 };
 
 #endif // WILDGENERATOR5_HPP
