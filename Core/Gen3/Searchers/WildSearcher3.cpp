@@ -70,7 +70,14 @@ static void mergeLeadState(std::vector<WildSearcherState> &states, const WildSea
     auto state = std::find_if(states.begin(), states.end(), [&newState](const auto &state) { return sameTarget(state, newState); });
     if (state != states.end())
     {
-        state->setLeadMask(state->getLeadMask() | newState.getLeadMask());
+        if ((newState.getLeadMask() & getLeadFlag(Lead::None)) != 0)
+        {
+            state->setLeadMask(getLeadFlag(Lead::None));
+        }
+        else if ((state->getLeadMask() & getLeadFlag(Lead::None)) == 0)
+        {
+            state->setLeadMask(state->getLeadMask() | newState.getLeadMask());
+        }
     }
     else
     {
@@ -172,7 +179,7 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
     u64 selectedLeadMask = 0;
     for (Lead selectedLead : leads)
     {
-        selectedLeadMask |= getLeadFlag(selectedLead);
+        selectedLeadMask |= selectedLead == Lead::Synchronize ? synchronizeMask() : getLeadFlag(selectedLead);
     }
     const u64 selectedSynchronizeMask = selectedLeadMask & synchronizeMask();
     auto hasLead = [selectedLeadMask](Lead lead) { return (selectedLeadMask & getLeadFlag(lead)) != 0; };
