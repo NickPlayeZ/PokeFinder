@@ -169,6 +169,13 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
 {
     std::vector<WildSearcherState> states;
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
+    u64 selectedLeadMask = 0;
+    for (Lead selectedLead : leads)
+    {
+        selectedLeadMask |= getLeadFlag(selectedLead);
+    }
+    const u64 selectedSynchronizeMask = selectedLeadMask & synchronizeMask();
+    auto hasLead = [selectedLeadMask](Lead lead) { return (selectedLeadMask & getLeadFlag(lead)) != 0; };
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, method);
     for (int i = 0; i < seeds.count; i++)
@@ -205,9 +212,7 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
 
         do
         {
-            for (Lead currentLead : leads)
-            {
-                Lead lead = currentLead;
+            auto evaluateLead = [&](Lead lead) {
                 ModifiedSlots modifiedSlots = area.getSlots(lead);
                 bool cuteCharmFlag = false;
                 u8 encounterSlot[4];
@@ -337,8 +342,10 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
                         encounterSlot[0] = EncounterSlot::hSlot(test[0].nextUShort(100), area.getEncounter());
                         valid[0] = filter.compareEncounterSlot(encounterSlot[0]);
                     }
-                    leadMask[0] = getLeadFlag(static_cast<Lead>(nature));
-                    leadMask[1] = getLeadFlag(static_cast<Lead>(nature));
+                    leadMask[0] = selectedSynchronizeMask & getLeadFlag(static_cast<Lead>(nature));
+                    leadMask[1] = leadMask[0];
+                    valid[0] = valid[0] && leadMask[0] != 0;
+                    valid[1] = valid[1] && leadMask[1] != 0;
                 }
 
                 if ((nextRNG2 & 1) == 1 && (nextRNG % 25) == nature)
@@ -379,8 +386,8 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
                         encounterSlot[2] = EncounterSlot::hSlot(test[2].nextUShort(100), area.getEncounter());
                         valid[2] = filter.compareEncounterSlot(encounterSlot[2]);
                     }
-                    leadMask[2] = synchronizeMask();
-                    leadMask[3] = synchronizeMask();
+                    leadMask[2] = selectedSynchronizeMask;
+                    leadMask[3] = selectedSynchronizeMask;
                 }
                 break;
             case Lead::MagnetPull:
@@ -473,6 +480,35 @@ std::vector<WildSearcherState> WildSearcher3::search(u8 hp, u8 atk, u8 def, u8 s
                 }
             }
 
+            };
+
+            if (hasLead(Lead::None))
+            {
+                evaluateLead(Lead::None);
+            }
+            if (hasLead(Lead::CuteCharmF))
+            {
+                evaluateLead(Lead::CuteCharmF);
+            }
+            if (hasLead(Lead::CuteCharmM))
+            {
+                evaluateLead(Lead::CuteCharmM);
+            }
+            if (selectedSynchronizeMask != 0)
+            {
+                evaluateLead(Lead::Synchronize);
+            }
+            if (hasLead(Lead::MagnetPull))
+            {
+                evaluateLead(Lead::MagnetPull);
+            }
+            if (hasLead(Lead::Static))
+            {
+                evaluateLead(Lead::Static);
+            }
+            if (hasLead(Lead::Pressure))
+            {
+                evaluateLead(Lead::Pressure);
             }
 
             if (tanoby)

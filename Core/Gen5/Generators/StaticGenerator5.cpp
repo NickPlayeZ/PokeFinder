@@ -52,18 +52,18 @@ static bool matches(const State5 &left, const State5 &right)
         && left.getIVs() == right.getIVs();
 }
 
-static void addState(std::vector<State5> &states, const State5 &state, Lead lead)
+static void addState(std::vector<State5> &states, const State5 &state)
 {
     auto iter = std::ranges::find_if(states, [&state](const State5 &other) { return matches(state, other); });
     if (iter != states.end())
     {
-        if (lead == Lead::None)
+        if ((state.getLeadMask() & getLeadFlag(Lead::None)) != 0)
         {
             iter->setLeadMask(getLeadFlag(Lead::None));
         }
         else if ((iter->getLeadMask() & getLeadFlag(Lead::None)) == 0)
         {
-            iter->addLead(lead);
+            iter->setLeadMask(iter->getLeadMask() | state.getLeadMask());
         }
     }
     else
@@ -233,12 +233,34 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
         }
     }
 
+    u64 selectedLeadMask = 0;
+    u64 synchronizeMask = 0;
+    u64 filteredSynchronizeMask = 0;
+    Lead synchronizeLead = Lead::None;
+    for (Lead selectedLead : leads)
+    {
+        selectedLeadMask |= getLeadFlag(selectedLead);
+        if (selectedLead <= Lead::SynchronizeEnd)
+        {
+            if (synchronizeMask == 0)
+            {
+                synchronizeLead = selectedLead;
+            }
+            synchronizeMask |= getLeadFlag(selectedLead);
+            if (filter.compareNature(toInt(selectedLead)))
+            {
+                filteredSynchronizeMask |= getLeadFlag(selectedLead);
+                synchronizeLead = selectedLead;
+            }
+        }
+    }
+    auto hasLead = [selectedLeadMask](Lead lead) { return (selectedLeadMask & getLeadFlag(lead)) != 0; };
+
     std::vector<State5> states;
     for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
     {
         u32 prng = BWRNG(rng).nextUInt();
-        for (Lead currentLead : leads)
-        {
+        auto evaluateLead = [&](Lead currentLead) {
             BWRNG go(rng, jump);
 
             bool cuteCharm = false;
@@ -291,16 +313,32 @@ std::vector<State5> StaticGenerator5::generateWild(u64 seed, const std::vector<s
                 nature = toInt(currentLead);
             }
 
+            u64 resultLeadMask = getLeadFlag(currentLead);
+            if (currentLead <= Lead::SynchronizeEnd)
+            {
+                resultLeadMask = sync ? filteredSynchronizeMask : synchronizeMask;
+                if (resultLeadMask == 0)
+                {
+                    return;
+                }
+            }
+
             for (const auto &iv : ivs)
             {
                 State5 state(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, staticTemplate.getLevel(),
                              nature, shiny, info, currentLead, sync);
+                state.setLeadMask(resultLeadMask);
                 if (filter.compareState(static_cast<const State &>(state)))
                 {
-                    addState(states, state, currentLead);
+                    addState(states, state);
                 }
             }
-        }
+        };
+
+        if (hasLead(Lead::None)) evaluateLead(Lead::None);
+        if (hasLead(Lead::CuteCharmF)) evaluateLead(Lead::CuteCharmF);
+        if (hasLead(Lead::CuteCharmM)) evaluateLead(Lead::CuteCharmM);
+        if (synchronizeMask != 0) evaluateLead(synchronizeLead);
         rng.next();
     }
 

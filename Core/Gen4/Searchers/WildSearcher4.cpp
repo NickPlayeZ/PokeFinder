@@ -212,6 +212,13 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
     bool grass = area.getEncounter() == Encounter::Grass;
     bool nibble = area.getEncounter() == Encounter::OldRod || area.getEncounter() == Encounter::GoodRod
         || area.getEncounter() == Encounter::SuperRod;
+    u64 selectedLeadMask = 0;
+    for (Lead selectedLead : leads)
+    {
+        selectedLeadMask |= getLeadFlag(selectedLead);
+    }
+    const u64 selectedSynchronizeMask = selectedLeadMask & synchronizeMask();
+    auto hasLead = [selectedLeadMask](Lead lead) { return (selectedLeadMask & getLeadFlag(lead)) != 0; };
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
     for (int i = 0; i < seeds.count; i++)
@@ -220,9 +227,26 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
         u8 itemRand = forward.nextUShort(100);
         u8 unownForm = area.unownForm(forward.nextUShort());
 
-        for (Lead currentLead : leads)
+        PokeRNGR normalRng(seeds[i]);
+        u32 normalPid = normalRng.nextUShort() << 16;
+        normalPid |= normalRng.nextUShort();
+        u8 normalNature = normalPid % 25;
+        std::vector<std::array<u32, 3>> candidates;
+        if (filter.compareNature(normalNature))
         {
-            Lead lead = currentLead;
+            u16 nextRNG = normalRng.nextUShort();
+            u16 nextRNG2 = normalRng.nextUShort();
+            u8 huntNature;
+            do
+            {
+                candidates.push_back({ normalRng.getSeed(), nextRNG, nextRNG2 });
+                huntNature = static_cast<u32>((nextRNG << 16) | nextRNG2) % 25;
+                nextRNG = normalRng.nextUShort();
+                nextRNG2 = normalRng.nextUShort();
+            } while (huntNature != normalNature);
+        }
+
+        auto evaluateLead = [&](Lead lead, const std::array<u32, 3> *normalCandidate) {
             ModifiedSlots modifiedSlots = area.getSlots(lead);
             u16 thresh = this->thresh;
             if ((profile.getVersion() & Game::HGSS) != Game::None
@@ -243,7 +267,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
             u8 nature = rng.nextUShort<false>(25);
             if (!filter.compareNature(nature))
             {
-                continue;
+                return;
             }
 
             if (rng.nextUShort<false>(3) != 0)
@@ -291,7 +315,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                     }
                     else
                     {
-                        continue;
+                        return;
                     }
 
                     u8 level;
@@ -325,21 +349,13 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
         }
         else
         {
-            u32 pid = rng.nextUShort() << 16;
-            pid |= rng.nextUShort();
-
-            u8 nature = pid % 25;
-            if (!filter.compareNature(nature))
+            u32 pid = normalPid;
+            u8 nature = normalNature;
             {
-                continue;
-            }
-
-            u8 huntNature;
-            u16 nextRNG = rng.nextUShort();
-            u16 nextRNG2 = rng.nextUShort();
-
-            do
-            {
+                const auto &candidate = *normalCandidate;
+                rng = PokeRNGR(candidate[0]);
+                u16 nextRNG = candidate[1];
+                u16 nextRNG2 = candidate[2];
                 u8 encounterSlot[2];
                 bool force = false;
                 u16 levelRand[2];
@@ -432,7 +448,8 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                                 valid[0] = filter.compareEncounterSlot(encounterSlot[0]);
                             }
                         }
-                        leadMask[0] = getLeadFlag(static_cast<Lead>(nature));
+                        leadMask[0] = selectedSynchronizeMask & getLeadFlag(static_cast<Lead>(nature));
+                        valid[0] = valid[0] && leadMask[0] != 0;
                     }
 
                     if ((nextRNG2 / 0x8000) == 1 && (nextRNG / 0xa3e) == nature)
@@ -474,7 +491,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                                 valid[1] = filter.compareEncounterSlot(encounterSlot[1]);
                             }
                         }
-                        leadMask[1] = synchronizeMask();
+                        leadMask[1] = selectedSynchronizeMask;
                     }
                     break;
                 case Lead::MagnetPull:
@@ -611,11 +628,21 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                     }
                 }
 
-                huntNature = static_cast<u32>((nextRNG << 16) | nextRNG2) % 25;
-                nextRNG = rng.nextUShort();
-                nextRNG2 = rng.nextUShort();
-            } while (huntNature != nature);
+            }
         }
+        };
+
+        if (hasLead(Lead::CuteCharmF)) evaluateLead(Lead::CuteCharmF, nullptr);
+        if (hasLead(Lead::CuteCharmM)) evaluateLead(Lead::CuteCharmM, nullptr);
+        for (const auto &candidate : candidates)
+        {
+            if (hasLead(Lead::None)) evaluateLead(Lead::None, &candidate);
+            if (selectedSynchronizeMask != 0) evaluateLead(Lead::Synchronize, &candidate);
+            if (hasLead(Lead::MagnetPull)) evaluateLead(Lead::MagnetPull, &candidate);
+            if (hasLead(Lead::Static)) evaluateLead(Lead::Static, &candidate);
+            if (hasLead(Lead::Pressure)) evaluateLead(Lead::Pressure, &candidate);
+            if (hasLead(Lead::CompoundEyes)) evaluateLead(Lead::CompoundEyes, &candidate);
+            if (hasLead(Lead::SuctionCups)) evaluateLead(Lead::SuctionCups, &candidate);
         }
     }
 
@@ -630,6 +657,13 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
     bool grass = area.getEncounter() == Encounter::Grass;
     bool nibble = area.getEncounter() == Encounter::RockSmash || area.getEncounter() == Encounter::OldRod
         || area.getEncounter() == Encounter::GoodRod || area.getEncounter() == Encounter::SuperRod;
+    u64 selectedLeadMask = 0;
+    for (Lead selectedLead : leads)
+    {
+        selectedLeadMask |= getLeadFlag(selectedLead);
+    }
+    const u64 selectedSynchronizeMask = selectedLeadMask & synchronizeMask();
+    auto hasLead = [selectedLeadMask](Lead lead) { return (selectedLeadMask & getLeadFlag(lead)) != 0; };
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
     for (int i = 0; i < seeds.count; i++)
@@ -654,9 +688,26 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
             }
         }
 
-        for (Lead currentLead : leads)
+        PokeRNGR normalRng(seeds[i]);
+        u32 normalPid = normalRng.nextUShort() << 16;
+        normalPid |= normalRng.nextUShort();
+        u8 normalNature = normalPid % 25;
+        std::vector<std::array<u32, 3>> candidates;
+        if (filter.compareNature(normalNature))
         {
-            Lead lead = currentLead;
+            u16 nextRNG = normalRng.nextUShort();
+            u16 nextRNG2 = normalRng.nextUShort();
+            u8 huntNature;
+            do
+            {
+                candidates.push_back({ normalRng.getSeed(), nextRNG, nextRNG2 });
+                huntNature = static_cast<u32>((nextRNG << 16) | nextRNG2) % 25;
+                nextRNG = normalRng.nextUShort();
+                nextRNG2 = normalRng.nextUShort();
+            } while (huntNature != normalNature);
+        }
+
+        auto evaluateLead = [&](Lead lead, const std::array<u32, 3> *normalCandidate) {
             ModifiedSlots modifiedSlots = area.getSlots(lead);
             u16 thresh = this->thresh;
             if ((profile.getVersion() & Game::HGSS) != Game::None)
@@ -683,7 +734,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
             u8 nature = rng.nextUShort(25);
             if (!filter.compareNature(nature))
             {
-                continue;
+                return;
             }
 
             if (rng.nextUShort(3) != 0)
@@ -706,7 +757,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
 
                 if (!filter.compareEncounterSlot(encounterSlot))
                 {
-                    continue;
+                    return;
                 }
 
                 if (!nibble || rng.nextUShort(100) < thresh)
@@ -724,7 +775,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                     }
                     else
                     {
-                        continue;
+                        return;
                     }
 
                     u8 level;
@@ -753,21 +804,13 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
         }
         else
         {
-            u32 pid = rng.nextUShort() << 16;
-            pid |= rng.nextUShort();
-
-            u8 nature = pid % 25;
-            if (!filter.compareNature(nature))
+            u32 pid = normalPid;
+            u8 nature = normalNature;
             {
-                continue;
-            }
-
-            u8 huntNature;
-            u16 nextRNG = rng.nextUShort();
-            u16 nextRNG2 = rng.nextUShort();
-
-            do
-            {
+                const auto &candidate = *normalCandidate;
+                rng = PokeRNGR(candidate[0]);
+                u16 nextRNG = candidate[1];
+                u16 nextRNG2 = candidate[2];
                 u8 encounterSlot[2];
                 bool force = false;
                 u16 levelRand[2];
@@ -816,7 +859,8 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                             encounterSlot[0] = EncounterSlot::kSlot(test[0].nextUShort(100), area.getEncounter());
                         }
                         valid[0] = filter.compareEncounterSlot(encounterSlot[0]);
-                        leadMask[0] = getLeadFlag(static_cast<Lead>(nature));
+                        leadMask[0] = selectedSynchronizeMask & getLeadFlag(static_cast<Lead>(nature));
+                        valid[0] = valid[0] && leadMask[0] != 0;
                     }
 
                     if ((nextRNG2 % 2) == 1 && (nextRNG % 25) == nature)
@@ -835,7 +879,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                             encounterSlot[1] = EncounterSlot::kSlot(test[1].nextUShort(100), area.getEncounter());
                         }
                         valid[1] = filter.compareEncounterSlot(encounterSlot[1]);
-                        leadMask[1] = synchronizeMask();
+                        leadMask[1] = selectedSynchronizeMask;
                     }
                     break;
                 case Lead::MagnetPull:
@@ -921,11 +965,22 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                     }
                 }
 
-                huntNature = static_cast<u32>((nextRNG << 16) | nextRNG2) % 25;
-                nextRNG = rng.nextUShort();
-                nextRNG2 = rng.nextUShort();
-            } while (huntNature != nature);
+            }
         }
+        };
+
+        if (hasLead(Lead::CuteCharmF)) evaluateLead(Lead::CuteCharmF, nullptr);
+        if (hasLead(Lead::CuteCharmM)) evaluateLead(Lead::CuteCharmM, nullptr);
+        for (const auto &candidate : candidates)
+        {
+            if (hasLead(Lead::None)) evaluateLead(Lead::None, &candidate);
+            if (selectedSynchronizeMask != 0) evaluateLead(Lead::Synchronize, &candidate);
+            if (hasLead(Lead::MagnetPull)) evaluateLead(Lead::MagnetPull, &candidate);
+            if (hasLead(Lead::Static)) evaluateLead(Lead::Static, &candidate);
+            if (hasLead(Lead::Pressure)) evaluateLead(Lead::Pressure, &candidate);
+            if (hasLead(Lead::CompoundEyes)) evaluateLead(Lead::CompoundEyes, &candidate);
+            if (hasLead(Lead::SuctionCups)) evaluateLead(Lead::SuctionCups, &candidate);
+            if (hasLead(Lead::ArenaTrap)) evaluateLead(Lead::ArenaTrap, &candidate);
         }
     }
 
