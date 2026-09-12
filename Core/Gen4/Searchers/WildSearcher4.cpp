@@ -215,7 +215,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
     u64 selectedLeadMask = 0;
     for (Lead selectedLead : leads)
     {
-        selectedLeadMask |= getLeadFlag(selectedLead);
+        selectedLeadMask |= selectedLead == Lead::Synchronize ? synchronizeMask() : getLeadFlag(selectedLead);
     }
     const u64 selectedSynchronizeMask = selectedLeadMask & synchronizeMask();
     auto hasLead = [selectedLeadMask](Lead lead) { return (selectedLeadMask & getLeadFlag(lead)) != 0; };
@@ -660,7 +660,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
     u64 selectedLeadMask = 0;
     for (Lead selectedLead : leads)
     {
-        selectedLeadMask |= getLeadFlag(selectedLead);
+        selectedLeadMask |= selectedLead == Lead::Synchronize ? synchronizeMask() : getLeadFlag(selectedLead);
     }
     const u64 selectedSynchronizeMask = selectedLeadMask & synchronizeMask();
     auto hasLead = [selectedLeadMask](Lead lead) { return (selectedLeadMask & getLeadFlag(lead)) != 0; };
