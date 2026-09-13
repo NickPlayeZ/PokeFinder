@@ -588,22 +588,6 @@ WildSearcher4::WildSearcher4(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 m
     modifiedSlots(area.getSlots(lead)),
     leads(expandLegacySynchronizeLead(lead))
 {
-    if ((profile.getVersion() & Game::HGSS) != Game::None)
-    {
-        if (area.getEncounter() == Encounter::OldRod || area.getEncounter() == Encounter::GoodRod
-            || area.getEncounter() == Encounter::SuperRod)
-        {
-            thresh += happiness;
-            if (lead == Lead::SuctionCups)
-            {
-                thresh *= 2;
-            }
-        }
-        else if (lead == Lead::ArenaTrap && area.getEncounter() == Encounter::RockSmash)
-        {
-            thresh *= 2;
-        }
-    }
 }
 
 static bool matches(const WildSearcherState4 &left, const WildSearcherState4 &right)
@@ -1686,7 +1670,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchHoneyTree(u8 hp, u8 atk, u8
                     }
                     break;
                 case Lead::Synchronize:
-                    if ((nextRNG / 0x8000) == 0 && toInt(lead) == nature)
+                    if ((nextRNG / 0x8000) == 0 && (lead == Lead::Synchronize || toInt(lead) == nature))
                     {
                         levelRand[0] = nextRNG2;
                         valid[0] = true;
@@ -1809,7 +1793,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchPokeRadar(u8 hp, u8 atk, u8
                     }
                     break;
                 case Lead::Synchronize:
-                    if ((nextRNG / 0x8000) == 0 && toInt(lead) == nature)
+                    if ((nextRNG / 0x8000) == 0 && (lead == Lead::Synchronize || toInt(lead) == nature))
                     {
                         seed = test.getSeed();
                         valid = true;
@@ -1890,7 +1874,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchPokeRadarShiny(u8 hp, u8 at
             do
             {
                 PokeRNGR test(rng);
-                bool valid = synchronize ? test.nextUShort<false>(2) == 0 && toInt(lead) == nature
+                bool valid = synchronize ? test.nextUShort<false>(2) == 0 && (lead == Lead::Synchronize || toInt(lead) == nature)
                                          : test.nextUShort<false>(3) != 0 && cuteCharmCheck(info, pid);
 
                 if (valid)
