@@ -245,10 +245,14 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     ui->comboBoxSearcherLocation->enableAutoComplete();
 
     ui->comboBoxGeneratorLuckyPower->setup({ 0, 1, 2, 3 });
+    ui->comboBoxGeneratorLuckyPower->setItemText(0, tr("None"));
+    ui->comboBoxGeneratorLuckyPower->setItemText(1, tr("↑"));
+    ui->comboBoxGeneratorLuckyPower->setItemText(2, tr("↑↑"));
+    ui->comboBoxGeneratorLuckyPower->setItemText(3, tr("↑↑↑ / S"));
     ui->comboBoxSearcherLuckyPower->addAction(tr("None"), PassPower5::None);
-    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑"), PassPower5::Lucky1);
-    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑↑"), PassPower5::Lucky2);
-    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑↑↑/S"), PassPower5::Lucky3);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("↑"), PassPower5::Lucky1);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("↑↑"), PassPower5::Lucky2);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("↑↑↑ / S"), PassPower5::Lucky3);
     ui->comboBoxSearcherLuckyPower->setCheckedData({ PassPower5::None });
     ui->comboBoxSearcherLuckyPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 

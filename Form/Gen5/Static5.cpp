@@ -129,9 +129,10 @@ Static5::Static5(QWidget *parent) : QWidget(parent), ui(new Ui::Static5), ivCach
     ui->comboMenuSearcherLead->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     ui->comboBoxGeneratorLuckyPower->setup({ 0, 3 });
+    ui->comboBoxGeneratorLuckyPower->setItemText(1, tr("↑↑↑ / S"));
     ui->comboBoxSearcherLuckyPower->setMultiSelect(true);
     ui->comboBoxSearcherLuckyPower->addAction(tr("None"), 0);
-    ui->comboBoxSearcherLuckyPower->addAction(tr("Lucky Power ↑↑↑/S"), 3);
+    ui->comboBoxSearcherLuckyPower->addAction(tr("↑↑↑ / S"), 3);
     ui->comboBoxSearcherLuckyPower->setCheckedData({ 0 });
     ui->comboBoxSearcherLuckyPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
