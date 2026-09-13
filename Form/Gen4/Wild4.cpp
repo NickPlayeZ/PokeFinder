@@ -680,7 +680,9 @@ void Wild4::generate()
         {
             method = Method::HoneyTree;
             std::array<bool, 13> encounters = ui->filterGenerator->getEncounterSlots();
-            if (std::ranges::count(encounters, true) != 1)
+            const u8 slotCount = encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount();
+            const auto end = encounters.begin() + slotCount;
+            if (std::count(encounters.begin(), end, true) != 1)
             {
                 QMessageBox msg(QMessageBox::Warning, tr("Too many slots selected"),
                                 tr("Please select a single encounter slot for Honey Tree"));
@@ -689,7 +691,7 @@ void Wild4::generate()
             }
             else
             {
-                fixedSlot = std::ranges::find(encounters, true) - encounters.begin();
+                fixedSlot = std::find(encounters.begin(), end, true) - encounters.begin();
             }
         }
         else
@@ -1042,7 +1044,9 @@ void Wild4::search()
         {
             method = Method::HoneyTree;
             std::array<bool, 13> encounters = ui->filterSearcher->getEncounterSlots();
-            if (std::ranges::count(encounters, true) != 1)
+            const u8 slotCount = encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()].getCount();
+            const auto end = encounters.begin() + slotCount;
+            if (std::count(encounters.begin(), end, true) != 1)
             {
                 QMessageBox msg(QMessageBox::Warning, tr("Too many slots selected"),
                                 tr("Please select a single encounter slot for Honey Tree"));
@@ -1051,7 +1055,7 @@ void Wild4::search()
             }
             else
             {
-                fixedSlot = std::ranges::find(encounters, true) - encounters.begin();
+                fixedSlot = std::find(encounters.begin(), end, true) - encounters.begin();
             }
         }
         else
