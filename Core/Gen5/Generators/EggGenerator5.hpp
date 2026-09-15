@@ -44,7 +44,7 @@ public:
      * @param filter State filter
      */
     EggGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, const Daycare &daycare, const Profile5 &profile,
-                  const StateFilter &filter);
+                  const StateFilter &filter, u8 compatibility = 20);
 
     /**
      * @brief Generates states
@@ -58,10 +58,10 @@ public:
 private:
     bool ditto;
     u8 everstone;
+    u8 eggChance;
     u8 parentAbility;
     u8 poweritem;
     u8 rolls;
-    u8 eggChance;
 
     std::vector<EggState5> generateBW(u64 seed) const;
     std::vector<EggState5> generateBW2(u64 seed) const;

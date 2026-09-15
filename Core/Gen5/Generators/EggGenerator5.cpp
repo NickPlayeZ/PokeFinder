@@ -30,18 +30,15 @@
 #include <algorithm>
 
 EggGenerator5::EggGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, const Daycare &daycare, const Profile5 &profile,
-                             const StateFilter &filter) :
+                             const StateFilter &filter, u8 compatibility) :
     EggGenerator(initialAdvances, maxAdvances, offset, Method::None, 0, daycare, profile, filter),
     ditto(daycare.getDitto()),
     everstone(daycare.getEverstoneCount()),
+    eggChance(profile.getOvalCharm() ? (compatibility == 20 ? 40 : compatibility == 50 ? 80 : 88) : compatibility),
     parentAbility(daycare.getParentAbility(1)),
     poweritem(daycare.getPowerItemCount()),
     rolls(((profile.getVersion() & Game::BW2) != Game::None && profile.getShinyCharm() ? 2 : 0) + (daycare.getMasuda() ? 5 : 0))
 {
-    bool sameSpecies = daycare.getParentSpecie(0) == daycare.getParentSpecie(1);
-    bool sameTrainer = !daycare.getDifferentTrainer();
-    u8 chance = sameSpecies == sameTrainer ? 50 : sameSpecies ? 70 : 20;
-    eggChance = profile.getOvalCharm() ? (chance == 20 ? 40 : chance == 50 ? 80 : 88) : chance;
 }
 
 std::vector<EggState5> EggGenerator5::generate(u64 seed) const

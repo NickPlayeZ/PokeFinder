@@ -88,6 +88,10 @@ public:
      */
     Daycare getDaycare() const;
 
+    u8 getCompatibility() const;
+
+    void setCompatibilityVisible(bool visible);
+
     /**
      * @brief Changes order of the parents to match what the game does
      *
@@ -102,13 +106,6 @@ public:
      * @param game Game
      */
     void setup(Game game);
-
-    /**
-     * @brief Shows or hides the original trainer selector
-     *
-     * @param visible Whether the selector should be visible
-     */
-    void setOriginalTrainerVisible(bool visible);
 
 private:
     Ui::EggSettings *ui;

@@ -132,8 +132,7 @@ Profile5 ProfileEditor5::getProfile()
                     ui->textBoxGxStat->getUChar(), ui->textBoxVFrame->getUChar(), ui->checkBoxSkipLR->isChecked(),
                     ui->textBoxTimer0Min->getUShort(), ui->textBoxTimer0Max->getUShort(), ui->checkBoxMemoryLink->isChecked(),
                     ui->checkBoxShinyCharm->isChecked(), ui->comboBoxDSType->getEnum<DSType>(), ui->comboBoxLanguage->getEnum<Language>(),
-                    ui->checkBoxMemoryLink->isChecked() && ui->checkBoxNsPokemonReleased->isChecked(),
-                    ui->checkBoxOvalCharm->isChecked());
+                    ui->checkBoxMemoryLink->isChecked() && ui->checkBoxNsPokemonReleased->isChecked(), ui->checkBoxOvalCharm->isChecked());
 }
 
 void ProfileEditor5::clearIVCache()

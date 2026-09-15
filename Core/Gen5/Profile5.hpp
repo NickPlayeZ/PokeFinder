@@ -54,6 +54,7 @@ public:
      * @param dsType DS type for the profile
      * @param language Language type of the profile
      * @param nsPokemonReleased Whether N's Pokemon have been released
+     * @param ovalCharm Whether oval charm is obtained
      */
     Profile5(const std::string &name, Game version, u16 tid, u16 sid, const std::string &ivCache, const std::string &shaCache, u64 mac,
              const std::array<bool, 9> &keypresses, u8 vcount, u8 gxstat, u8 vframe, bool skipLR, u16 timer0Min, u16 timer0Max,
