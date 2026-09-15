@@ -9817,7 +9817,7 @@ Profil hat kein oder ein inkompatibles SHA Cache.</translation>
         <translation></translation>
     </message>
     <message>
-        <source>Lucky Powerw</source>
+        <source>Lucky Power</source>
         <translation>Beschwörungskraft</translation>
     </message>
     <message>
