@@ -42,6 +42,13 @@ enum class PokeRadarChainType : u8
     StrongShiny
 };
 
+enum class PokeRadarStepModifier : u8
+{
+    None,
+    BlackFlute,
+    WhiteFlute
+};
+
 class PokeRadarGenerator
 {
 public:
@@ -49,6 +56,8 @@ public:
                        const std::array<bool, 81> &grass);
 
     static std::pair<u8, u8> getSkips(u32 seed, u32 advances);
+    static bool getStepEncounter(u32 seed, u32 advances, u16 encounterRate, s8 encounterRateModifier,
+                                 PokeRadarStepModifier stepModifier = PokeRadarStepModifier::None, s8 dateModifier = 0);
 
     std::vector<PokeRadarState> generate(u32 seed) const;
     PokeRadarState generate(u32 seed, u32 advances, u32 patchAdvances) const;

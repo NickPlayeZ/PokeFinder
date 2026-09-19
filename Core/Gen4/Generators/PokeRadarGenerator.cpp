@@ -103,6 +103,33 @@ std::pair<u8, u8> PokeRadarGenerator::getSkips(u32 seed, u32 advances)
     return { noGraceSkip, graceSkip };
 }
 
+bool PokeRadarGenerator::getStepEncounter(u32 seed, u32 advances, u16 encounterRate, s8 encounterRateModifier,
+                                          PokeRadarStepModifier stepModifier, s8 dateModifier)
+{
+    if (encounterRateModifier > 0)
+    {
+        encounterRate *= 2;
+    }
+    else if (encounterRateModifier < 0)
+    {
+        encounterRate /= 2;
+    }
+    if (stepModifier == PokeRadarStepModifier::BlackFlute)
+    {
+        encounterRate /= 2;
+    }
+    else if (stepModifier == PokeRadarStepModifier::WhiteFlute)
+    {
+        encounterRate = (encounterRate * 3) / 2;
+    }
+
+    int movementRate = 40 + dateModifier;
+    PokeRNG rng(seed, advances);
+    u8 movementRatio = rng.nextUShort() / 0x290;
+    u8 encounterRatio = rng.nextUShort() / 0x290;
+    return movementRatio < movementRate && encounterRatio < encounterRate;
+}
+
 std::vector<PokeRadarState> PokeRadarGenerator::generate(u32 seed) const
 {
     std::vector<PokeRadarState> states;
