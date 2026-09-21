@@ -273,13 +273,13 @@ std::vector<SearcherState> GameCubeSearcher::searchChannel(u8 hp, u8 atk, u8 def
             continue;
         }
 
-        u32 origin = rng.next();
-        if (!validateJirachi(origin))
+        u32 seed = rng.next();
+        if (!validateJirachi(seed))
         {
             continue;
         }
 
-        SearcherState state(origin, pid, ivs, pid & 1, 2, staticTemplate->getLevel(), nature, Utilities::getShiny<true>(pid, tid ^ sid),
+        SearcherState state(seed, pid, ivs, pid & 1, 2, staticTemplate->getLevel(), nature, Utilities::getShiny<true>(pid, tid ^ sid),
                             info);
         if (filter.compareState(static_cast<const SearcherState &>(state)))
         {
