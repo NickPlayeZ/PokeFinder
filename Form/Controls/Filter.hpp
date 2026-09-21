@@ -21,6 +21,7 @@
 #define FILTER_HPP
 
 #include <Core/Global.hpp>
+#include <Core/Util/StackVector.hpp>
 #include <QString>
 #include <QWidget>
 
@@ -125,7 +126,7 @@ public:
      *
      * @return Array of encounter slots
      */
-    std::array<bool, 13> getEncounterSlots() const;
+    StackVector<bool, 13> getEncounterSlots() const;
 
     /**
      * @brief Constructs filter from the UI settings

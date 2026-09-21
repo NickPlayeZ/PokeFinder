@@ -155,7 +155,7 @@ std::vector<HiddenGrottoState> HiddenGrottoSlotGenerator::generate(u64 seed, Pas
                 auto pokemon = encounterArea.getPokemon(group, slot, profile.getVersion());
                 u8 gender = go.nextUInt(100) < pokemon.getGender();
                 HiddenGrottoState state(prng, advances + initialAdvances + cnt, group, slot, pokemon.getSpecie(), gender, grottoPower);
-                if (!searchItemAmount && filter.compareState(state))
+                if (!searchItemAmount && filter.compare(state))
                 {
                     states.emplace_back(state);
                 }
@@ -164,7 +164,7 @@ std::vector<HiddenGrottoState> HiddenGrottoSlotGenerator::generate(u64 seed, Pas
             {
                 u16 item = encounterArea.getItem(group, slot - 3);
                 HiddenGrottoState state(prng, advances + initialAdvances + cnt, group, slot, item, true, grottoPower);
-                if (filter.compareState(state))
+                if (filter.compare(state))
                 {
                     if (searchItemAmount)
                     {
@@ -193,7 +193,7 @@ std::vector<HiddenGrottoState> HiddenGrottoSlotGenerator::generate(u64 seed, Pas
             {
                 u16 item = encounterArea.getHiddenItem(group, slot - 7);
                 HiddenGrottoState state(prng, advances + initialAdvances + cnt, group, slot, item, true, grottoPower);
-                if (filter.compareState(state))
+                if (filter.compare(state))
                 {
                     if (searchItemAmount)
                     {
@@ -252,7 +252,7 @@ std::vector<State5> HiddenGrottoGenerator::generate(u64 seed, u32 initialAdvance
     {
         std::array<u8, 6> iv;
         std::ranges::generate(iv, [&rngList] { return rngList.next(); });
-        if (filter.compareIV(iv))
+        if (filter.compareIV(iv) && filter.compareHiddenPower(iv))
         {
             ivs.emplace_back(initialAdvances + cnt, iv);
         }
@@ -316,13 +316,13 @@ std::vector<State5> HiddenGrottoGenerator::generate(u64 seed, const std::vector<
             nature = toInt(lead);
         }
 
-        u32 prng = rng.nextUInt();
-        for (const auto &iv : ivs)
+        if (filter.compare(level, nature))
         {
-            State5 state(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, level, nature, 0, info);
-            if (filter.compareState(static_cast<const State &>(state)))
+            u32 prng = rng.nextUInt();
+            for (const auto &iv : ivs)
             {
-                states.emplace_back(state);
+                states.emplace_back(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, level, nature, 0,
+                                    info);
             }
         }
     }

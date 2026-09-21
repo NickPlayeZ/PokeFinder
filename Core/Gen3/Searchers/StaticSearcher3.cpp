@@ -91,7 +91,7 @@ std::vector<SearcherState> StaticSearcher3::search(u8 hp, u8 atk, u8 def, u8 spa
     const PersonalInfo *info = staticTemplate->getInfo();
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, method);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         PokeRNGR rng(seeds[i]);
         if (ivAdvance)
@@ -110,7 +110,7 @@ std::vector<SearcherState> StaticSearcher3::search(u8 hp, u8 atk, u8 def, u8 spa
 
         SearcherState state(rng.next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), staticTemplate->getLevel(), nature,
                             Utilities::getShiny<true>(pid, tsv), info);
-        if (filter.compareState(state))
+        if (filter.compare(state))
         {
             states.emplace_back(state);
         }

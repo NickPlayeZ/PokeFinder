@@ -52,7 +52,7 @@ std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
         if (go.nextUInt(1000) < rate)
         {
             PhenomenonState state(prng, advances + initialAdvances + cnt);
-            if (filter.compareState(state))
+            if (filter.compare(state))
             {
                 states.emplace_back(state);
             }
@@ -61,7 +61,7 @@ std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
         {
             u16 item = area.getItem(go);
             PhenomenonState state(prng, advances + initialAdvances + cnt, item);
-            if (filter.compareState(state))
+            if (filter.compare(state))
             {
                 states.emplace_back(state);
             }

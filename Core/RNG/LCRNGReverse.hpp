@@ -21,28 +21,13 @@
 #define LCRNGREVERSE_HPP
 
 #include <Core/Global.hpp>
+#include <Core/Util/StackVector.hpp>
 
 enum class Method : u8;
 
-template <int size>
-struct RecoverySeeds
-{
-    int count;
-    u32 seeds[size];
-
-    RecoverySeeds() : count(0)
-    {
-    }
-
-    u32 &operator[](int i)
-    {
-        return seeds[i];
-    }
-};
-
 /**
  * @brief Provides a way to compute origin seed given IVs or PID.
- * 
+ *
  * All attacks are based on a lattice reduction method. See https://github.com/StarfBerry/PokeRNG/blob/main/Recovery/LCG_Recovery.py
  */
 namespace LCRNGReverse
@@ -59,7 +44,7 @@ namespace LCRNGReverse
      *
      * @return Array of origin seeds (Safe upper bound of 12)
      */
-    RecoverySeeds<12> recoverChannelIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe);
+    StackVector<u32, 12> recoverChannelIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe);
 
     /**
      * @brief Recovers origin seeds for two 16 bit calls(15 bits known) with or without gap
@@ -74,7 +59,7 @@ namespace LCRNGReverse
      *
      * @return Array of origin seeds (Won't be higher than 6)
      */
-    RecoverySeeds<6> recoverPokeRNGIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe, Method method);
+    StackVector<u32, 6> recoverPokeRNGIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe, Method method);
 
     /**
      * @brief Recovers origin seeds for two 16 bit calls
@@ -84,7 +69,7 @@ namespace LCRNGReverse
      *
      * @return Array of origin seeds (Won't be higher than 3)
      */
-    RecoverySeeds<3> recoverPokeRNGPID(u32 pid);
+    StackVector<u32, 3> recoverPokeRNGPID(u32 pid);
 
     /**
      * @brief Recovers origin seeds for two 16 bit calls(15 bits known)
@@ -99,7 +84,7 @@ namespace LCRNGReverse
      *
      * @return Array of origin seeds (Won't be higher than 6)
      */
-    RecoverySeeds<6> recoverXDRNGIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe);
+    StackVector<u32, 6> recoverXDRNGIV(u8 hp, u8 atk, u8 def, u8 spa, u8 spd, u8 spe);
 
     /**
      * @brief Recovers origin seeds for two 16 bit calls
@@ -109,7 +94,7 @@ namespace LCRNGReverse
      *
      * @return Array of origin seeds (Won't be higher than 2)
      */
-    RecoverySeeds<2> recoverXDRNGPID(u32 pid);
+    StackVector<u32, 2> recoverXDRNGPID(u32 pid);
 };
 
 #endif // LCRNGREVERSE_HPP

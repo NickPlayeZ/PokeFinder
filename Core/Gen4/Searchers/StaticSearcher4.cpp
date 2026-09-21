@@ -181,7 +181,7 @@ std::vector<SearcherState4> StaticSearcher4::searchMethod1(u8 hp, u8 atk, u8 def
     const PersonalInfo *info = staticTemplate->getInfo();
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         PokeRNGR rng(seeds[i]);
 
@@ -239,7 +239,7 @@ std::vector<SearcherState4> StaticSearcher4::searchMethodJ(u8 hp, u8 atk, u8 def
     const PersonalInfo *info = staticTemplate->getInfo();
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         PokeRNGR rng(seeds[i]);
 
@@ -344,7 +344,7 @@ std::vector<SearcherState4> StaticSearcher4::searchMethodK(u8 hp, u8 atk, u8 def
     const PersonalInfo *info = staticTemplate->getInfo();
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         PokeRNGR rng(seeds[i]);
 

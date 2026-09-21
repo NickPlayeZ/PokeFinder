@@ -250,7 +250,7 @@ std::vector<SearcherState> GameCubeSearcher::searchChannel(u8 hp, u8 atk, u8 def
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverChannelIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         XDRNGR rng(seeds[i]);
 
@@ -307,7 +307,7 @@ std::vector<SearcherState> GameCubeSearcher::searchColoShadow(u8 hp, u8 atk, u8 
     }
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         XDRNG rng(seeds[i]);
 
@@ -363,7 +363,7 @@ std::vector<SearcherState> GameCubeSearcher::searchGalesShadow(u8 hp, u8 atk, u8
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         XDRNG rng(seeds[i]);
 
@@ -444,7 +444,7 @@ std::vector<SearcherState> GameCubeSearcher::searchNonLock(u8 hp, u8 atk, u8 def
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
 
     auto seeds = LCRNGReverse::recoverXDRNGIV(hp, atk, def, spa, spd, spe);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         XDRNG rng(seeds[i]);
 

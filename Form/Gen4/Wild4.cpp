@@ -679,7 +679,7 @@ void Wild4::generate()
         if (encounter == Encounter::HoneyTree)
         {
             method = Method::HoneyTree;
-            std::array<bool, 13> encounters = ui->filterGenerator->getEncounterSlots();
+            auto encounters = ui->filterGenerator->getEncounterSlots();
             const u8 slotCount = encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount();
             const auto end = encounters.begin() + slotCount;
             if (std::count(encounters.begin(), end, true) != 1)
@@ -1043,7 +1043,7 @@ void Wild4::search()
         if (encounter == Encounter::HoneyTree)
         {
             method = Method::HoneyTree;
-            std::array<bool, 13> encounters = ui->filterSearcher->getEncounterSlots();
+            auto encounters = ui->filterSearcher->getEncounterSlots();
             const u8 slotCount = encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()].getCount();
             const auto end = encounters.begin() + slotCount;
             if (std::count(encounters.begin(), end, true) != 1)

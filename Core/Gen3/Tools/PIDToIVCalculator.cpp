@@ -35,11 +35,11 @@ static std::vector<PIDToIVState> calcMethod124(u32 pid)
     std::vector<PIDToIVState> states;
 
     auto seeds = LCRNGReverse::recoverPokeRNGPID(pid);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        u32 seed = PokeRNGR(seeds[i]).next();
+        u32 seed = PokeRNGR(origin).next();
 
-        PokeRNG forward(seeds[i], 1);
+        PokeRNG forward(origin, 1);
 
         u16 iv1 = forward.nextUShort(); // Method 1/4
         u16 iv2 = forward.nextUShort(); // Method 1/2
@@ -68,9 +68,9 @@ static std::vector<PIDToIVState> calcMethodChannel(u32 pid)
     // So we have to check both xored and unxored and recalculate the PID to see if we have a match
 
     auto seeds = LCRNGReverse::recoverXDRNGPID(pid);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        XDRNGR backward(seeds[i]);
+        XDRNGR backward(origin);
         u16 sid = backward.nextUShort();
         u32 seed = backward.next();
 
@@ -101,9 +101,9 @@ static std::vector<PIDToIVState> calcMethodChannel(u32 pid)
     }
 
     seeds = LCRNGReverse::recoverXDRNGPID(pid ^ 0x80000000);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        XDRNGR backward(seeds[i]);
+        XDRNGR backward(origin);
         u16 sid = backward.nextUShort();
         u32 seed = backward.next();
 
@@ -148,9 +148,9 @@ static std::vector<PIDToIVState> calcMethodXDColo(u32 pid)
     std::vector<PIDToIVState> states;
 
     auto seeds = LCRNGReverse::recoverXDRNGPID(pid);
-    for (int i = 0; i < seeds.count; i++)
+    for (u32 origin : seeds)
     {
-        XDRNGR backward(seeds[i], 1);
+        XDRNGR backward(origin, 1);
 
         u16 iv2 = backward.nextUShort();
         u16 iv1 = backward.nextUShort();

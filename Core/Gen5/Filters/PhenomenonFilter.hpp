@@ -44,6 +44,7 @@ public:
      * @return true State passes the filter
      * @return false State does not pass the filter
      */
+    bool compare(const PhenomenonState &state) const;
     bool compareState(const PhenomenonState &state) const;
 
 private:

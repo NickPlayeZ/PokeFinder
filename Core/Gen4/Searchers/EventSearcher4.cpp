@@ -87,7 +87,7 @@ std::vector<SearcherState4> EventSearcher4::search(u8 hp, u8 atk, u8 def, u8 spa
     }
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         PokeRNGR rng(seeds[i]);
         state.setSeed(rng.next());

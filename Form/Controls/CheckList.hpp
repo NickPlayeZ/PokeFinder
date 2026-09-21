@@ -21,6 +21,7 @@
 #define CHECKLIST
 
 #include <Core/Global.hpp>
+#include <Core/Util/StackVector.hpp>
 #include <QComboBox>
 #include <QString>
 #include <algorithm>
@@ -114,6 +115,15 @@ public:
         array.fill(full);
         std::ranges::copy_n(checked.begin(), std::min(checked.size(), array.size()), array.begin());
         return array;
+    }
+
+    template <size_t size>
+    StackVector<bool, size> getCheckedVector() const
+    {
+        auto checked = getChecked();
+        StackVector<bool, size> vector;
+        std::ranges::copy_n(checked.begin(), std::min(checked.size(), vector.capacity()), std::back_inserter(vector));
+        return vector;
     }
 
     /**

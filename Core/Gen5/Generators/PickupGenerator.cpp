@@ -87,7 +87,7 @@ static WildStateFilter createDefaultFilter()
     natures.fill(true);
     std::array<bool, 16> powers;
     powers.fill(true);
-    std::array<bool, 13> slots;
+    StackVector<bool, 13> slots;
     slots.fill(true);
 
     return WildStateFilter(255, 255, 255, 1, 100, 0, 255, 0, 255, true, min, max, natures, powers, slots);

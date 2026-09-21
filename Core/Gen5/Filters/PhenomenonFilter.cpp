@@ -25,7 +25,7 @@ PhenomenonFilter::PhenomenonFilter(bool encounter, const std::vector<u16> &items
 {
 }
 
-bool PhenomenonFilter::compareState(const PhenomenonState &state) const
+bool PhenomenonFilter::compare(const PhenomenonState &state) const
 {
     if (state.getItem() && (encounter || std::find(items.begin(), items.end(), state.getData()) == items.end()))
     {
@@ -33,4 +33,9 @@ bool PhenomenonFilter::compareState(const PhenomenonState &state) const
     }
 
     return true;
+}
+
+bool PhenomenonFilter::compareState(const PhenomenonState &state) const
+{
+    return compare(state);
 }

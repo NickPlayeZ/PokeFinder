@@ -43,7 +43,7 @@ class PokeRadarSearcher : public Searcher<Profile4, PokeRadarState>
 public:
     PokeRadarSearcher(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 maxDelay, u32 minPatchDistance, u16 maxChain,
                       u8 chainSlot, const std::vector<Lead> &leads, PokeRadarChainType chainType, PokeRadarResult result,
-                      const std::array<bool, 81> &grass, const std::array<bool, 13> &encounterSlots, const EncounterArea4 &area,
+                      const std::array<bool, 81> &grass, const StackVector<bool, 13> &encounterSlots, const EncounterArea4 &area,
                       const Profile4 &profile, const WildStateFilter &filter);
 
     void startSearch(const std::array<u8, 6> &min, const std::array<u8, 6> &max);
@@ -97,7 +97,7 @@ private:
     PokeRadarChainType chainType;
     PokeRadarResult result;
     std::array<bool, 81> grass;
-    std::array<bool, 13> encounterSlots;
+    StackVector<bool, 13> encounterSlots;
     EncounterArea4 area;
     WildStateFilter filter;
     std::atomic<u64> currentPhaseProgress;

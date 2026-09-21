@@ -127,7 +127,7 @@ namespace
         std::array<bool, 16> powers;
         powers.fill(true);
 
-        std::array<bool, 13> encounterSlots;
+        StackVector<bool, 13> encounterSlots;
         encounterSlots.fill(true);
 
         return WildStateFilter(255, 255, 255, 1, 100, 0, 255, 0, 255, true, ivMin, ivMax, natures, powers, encounterSlots);

@@ -426,7 +426,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, 
     {
         std::array<u8, 6> iv;
         std::ranges::generate(iv, [&rngList] { return rngList.next(); });
-        if (area.getEncounter() == Encounter::SuperRod || filter.compareIV(iv))
+        if (area.getEncounter() == Encounter::SuperRod || (filter.compareIV(iv) && filter.compareHiddenPower(iv)))
         {
             ivs.emplace_back(initialAdvances + cnt, iv);
         }
@@ -788,6 +788,11 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             {
                 return;
             }
+        }
+
+        if (valid && !phenomenonItem && !filter.compare(ability, encounterSlot, gender, level, nature, shiny))
+        {
+            return;
         }
 
         for (const auto &iv : ivs)

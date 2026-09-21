@@ -21,6 +21,7 @@
 #define STATEFILTER_HPP
 
 #include <Core/Global.hpp>
+#include <Core/Util/StackVector.hpp>
 #include <array>
 
 class SearcherState;
@@ -59,6 +60,12 @@ public:
                 const std::array<u8, 6> &ivMin, const std::array<u8, 6> &ivMax, const std::array<bool, 25> &natures,
                 const std::array<bool, 16> &powers);
 
+    bool compare(const SearcherState &state) const;
+    bool compare(const State &state) const;
+    bool compare(const State8 &state) const;
+    bool compare(u8 ability, u8 gender, u8 nature, u8 shiny) const;
+    bool compare(u8 level, u8 nature) const;
+
     /**
      * @brief Determines if the \p ability meets the filter criteria
      *
@@ -88,6 +95,8 @@ public:
      * @return false Gender does not pass the filter
      */
     bool compareHiddenPower(u8 hiddenPower) const;
+
+    bool compareHiddenPower(const std::array<u8, 6> &ivs) const;
 
     /**
      * @brief Determines if the \p ivs meet the filter criteria
@@ -168,6 +177,8 @@ protected:
     u8 shiny;
     u8 weightMax;
     u8 weightMin;
+
+    bool hasActiveFilters() const;
 };
 
 /**
@@ -196,7 +207,13 @@ public:
      */
     WildStateFilter(u8 gender, u8 ability, u8 shiny, u8 levelMin, u8 levelMax, u8 heightMin, u8 heightMax, u8 weightMin, u8 weightMax, bool skip,
                     const std::array<u8, 6> &ivMin, const std::array<u8, 6> &ivMax, const std::array<bool, 25> &natures,
-                    const std::array<bool, 16> &powers, const std::array<bool, 13> &encounterSlots);
+                    const std::array<bool, 16> &powers, const StackVector<bool, 13> &encounterSlots);
+
+    bool compare(const WildGeneratorState &state) const;
+    bool compare(const WildSearcherState &state) const;
+    bool compare(const WildState &state) const;
+    bool compare(const WildState8 &state) const;
+    bool compare(u8 ability, u8 encounterSlot, u8 gender, u8 level, u8 nature, u8 shiny) const;
 
     /**
      * @brief Determines if the \p encounterSlot meets the filter criteria
@@ -263,7 +280,9 @@ public:
     bool hasFilters() const;
 
 protected:
-    std::array<bool, 13> encounterSlots;
+    StackVector<bool, 13> encounterSlots;
+
+    bool hasActiveFilters() const;
 };
 
 #endif // STATEFILTER_HPP

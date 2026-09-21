@@ -129,7 +129,7 @@ PokeRadarSearcher::PokeRadarSearcher(u32 minAdvance, u32 maxAdvance, u32 minDela
                                      u16 maxChain, u8 chainSlot, const std::vector<Lead> &leads, PokeRadarChainType chainType,
                                      PokeRadarResult result,
                                      const std::array<bool, 81> &grass,
-                                     const std::array<bool, 13> &encounterSlots, const EncounterArea4 &area, const Profile4 &profile,
+                                     const StackVector<bool, 13> &encounterSlots, const EncounterArea4 &area, const Profile4 &profile,
                                      const WildStateFilter &filter) :
     Searcher(Method::PokeRadar, profile),
     minAdvance(minAdvance),
@@ -375,7 +375,7 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonNormalIVs(u8 hp,
     }
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         PokeRNGR rng(seeds[i]);
         u16 item = getRadarItem((PokeRNG(seeds[i]).advance(2) >> 16) % 100, effectiveLead, info);
@@ -499,7 +499,7 @@ std::vector<WildSearcherState4> PokeRadarSearcher::searchPokemonShinyIVs(u8 hp, 
     };
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (int i = 0; i < seeds.count; i++)
+    for (int i = 0; i < seeds.size(); i++)
     {
         PokeRNGR rng(seeds[i]);
         u16 item = getRadarItem((PokeRNG(seeds[i]).advance(2) >> 16) % 100, effectiveLead, info);
