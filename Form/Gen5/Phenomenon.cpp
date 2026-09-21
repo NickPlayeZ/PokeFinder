@@ -249,6 +249,7 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     ui->comboBoxGeneratorLuckyPower->setItemText(1, tr("↑"));
     ui->comboBoxGeneratorLuckyPower->setItemText(2, tr("↑↑"));
     ui->comboBoxGeneratorLuckyPower->setItemText(3, tr("↑↑↑ / S"));
+    ui->comboBoxSearcherLuckyPower->setMultiSelect(true);
     ui->comboBoxSearcherLuckyPower->addAction(tr("None"), PassPower5::None);
     ui->comboBoxSearcherLuckyPower->addAction(tr("↑"), PassPower5::Lucky1);
     ui->comboBoxSearcherLuckyPower->addAction(tr("↑↑"), PassPower5::Lucky2);
