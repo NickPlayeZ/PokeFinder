@@ -22,8 +22,19 @@
 #include <QColor>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPalette>
 
-static QColor getMarkColor(PokeRadarTileMark mark)
+static QColor getNeutralColor(const QPalette &palette, bool grass)
+{
+    if (palette.color(QPalette::Window).lightness() >= 128)
+    {
+        return grass ? QColor(QStringLiteral("#f5f5f5")) : QColor(QStringLiteral("#a6a6a6"));
+    }
+
+    return grass ? QColor(QStringLiteral("#5a5a5a")) : QColor(QStringLiteral("#303030"));
+}
+
+static QColor getMarkColor(PokeRadarTileMark mark, const QPalette &palette)
 {
     switch (mark)
     {
@@ -34,10 +45,10 @@ static QColor getMarkColor(PokeRadarTileMark mark)
     case PokeRadarTileMark::Shiny:
         return QColor(QStringLiteral("#d9c63f"));
     case PokeRadarTileMark::None:
-        return QColor(QStringLiteral("#5a5a5a"));
+        return getNeutralColor(palette, true);
     }
 
-    return QColor(QStringLiteral("#5a5a5a"));
+    return getNeutralColor(palette, true);
 }
 
 PokeRadarTile::PokeRadarTile(bool center, QWidget *parent) :
@@ -147,8 +158,8 @@ void PokeRadarTile::paintEvent(QPaintEvent *event)
         left.setWidth(inner.width() / 2);
         QRect right = inner;
         right.setLeft(left.right() + 1);
-        painter.fillRect(left, getMarkColor(mark));
-        painter.fillRect(right, getMarkColor(rightMark));
+        painter.fillRect(left, getMarkColor(mark, palette()));
+        painter.fillRect(right, getMarkColor(rightMark, palette()));
     }
 
     if (!split && (mark == PokeRadarTileMark::Shiny || (mark != PokeRadarTileMark::None && continues)))
@@ -163,7 +174,8 @@ void PokeRadarTile::updateColor()
 {
     if (split)
     {
-        setStyleSheet(QStringLiteral("PokeRadarTile { background-color: #5a5a5a; border: 1px solid black; }"));
+        setStyleSheet(QStringLiteral("PokeRadarTile { background-color: %1; border: 1px solid black; }")
+                          .arg(getNeutralColor(palette(), true).name()));
     }
     else if (mark == PokeRadarTileMark::Shiny)
     {
@@ -185,12 +197,14 @@ void PokeRadarTile::updateColor()
         }
         else
         {
-            setStyleSheet(QStringLiteral("PokeRadarTile { background-color: #303030; border: 1px solid black; }"));
+            setStyleSheet(QStringLiteral("PokeRadarTile { background-color: %1; border: 1px solid black; }")
+                              .arg(getNeutralColor(palette(), false).name()));
         }
     }
     else
     {
-        setStyleSheet(QStringLiteral("PokeRadarTile { background-color: #5a5a5a; border: 1px solid black; }"));
+        setStyleSheet(QStringLiteral("PokeRadarTile { background-color: %1; border: 1px solid black; }")
+                          .arg(getNeutralColor(palette(), true).name()));
     }
     update();
 }

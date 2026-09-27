@@ -60,6 +60,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMouseEvent>
+#include <QPalette>
 #include <QItemSelectionModel>
 #include <QProgressBar>
 #include <QPushButton>
@@ -1451,8 +1452,13 @@ void PokeRadar::choosePosition()
     std::optional<QPoint> selectedPosition = generator.currentPosition ? generator.currentPosition : generator.startPosition;
     std::optional<QPoint> markedPosition = generator.currentPosition;
     QPushButton *selectedButton = nullptr;
-    const QString normalStyle = QStringLiteral("QPushButton { background-color: #5a5a5a; border: 1px solid black; }");
-    const QString inactiveStyle = QStringLiteral("QPushButton { background-color: #303030; border: 1px solid black; }");
+    const bool lightMode = dialog.palette().color(QPalette::Window).lightness() >= 128;
+    const QString normalColor = lightMode ? QStringLiteral("#f5f5f5") : QStringLiteral("#5a5a5a");
+    const QString inactiveColor = lightMode ? QStringLiteral("#a6a6a6") : QStringLiteral("#303030");
+    const QString normalStyle
+        = QStringLiteral("QPushButton { background-color: %1; border: 1px solid black; }").arg(normalColor);
+    const QString inactiveStyle
+        = QStringLiteral("QPushButton { background-color: %1; border: 1px solid black; }").arg(inactiveColor);
     const QString selectedStyle = QStringLiteral("QPushButton { background-color: #c04040; border: 1px solid black; }");
     const QString weakStyle = QStringLiteral("QPushButton { background-color: #7fbd73; border: 1px solid black; }");
     const QString strongStyle = QStringLiteral("QPushButton { background-color: #1f5f2f; border: 1px solid black; }");
