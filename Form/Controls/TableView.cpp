@@ -28,10 +28,10 @@
 #include <QSettings>
 #include <QTimer>
 
-TableView::TableView(QWidget *parent) : QTableView(parent)
+TableView::TableView(QWidget *parent) : QTableView(parent), outputActionsLast(false)
 {
-    auto *outputTXT = addAction(tr("Output Results to TXT"));
-    auto *outputCSV = addAction(tr("Output Results to CSV"));
+    outputTXT = addAction(tr("Output Results to TXT"));
+    outputCSV = addAction(tr("Output Results to CSV"));
 
     connect(outputTXT, &QAction::triggered, this, [this] { outputModel(); });
     connect(outputCSV, &QAction::triggered, this, [this] { outputModel(true); });
@@ -46,6 +46,11 @@ TableView::TableView(QWidget *parent) : QTableView(parent)
         QSettings setting;
         horizontal->resizeSections(setting.value("settings/headerSize").value<QHeaderView::ResizeMode>());
     });
+}
+
+void TableView::setOutputActionsLast(bool enabled)
+{
+    outputActionsLast = enabled;
 }
 
 void TableView::setModel(QAbstractItemModel *model)
@@ -67,7 +72,16 @@ void TableView::contextMenuEvent(QContextMenuEvent *event)
             selectRow(index.row());
             setCurrentIndex(index);
         }
-        QMenu::exec(actions(), event->globalPos(), nullptr, this);
+        auto menuActions = actions();
+        if (outputActionsLast || objectName().contains(QStringLiteral("generator"), Qt::CaseInsensitive)
+            || objectName().contains(QStringLiteral("searcher"), Qt::CaseInsensitive))
+        {
+            menuActions.removeAll(outputTXT);
+            menuActions.removeAll(outputCSV);
+            menuActions.append(outputTXT);
+            menuActions.append(outputCSV);
+        }
+        QMenu::exec(menuActions, event->globalPos(), nullptr, this);
     }
 }
 

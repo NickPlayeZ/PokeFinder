@@ -30,6 +30,7 @@
 IDs4::IDs4(QWidget *parent) : QWidget(parent), ui(new Ui::IDs4)
 {
     ui->setupUi(this);
+    ui->tableViewSeedFinder->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     searcherModel = new IDModel4(ui->tableViewSearcher, false);

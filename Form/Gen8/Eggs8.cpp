@@ -35,6 +35,7 @@ static const QString settingPrefix = QStringLiteral("egg8");
 Eggs8::Eggs8(QWidget *parent) : QWidget(parent), ui(new Ui::Eggs8)
 {
     ui->setupUi(this);
+    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::BDSP);

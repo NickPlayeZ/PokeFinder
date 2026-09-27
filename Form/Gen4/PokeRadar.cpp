@@ -485,6 +485,7 @@ PokeRadar::PokeRadar(QWidget *parent) : QWidget(parent), currentProfile(nullptr)
     generator.model = new PokeRadarModel4(generatorTab);
     generator.proxyModel = nullptr;
     generator.tableView = new TableView(generatorTab);
+    generator.tableView->setOutputActionsLast();
     generator.tableView->setModel(generator.model);
     QTimer::singleShot(0, this, [this] { generator.tableView->horizontalHeader()->resizeSections(QHeaderView::ResizeToContents); });
     connect(generator.filter, &Filter::showStatsChanged, generator.model, &PokeRadarModel4::setShowStats);
@@ -512,6 +513,7 @@ PokeRadar::PokeRadar(QWidget *parent) : QWidget(parent), currentProfile(nullptr)
     searcher.model = new PokeRadarModel4(searcherTab, true);
     searcher.proxyModel = new SortFilterProxyModel(searcherTab, searcher.model);
     searcher.tableView = new TableView(searcherTab);
+    searcher.tableView->setOutputActionsLast();
     searcher.tableView->setModel(searcher.proxyModel);
     connect(searcher.filter, &Filter::showStatsChanged, searcher.model, &PokeRadarModel4::setShowStats);
     searcher.tableView->setSortingEnabled(true);

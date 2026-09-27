@@ -22,6 +22,8 @@
 
 #include <QTableView>
 
+class QAction;
+
 /**
  * @brief Provides automatic horizontal header sizing and action handling
  * The TableView class automatically resizes the horizontal header to use all available space then allows the user to manually resize each
@@ -46,7 +48,13 @@ public:
      */
     void setModel(QAbstractItemModel *model) override;
 
+    void setOutputActionsLast(bool enabled = true);
+
 private:
+    bool outputActionsLast;
+    QAction *outputTXT;
+    QAction *outputCSV;
+
     /**
      * @brief Handles when the context menu is requested. Only displays if the model isn't empty.
      *
