@@ -199,12 +199,15 @@ HiddenGrotto::HiddenGrotto(QWidget *parent) :
     ui->comboMenuPokemonSearcherLead->addMenu(tr("Synchronize"), Translator::getNatures());
 
     auto *grottoAdvanceFinder = ui->tableViewGrottoGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGrottoGenerator->setPrimaryAction(grottoAdvanceFinder);
     connect(grottoAdvanceFinder, &QAction::triggered, this, &HiddenGrotto::openGrottoAdvanceFinder);
 
     auto *pokemonAdvanceFinder = ui->tableViewPokemonGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewPokemonGenerator->setPrimaryAction(pokemonAdvanceFinder);
     connect(pokemonAdvanceFinder, &QAction::triggered, this, &HiddenGrotto::openPokemonAdvanceFinder);
 
     auto *adjacentSeeds = ui->tableViewPokemonSearcher->addAction(tr("Adjacent Seeds"));
+    ui->tableViewPokemonSearcher->setPrimaryAction(adjacentSeeds);
     connect(adjacentSeeds, &QAction::triggered, this, &HiddenGrotto::openAdjacentSeeds);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &HiddenGrotto::profileChanged);

@@ -485,11 +485,11 @@ PokeRadar::PokeRadar(QWidget *parent) : QWidget(parent), currentProfile(nullptr)
     generator.model = new PokeRadarModel4(generatorTab);
     generator.proxyModel = nullptr;
     generator.tableView = new TableView(generatorTab);
-    generator.tableView->setOutputActionsLast();
     generator.tableView->setModel(generator.model);
     QTimer::singleShot(0, this, [this] { generator.tableView->horizontalHeader()->resizeSections(QHeaderView::ResizeToContents); });
     connect(generator.filter, &Filter::showStatsChanged, generator.model, &PokeRadarModel4::setShowStats);
     auto *advanceFinder = generator.tableView->addAction(tr("Advance Finder"));
+    generator.tableView->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &PokeRadar::openAdvanceFinder);
     auto *jumpToBattleAdv = generator.tableView->addAction(tr("Jump to Battle Adv"));
     connect(jumpToBattleAdv, &QAction::triggered, this, &PokeRadar::jumpToBattleAdv);
@@ -513,12 +513,12 @@ PokeRadar::PokeRadar(QWidget *parent) : QWidget(parent), currentProfile(nullptr)
     searcher.model = new PokeRadarModel4(searcherTab, true);
     searcher.proxyModel = new SortFilterProxyModel(searcherTab, searcher.model);
     searcher.tableView = new TableView(searcherTab);
-    searcher.tableView->setOutputActionsLast();
     searcher.tableView->setModel(searcher.proxyModel);
     connect(searcher.filter, &Filter::showStatsChanged, searcher.model, &PokeRadarModel4::setShowStats);
     searcher.tableView->setSortingEnabled(true);
     searcher.tableView->horizontalHeader()->setSortIndicatorShown(true);
     auto *seedToTime = new QAction(tr("Generate times for seed"), searcher.tableView);
+    searcher.tableView->setPrimaryAction(seedToTime);
     connect(seedToTime, &QAction::triggered, this, &PokeRadar::seedToTime);
     searcher.tableView->addAction(seedToTime);
     auto *markPatches = new QAction(tr("Mark Patches"), searcher.tableView);

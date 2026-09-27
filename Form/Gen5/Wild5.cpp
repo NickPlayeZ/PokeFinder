@@ -395,9 +395,11 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     ui->comboBoxSearcherLuckyPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Wild5::openAdvanceFinder);
 
     auto *adjacentSeeds = ui->tableViewSearcher->addAction(tr("Adjacent Seeds"));
+    ui->tableViewSearcher->setPrimaryAction(adjacentSeeds);
     connect(adjacentSeeds, &QAction::triggered, this, &Wild5::openAdjacentSeeds);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &Wild5::profileChanged);

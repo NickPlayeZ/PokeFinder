@@ -48,10 +48,10 @@ public:
      */
     void setModel(QAbstractItemModel *model) override;
 
-    void setOutputActionsLast(bool enabled = true);
+    void setPrimaryAction(QAction *action);
 
 private:
-    bool outputActionsLast;
+    QAction *primaryAction;
     QAction *outputTXT;
     QAction *outputCSV;
 

@@ -38,7 +38,6 @@ static const QString settingPrefix = QStringLiteral("raid");
 Raids::Raids(QWidget *parent) : QWidget(parent), ui(new Ui::Raids), currentProfile(nullptr)
 {
     ui->setupUi(this);
-    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::SwSh);

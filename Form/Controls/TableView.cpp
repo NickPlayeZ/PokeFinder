@@ -28,7 +28,7 @@
 #include <QSettings>
 #include <QTimer>
 
-TableView::TableView(QWidget *parent) : QTableView(parent), outputActionsLast(false)
+TableView::TableView(QWidget *parent) : QTableView(parent), primaryAction(nullptr)
 {
     outputTXT = addAction(tr("Output Results to TXT"));
     outputCSV = addAction(tr("Output Results to CSV"));
@@ -48,9 +48,9 @@ TableView::TableView(QWidget *parent) : QTableView(parent), outputActionsLast(fa
     });
 }
 
-void TableView::setOutputActionsLast(bool enabled)
+void TableView::setPrimaryAction(QAction *action)
 {
-    outputActionsLast = enabled;
+    primaryAction = action;
 }
 
 void TableView::setModel(QAbstractItemModel *model)
@@ -73,13 +73,14 @@ void TableView::contextMenuEvent(QContextMenuEvent *event)
             setCurrentIndex(index);
         }
         auto menuActions = actions();
-        if (outputActionsLast || objectName().contains(QStringLiteral("generator"), Qt::CaseInsensitive)
-            || objectName().contains(QStringLiteral("searcher"), Qt::CaseInsensitive))
+        if (primaryAction != nullptr)
         {
+            menuActions.removeAll(primaryAction);
             menuActions.removeAll(outputTXT);
             menuActions.removeAll(outputCSV);
-            menuActions.append(outputTXT);
-            menuActions.append(outputCSV);
+            menuActions.prepend(outputCSV);
+            menuActions.prepend(outputTXT);
+            menuActions.prepend(primaryAction);
         }
         QMenu::exec(menuActions, event->globalPos(), nullptr, this);
     }

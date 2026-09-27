@@ -65,6 +65,7 @@ Static3::Static3(QWidget *parent) : QWidget(parent), ui(new Ui::Static3)
     ui->filterSearcher->disableControls(Controls::Height | Controls::Searcher | Controls::Weight | Controls::Wild);
 
     auto *seedToTime = new QAction(tr("Generate times for seed"), ui->tableViewSearcher);
+    ui->tableViewSearcher->setPrimaryAction(seedToTime);
     connect(seedToTime, &QAction::triggered, this, &Static3::seedToTime);
     ui->tableViewSearcher->addAction(seedToTime);
 

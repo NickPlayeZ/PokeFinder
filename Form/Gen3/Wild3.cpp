@@ -128,6 +128,7 @@ Wild3::Wild3(QWidget *parent) : QWidget(parent), ui(new Ui::Wild3)
     ui->comboBoxSearcherLocation->enableAutoComplete();
 
     auto *seedToTime = new QAction(tr("Generate times for seed"), ui->tableViewSearcher);
+    ui->tableViewSearcher->setPrimaryAction(seedToTime);
     connect(seedToTime, &QAction::triggered, this, &Wild3::seedToTime);
     ui->tableViewSearcher->addAction(seedToTime);
 

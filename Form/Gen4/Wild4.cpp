@@ -261,10 +261,12 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->comboBoxSearcherHappiness->setup({ 0, 20, 30, 40, 50 });
 
     auto *seedToTime = new QAction(tr("Generate times for seed"), ui->tableViewSearcher);
+    ui->tableViewSearcher->setPrimaryAction(seedToTime);
     connect(seedToTime, &QAction::triggered, this, &Wild4::seedToTime);
     ui->tableViewSearcher->addAction(seedToTime);
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Wild4::openAdvanceFinder);
 
     connect(ui->profileDisplay, &ProfileDisplay4::profileChanged, this, &Wild4::profileChanged);

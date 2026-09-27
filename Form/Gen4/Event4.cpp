@@ -81,9 +81,11 @@ Event4::Event4(QWidget *parent) : QWidget(parent), ui(new Ui::Event4)
     }
 
     auto *seedToTime = ui->tableViewSearcher->addAction(tr("Generate times for seed"));
+    ui->tableViewSearcher->setPrimaryAction(seedToTime);
     connect(seedToTime, &QAction::triggered, this, &Event4::seedToTime);
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Event4::openAdvanceFinder);
 
     connect(ui->profileDisplay, &ProfileDisplay4::profileChanged, this, &Event4::profileChanged);

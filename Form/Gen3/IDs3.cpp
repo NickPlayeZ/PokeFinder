@@ -28,7 +28,6 @@
 IDs3::IDs3(QWidget *parent) : QWidget(parent), ui(new Ui::IDs3), model(new IDModel3(this))
 {
     ui->setupUi(this);
-    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->tableView->setModel(model);

@@ -29,7 +29,6 @@
 IDs8::IDs8(QWidget *parent) : QWidget(parent), ui(new Ui::IDs8)
 {
     ui->setupUi(this);
-    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     model = new IDModel8(ui->tableView);

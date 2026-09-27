@@ -39,7 +39,6 @@ static const QString settingPrefix = QStringLiteral("ids5");
 IDs5::IDs5(QWidget *parent) : QWidget(parent), ui(new Ui::IDs5)
 {
     ui->setupUi(this);
-    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::Gen5);

@@ -37,7 +37,6 @@ static const QString settingPrefix = QStringLiteral("static8");
 Static8::Static8(QWidget *parent) : QWidget(parent), ui(new Ui::Static8)
 {
     ui->setupUi(this);
-    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::BDSP);

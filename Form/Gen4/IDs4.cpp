@@ -30,7 +30,6 @@
 IDs4::IDs4(QWidget *parent) : QWidget(parent), ui(new Ui::IDs4)
 {
     ui->setupUi(this);
-    ui->tableViewSeedFinder->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     searcherModel = new IDModel4(ui->tableViewSearcher, false);
@@ -50,6 +49,7 @@ IDs4::IDs4(QWidget *parent) : QWidget(parent), ui(new Ui::IDs4)
     ui->idFilter->toggleTIDPID(true);
 
     auto *seedToTime = ui->tableViewSearcher->addAction(tr("Generate times for seed"));
+    ui->tableViewSearcher->setPrimaryAction(seedToTime);
     connect(seedToTime, &QAction::triggered, this, &IDs4::seedToTime);
 
     connect(ui->pushButtonSearch, &QPushButton::clicked, this, &IDs4::search);

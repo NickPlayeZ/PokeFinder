@@ -36,8 +36,6 @@ static const QString settingPrefix = QStringLiteral("eggs3");
 Eggs3::Eggs3(QWidget *parent) : QWidget(parent), ui(new Ui::Eggs3)
 {
     ui->setupUi(this);
-    ui->tableViewEmerald->setOutputActionsLast();
-    ui->tableViewRSFRLG->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::RSE | Game::FRLG);

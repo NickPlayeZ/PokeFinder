@@ -41,7 +41,6 @@ static const QString settingPrefix = QStringLiteral("underground");
 Wild8::Wild8(QWidget *parent) : QWidget(parent), ui(new Ui::Wild8)
 {
     ui->setupUi(this);
-    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::BDSP);

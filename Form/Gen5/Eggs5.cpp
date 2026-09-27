@@ -71,6 +71,7 @@ Eggs5::Eggs5(QWidget *parent) : QWidget(parent), ui(new Ui::Eggs5)
     ui->filterSearcher->enableHiddenAbility();
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Eggs5::openAdvanceFinder);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &Eggs5::profileChanged);

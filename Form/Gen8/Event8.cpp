@@ -36,7 +36,6 @@ static const QString settingPrefix = QStringLiteral("event8");
 Event8::Event8(QWidget *parent) : QWidget(parent), ui(new Ui::Event8)
 {
     ui->setupUi(this);
-    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::BDSP);

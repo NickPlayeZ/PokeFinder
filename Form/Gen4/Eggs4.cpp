@@ -80,10 +80,12 @@ Eggs4::Eggs4(QWidget *parent) : QWidget(parent), ui(new Ui::Eggs4)
     connect(poketch, &QAction::triggered, this, &Eggs4::calcPoketch);
 
     auto *seedToTime = new QAction(tr("Generate times for seed"), ui->tableViewSearcher);
+    ui->tableViewSearcher->setPrimaryAction(seedToTime);
     connect(seedToTime, &QAction::triggered, this, &Eggs4::seedToTime);
     ui->tableViewSearcher->addAction(seedToTime);
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Eggs4::openAdvanceFinder);
 
     connect(ui->profileDisplay, &ProfileDisplay4::profileChanged, this, &Eggs4::profileChanged);

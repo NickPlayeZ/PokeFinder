@@ -40,7 +40,6 @@ static const QString settingPrefix = QStringLiteral("underground");
 Underground::Underground(QWidget *parent) : QWidget(parent), ui(new Ui::Underground)
 {
     ui->setupUi(this);
-    ui->tableView->setOutputActionsLast();
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::BDSP);
