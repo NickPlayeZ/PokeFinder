@@ -53,9 +53,12 @@
 #include <QSizePolicy>
 #include <QTimer>
 #include <algorithm>
+#include <utility>
 
 namespace
 {
+    constexpr u16 noItem = 0xffff;
+
     bool supportsEncounterModifier(Encounter encounter)
     {
         return encounter == Encounter::DustCloud || encounter == Encounter::FlyingShadow;
@@ -176,7 +179,7 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
                                            toInt(Encounter::SuperRodRippling), toInt(Encounter::FlyingShadow) });
 
     checkListGeneratorItem = new CheckList(ui->groupBoxGeneratorSettings);
-    checkListGeneratorItem->setUncheckedText(tr("None"));
+    checkListGeneratorItem->setUncheckedText(tr("Any"));
     labelGeneratorItem = new QLabel(tr("Item"), ui->groupBoxGeneratorSettings);
     auto *generatorSettingsLayout = qobject_cast<QGridLayout *>(ui->groupBoxGeneratorSettings->layout());
     auto moveLayoutItem = [](QGridLayout *layout, int row, int column, int newRow, int newColumn, int rowSpan = 1, int columnSpan = 1) {
@@ -375,16 +378,16 @@ bool Phenomenon::removeByGeneratorFilters(const WildState5 &state) const
     if (state.getPhenomenonItem())
     {
         auto itemCheckState = checkListGeneratorItem->getCheckState();
-        if (itemCheckState == Qt::Unchecked)
+        bool pokemonSelected = ui->comboBoxGeneratorPokemon->currentIndex() > 0;
+        bool itemFilterAny = itemCheckState == Qt::Unchecked || itemCheckState == Qt::Checked;
+        if (pokemonSelected && itemFilterAny)
         {
             return true;
         }
 
-        bool pokemonSelected = ui->comboBoxGeneratorPokemon->currentIndex() > 0;
-        bool itemFilterAny = itemCheckState == Qt::Checked;
-        if (pokemonSelected && itemFilterAny)
+        if (itemFilterAny)
         {
-            return true;
+            return false;
         }
 
         auto items = checkListGeneratorItem->getCheckedData();
@@ -399,7 +402,7 @@ bool Phenomenon::removeBySearcherFilters(const WildState5 &state) const
     return state.getPhenomenonItem();
 }
 
-void Phenomenon::updateItemFilter(QWidget *itemLabel, CheckList *itemFilter, EncounterArea5 &area, bool checkAll)
+void Phenomenon::updateItemFilter(QWidget *itemLabel, CheckList *itemFilter, EncounterArea5 &area)
 {
     itemFilter->clear();
 
@@ -422,11 +425,21 @@ void Phenomenon::updateItemFilter(QWidget *itemLabel, CheckList *itemFilter, Enc
     PhenomenonArea phenomenonArea(area.getLocation(), type);
     auto items = phenomenonArea.getUniqueItems();
     auto names = phenomenonArea.getItemNames();
+
+    std::vector<std::pair<QString, u16>> itemEntries;
+    itemEntries.reserve(items.size());
     for (size_t i = 0; i < items.size(); i++)
     {
-        itemFilter->addItem(QString::fromStdString(names[i]), items[i]);
+        itemEntries.emplace_back(QString::fromStdString(names[i]), items[i]);
     }
-    itemFilter->setChecks(std::vector<bool>(items.size(), checkAll));
+    std::ranges::sort(itemEntries, {}, &std::pair<QString, u16>::first);
+
+    itemFilter->addItem(tr("None"), noItem);
+    for (const auto &[name, item] : itemEntries)
+    {
+        itemFilter->addItem(name, item);
+    }
+    itemFilter->resetChecks();
 
     itemLabel->setVisible(true);
     itemFilter->setVisible(true);
@@ -453,15 +466,21 @@ void Phenomenon::generate()
     WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, false, false,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
 
-    auto itemCheckState = checkListGeneratorItem->isVisible() ? checkListGeneratorItem->getCheckState() : Qt::Unchecked;
+    bool itemFilterVisible = checkListGeneratorItem->isVisible();
+    auto itemCheckState = itemFilterVisible ? checkListGeneratorItem->getCheckState() : Qt::Unchecked;
+    auto selectedItems = checkListGeneratorItem->getCheckedData();
     bool pokemonSelected = ui->comboBoxGeneratorPokemon->currentIndex() > 0;
-    bool generateItems = itemCheckState != Qt::Unchecked && !(pokemonSelected && itemCheckState == Qt::Checked);
+    bool itemFilterAny = itemCheckState == Qt::Unchecked || itemCheckState == Qt::Checked;
+    bool noneSelected = std::find(selectedItems.begin(), selectedItems.end(), noItem) != selectedItems.end();
+    bool itemSelected
+        = std::find_if(selectedItems.begin(), selectedItems.end(), [](u16 item) { return item != noItem; }) != selectedItems.end();
+    bool generateItems = itemFilterVisible && !(pokemonSelected && itemFilterAny) && (itemFilterAny || itemSelected);
+    bool generatePokemon = !itemFilterVisible || pokemonSelected || itemFilterAny || noneSelected;
 
     auto states = generator.generate(seed, ivAdvances, 0);
+    std::erase_if(states, [=](const WildState5 &state) { return state.getPhenomenonItem() || !generatePokemon; });
     if (generateItems)
     {
-        std::erase_if(states, [](const WildState5 &state) { return state.getPhenomenonItem(); });
-
         WildGenerator5 itemGenerator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, false, false,
                                      encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile,
                                      getUnfilteredWildStateFilter());
@@ -473,12 +492,6 @@ void Phenomenon::generate()
         states.insert(states.end(), itemStates.begin(), itemStates.end());
         std::stable_sort(states.begin(), states.end(), [](const WildState5 &left, const WildState5 &right) {
             return left.getAdvances() < right.getAdvances();
-        });
-    }
-    else
-    {
-        std::erase_if(states, [=, this](const WildState5 &state) {
-            return removeByGeneratorFilters(state);
         });
     }
     generatorModel->addItems(states);
@@ -523,7 +536,7 @@ void Phenomenon::generatorLocationIndexChanged(int index)
             ui->comboBoxGeneratorPokemon->addItem(QString::fromStdString(names[i]), species[i]);
         }
 
-        updateItemFilter(labelGeneratorItem, checkListGeneratorItem, area, true);
+        updateItemFilter(labelGeneratorItem, checkListGeneratorItem, area);
     }
 }
 

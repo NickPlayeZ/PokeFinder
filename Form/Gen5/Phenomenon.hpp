@@ -127,7 +127,7 @@ private:
      * @param itemFilter Item filter to update
      * @param area Area to use for item availability
      */
-    void updateItemFilter(QWidget *itemLabel, CheckList *itemFilter, EncounterArea5 &area, bool checkAll);
+    void updateItemFilter(QWidget *itemLabel, CheckList *itemFilter, EncounterArea5 &area);
 
 private slots:
     /**
