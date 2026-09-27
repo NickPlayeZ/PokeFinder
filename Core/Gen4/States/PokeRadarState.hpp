@@ -38,6 +38,12 @@ struct PokeRadarPatch
     bool continueChain;
 };
 
+struct PokeRadarTargetPatch
+{
+    u32 advance;
+    std::array<PokeRadarPatch, 4> patches;
+};
+
 enum class PokeRadarResult : u8
 {
     Defeat,
@@ -182,14 +188,14 @@ public:
         return patchAdvances;
     }
 
-    const std::vector<u32> &getBattleStartAdvances() const
+    const std::vector<PokeRadarTargetPatch> &getTargetPatches() const
     {
-        return battleStartAdvances;
+        return targetPatches;
     }
 
-    bool hasBattleStartAdvances() const
+    void setTargetPatches(const std::vector<PokeRadarTargetPatch> &patches)
     {
-        return !battleStartAdvances.empty();
+        targetPatches = patches;
     }
 
     const std::vector<PokeRadarResult> &getResults() const
@@ -218,11 +224,6 @@ public:
     void setResultPatches(PokeRadarResult result, const std::array<PokeRadarPatch, 4> &patches)
     {
         resultPatches[static_cast<size_t>(result)] = patches;
-    }
-
-    void setBattleStartAdvances(const std::vector<u32> &advances)
-    {
-        battleStartAdvances = advances;
     }
 
     u32 getDistance() const
@@ -384,7 +385,7 @@ private:
     bool displayPatchShiny;
     bool patchesVisible;
     bool battlePatchesVisible;
-    std::vector<u32> battleStartAdvances;
+    std::vector<PokeRadarTargetPatch> targetPatches;
     std::vector<PokeRadarResult> results;
     std::array<std::optional<std::array<PokeRadarPatch, 4>>, 3> resultPatches;
     std::array<PokeRadarPatch, 4> patches;

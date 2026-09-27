@@ -103,6 +103,23 @@ static PokeRadarChainType getPokeRadarSearcherChainType(PokeRadarChainType chain
     return chainType;
 }
 
+static std::vector<std::pair<u8, u8>> getMatchingPatchCoordinates(const std::array<PokeRadarPatch, 4> &patches,
+                                                                  PokeRadarChainType chainType)
+{
+    bool wantedStrong = chainType == PokeRadarChainType::Strong || chainType == PokeRadarChainType::StrongShiny;
+    bool wantedShiny = chainType == PokeRadarChainType::WeakShiny || chainType == PokeRadarChainType::StrongShiny;
+    std::vector<std::pair<u8, u8>> coordinates;
+    for (const auto &patch : patches)
+    {
+        if (patch.active && patch.strong == wantedStrong && patch.shiny == wantedShiny)
+        {
+            coordinates.emplace_back(patch.x, patch.y);
+        }
+    }
+    std::ranges::sort(coordinates);
+    return coordinates;
+}
+
 static u16 getRadarItem(u8 rand, Lead lead, const PersonalInfo *info)
 {
     constexpr u8 ItemTableRange[2][2] = { { 45, 95 }, { 20, 80 } };
@@ -916,7 +933,7 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
     }
 
     u32 end = pokemon.getAdvances() - minPatchDistance;
-    u32 maxPatchMatches = chainMin != 0 && isShinyPatchType(searchChainType) ? 5 : 1;
+    constexpr u32 maxPatchMatches = 5;
 
     for (u32 patchAdvances = end;; patchAdvances--)
     {
@@ -943,9 +960,9 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
                 }
 
                 PokeRNG rng(pokemon.getSeed(), pokemon.getAdvances());
-                std::vector<u32> targetPatchAdvances = { patchState.getAdvances() };
+                std::vector<PokeRadarTargetPatch> targetPatches = { { patchState.getAdvances(), patchState.getPatches() } };
                 for (u32 nextPatchAdvances = patchAdvances == 0 ? 0 : patchAdvances - 1;
-                     targetPatchAdvances.size() < maxPatchMatches && nextPatchAdvances < patchAdvances;)
+                     targetPatches.size() < maxPatchMatches && nextPatchAdvances < patchAdvances;)
                 {
                     if (isCancelled())
                     {
@@ -955,9 +972,11 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
                     PokeRadarGenerator nextRadar(nextPatchAdvances, 0, chain, searchChainType, PokeRadarResult::ManualActivation, grass);
                     PokeRadarState nextPatchState = nextRadar.generate(pokemon.getSeed()).front();
                     if (patchMatchesType(nextPatchState, searchChainType)
-                        && std::ranges::find(targetPatchAdvances, nextPatchState.getAdvances()) == targetPatchAdvances.end())
+                        && std::ranges::none_of(targetPatches, [&nextPatchState](const PokeRadarTargetPatch &target) {
+                               return target.advance == nextPatchState.getAdvances();
+                           }))
                     {
-                        targetPatchAdvances.emplace_back(nextPatchState.getAdvances());
+                        targetPatches.emplace_back(PokeRadarTargetPatch { nextPatchState.getAdvances(), nextPatchState.getPatches() });
                     }
 
                     if (nextPatchAdvances == 0)
@@ -991,11 +1010,8 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
                 result.setSkip(noGraceSkip, graceSkip);
                 result.setStepEncounter(
                     PokeRadarGenerator::getStepEncounter(pokemon.getSeed(), pokemon.getAdvances(), area.getRate(), 0));
-                if (targetPatchAdvances.size() > 1)
-                {
-                    std::ranges::sort(targetPatchAdvances);
-                    result.setBattleStartAdvances(targetPatchAdvances);
-                }
+                std::ranges::sort(targetPatches, {}, &PokeRadarTargetPatch::advance);
+                result.setTargetPatches(targetPatches);
                 results.emplace_back(result);
                 return;
             }
@@ -1025,7 +1041,7 @@ void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &poke
 
         const auto &patches = getPostBattlePatches(pokemon.getSeed(), chain, searchChainType);
         const PostBattlePatch *bestPatch = nullptr;
-        std::vector<u32> bestBattleStartAdvances;
+        std::vector<PokeRadarTargetPatch> targetPatches;
         u32 bestDistance = std::numeric_limits<u32>::max();
         struct Candidate
         {
@@ -1071,21 +1087,22 @@ void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &poke
         bestDistance = candidates.front().distance;
         for (const auto &candidate : candidates)
         {
-            if (candidate.patch != bestPatch)
+            bool duplicate = std::ranges::any_of(targetPatches, [&candidate, searchChainType](const PokeRadarTargetPatch &target) {
+                return target.advance == candidate.battleStartAdvance
+                    && getMatchingPatchCoordinates(target.patches, searchChainType)
+                    == getMatchingPatchCoordinates(candidate.patch->state.getPatches(), searchChainType);
+            });
+            if (duplicate)
             {
                 continue;
             }
 
-            if (std::ranges::find(bestBattleStartAdvances, candidate.battleStartAdvance) == bestBattleStartAdvances.end())
+            targetPatches.emplace_back(PokeRadarTargetPatch { candidate.battleStartAdvance, candidate.patch->state.getPatches() });
+            if (targetPatches.size() == 5)
             {
-                bestBattleStartAdvances.emplace_back(candidate.battleStartAdvance);
-                if (bestBattleStartAdvances.size() == 5)
-                {
-                    break;
-                }
+                break;
             }
         }
-        std::ranges::sort(bestBattleStartAdvances);
 
         PokeRNG rng(pokemon.getSeed(), pokemon.getAdvances());
         std::lock_guard<std::mutex> guard(mutex);
@@ -1112,7 +1129,7 @@ void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &poke
         state.setSkip(noGraceSkip, graceSkip);
         state.setStepEncounter(PokeRadarGenerator::getStepEncounter(pokemon.getSeed(), pokemon.getAdvances(), area.getRate(), 0));
         state.setDistance(bestDistance);
-        state.setBattleStartAdvances(bestBattleStartAdvances);
+        state.setTargetPatches(targetPatches);
         results.emplace_back(state);
         return;
     }

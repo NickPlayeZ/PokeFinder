@@ -343,11 +343,6 @@ static std::string getSearcherResultKey(const PokeRadarState &state)
            << state.getPatchesVisible() << '|'
            << state.getBattlePatchesVisible();
 
-    for (u32 advance : state.getBattleStartAdvances())
-    {
-        stream << '|' << advance;
-    }
-
     auto appendDisplayedPatches = [&stream, &state](const std::array<PokeRadarPatch, 4> &patches) {
         std::vector<PokeRadarPatch> displayedPatches;
         for (const auto &patch : patches)
@@ -364,6 +359,12 @@ static std::string getSearcherResultKey(const PokeRadarState &state)
             stream << '|' << static_cast<int>(patch.x) << ',' << static_cast<int>(patch.y);
         }
     };
+
+    for (const auto &target : state.getTargetPatches())
+    {
+        stream << '|' << target.advance;
+        appendDisplayedPatches(target.patches);
+    }
     appendDisplayedPatches(state.getPatches());
 
     if (state.hasSearcherPokemon())
