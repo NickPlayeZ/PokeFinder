@@ -785,6 +785,9 @@ QGroupBox *PokeRadar::createFilters(PokeRadarControls &controls, bool searcherTa
         controls.patchFilter->addItem(tr("Weak"));
         controls.patchFilter->addItem(tr("Strong"));
         controls.patchFilter->addItem(tr("Shiny"));
+        controls.patchFilter->addItem(tr("Battle Weak"));
+        controls.patchFilter->addItem(tr("Battle Strong"));
+        controls.patchFilter->addItem(tr("Battle Shiny"));
         controls.filter->addCustomControlAfterShiny(tr("Patch"), controls.patchFilter);
 
         layout->addWidget(controls.filter, 0, 0);
@@ -1230,12 +1233,12 @@ bool PokeRadar::matchesPatchFilter(const PokeRadarControls &controls, const Poke
     }
 
     auto checked = controls.patchFilter->getChecked();
-    if (checked.size() < 4)
+    if (checked.size() < 7)
     {
         return true;
     }
 
-    auto matchesPatches = [&checked](const std::array<PokeRadarPatch, 4> &patches, bool visible) -> bool {
+    auto matchesManualPatches = [&checked](const std::array<PokeRadarPatch, 4> &patches, bool visible) -> bool {
         if (!visible)
         {
             return checked[0] != 0;
@@ -1260,12 +1263,21 @@ bool PokeRadar::matchesPatchFilter(const PokeRadarControls &controls, const Poke
         return checked[0] && !hasActivePatch;
     };
 
-    if (matchesPatches(state.getPatches(), state.getPatchesVisible()))
+    if (matchesManualPatches(state.getPatches(), state.getPatchesVisible()))
     {
         return true;
     }
 
-    return matchesPatches(state.getBattlePatches(), state.getBattlePatchesVisible());
+    if (!state.getBattlePatchesVisible())
+    {
+        return false;
+    }
+
+    return std::ranges::any_of(state.getBattlePatches(), [&checked](const PokeRadarPatch &patch) {
+        return patch.active
+            && ((checked[4] && !patch.strong && !patch.shiny) || (checked[5] && patch.strong && !patch.shiny)
+                || (checked[6] && patch.shiny));
+    });
 }
 
 void PokeRadar::clearGrassMarks()
