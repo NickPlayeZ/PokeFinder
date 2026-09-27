@@ -20,13 +20,18 @@
 #include "PokeRadarTile.hpp"
 
 #include <QColor>
+#include <QGuiApplication>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPalette>
+#include <QStyleHints>
 
 static QColor getNeutralColor(const QPalette &palette, bool grass)
 {
-    if (palette.color(QPalette::Window).lightness() >= 128)
+    Qt::ColorScheme colorScheme = QGuiApplication::styleHints()->colorScheme();
+    bool lightMode
+        = colorScheme == Qt::ColorScheme::Light || (colorScheme == Qt::ColorScheme::Unknown && palette.color(QPalette::Window).lightness() >= 128);
+    if (lightMode)
     {
         return grass ? QColor(QStringLiteral("#f5f5f5")) : QColor(QStringLiteral("#a6a6a6"));
     }

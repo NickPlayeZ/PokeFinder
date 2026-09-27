@@ -54,6 +54,7 @@
 #include <QEvent>
 #include <QGridLayout>
 #include <QGroupBox>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -68,6 +69,7 @@
 #include <QSizePolicy>
 #include <QSignalBlocker>
 #include <QSpinBox>
+#include <QStyleHints>
 #include <QFrame>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -1467,7 +1469,9 @@ void PokeRadar::choosePosition()
     std::optional<QPoint> selectedPosition = generator.currentPosition ? generator.currentPosition : generator.startPosition;
     std::optional<QPoint> markedPosition = generator.currentPosition;
     QPushButton *selectedButton = nullptr;
-    const bool lightMode = dialog.palette().color(QPalette::Window).lightness() >= 128;
+    Qt::ColorScheme colorScheme = QGuiApplication::styleHints()->colorScheme();
+    const bool lightMode = colorScheme == Qt::ColorScheme::Light
+        || (colorScheme == Qt::ColorScheme::Unknown && dialog.palette().color(QPalette::Window).lightness() >= 128);
     const QString normalColor = lightMode ? QStringLiteral("#f5f5f5") : QStringLiteral("#5a5a5a");
     const QString inactiveColor = lightMode ? QStringLiteral("#a6a6a6") : QStringLiteral("#303030");
     const QString normalStyle
