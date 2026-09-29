@@ -25,6 +25,10 @@ PhenomenonFilter::PhenomenonFilter(const std::vector<u16> &items) : items(items)
 {
 }
 
+PhenomenonFilter::PhenomenonFilter(u16 item) : items({ item })
+{
+}
+
 bool PhenomenonFilter::compare(const PhenomenonState &state) const
 {
     if (std::ranges::find(items, state.getItem()) == items.end())

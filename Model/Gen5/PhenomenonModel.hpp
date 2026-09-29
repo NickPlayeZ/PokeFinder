@@ -118,7 +118,8 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 private:
-    QStringList header = { tr("Seed"), tr("Advances"), tr("Item"), tr("Date/Time"), tr("Timer0"), tr("Buttons") };
+    QStringList header = { tr("Seed"), tr("Target Advances"), tr("Phenomenon Advances"), tr("Item"), tr("Date/Time"), tr("Timer0"),
+                           tr("Buttons") };
 };
 
 #endif // PHENOMENONMODEL_HPP

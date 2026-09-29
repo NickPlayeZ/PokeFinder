@@ -50,8 +50,11 @@ public:
 
     void setPrimaryAction(QAction *action);
 
+    void setSecondaryAction(QAction *action);
+
 private:
     QAction *primaryAction;
+    QAction *secondaryAction;
     QAction *outputTXT;
     QAction *outputCSV;
 

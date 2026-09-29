@@ -28,7 +28,7 @@
 #include <QSettings>
 #include <QTimer>
 
-TableView::TableView(QWidget *parent) : QTableView(parent), primaryAction(nullptr)
+TableView::TableView(QWidget *parent) : QTableView(parent), primaryAction(nullptr), secondaryAction(nullptr)
 {
     outputTXT = addAction(tr("Output Results to TXT"));
     outputCSV = addAction(tr("Output Results to CSV"));
@@ -51,6 +51,11 @@ TableView::TableView(QWidget *parent) : QTableView(parent), primaryAction(nullpt
 void TableView::setPrimaryAction(QAction *action)
 {
     primaryAction = action;
+}
+
+void TableView::setSecondaryAction(QAction *action)
+{
+    secondaryAction = action;
 }
 
 void TableView::setModel(QAbstractItemModel *model)
@@ -76,10 +81,15 @@ void TableView::contextMenuEvent(QContextMenuEvent *event)
         if (primaryAction != nullptr)
         {
             menuActions.removeAll(primaryAction);
+            menuActions.removeAll(secondaryAction);
             menuActions.removeAll(outputTXT);
             menuActions.removeAll(outputCSV);
             menuActions.prepend(outputCSV);
             menuActions.prepend(outputTXT);
+            if (secondaryAction != nullptr)
+            {
+                menuActions.prepend(secondaryAction);
+            }
             menuActions.prepend(primaryAction);
         }
         QMenu::exec(menuActions, event->globalPos(), nullptr, this);

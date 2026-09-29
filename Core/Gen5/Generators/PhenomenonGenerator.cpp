@@ -28,10 +28,30 @@
 #include <Core/RNG/LCRNG64.hpp>
 #include <Core/Util/Utilities.hpp>
 #include <algorithm>
+#include <iterator>
 
 PhenomenonGenerator::PhenomenonGenerator(u32 initialAdvances, u32 maxAdvances, u32 offset, const PhenomenonArea &area,
                                          const Profile5 &profile, const PhenomenonFilter &filter) :
-    Generator(initialAdvances, maxAdvances, offset, Method::None, profile, filter), area(area)
+    Generator(initialAdvances, maxAdvances, offset, Method::None, profile, filter),
+    area(area),
+    aggregateItems(false),
+    minItemAmount(1),
+    minItemDistance(0),
+    postItemPhenomenonDistance(0),
+    preItemPhenomenonDistance(0)
+{
+}
+
+PhenomenonGenerator::PhenomenonGenerator(u32 initialAdvances, u32 maxAdvances, u32 offset, const PhenomenonArea &area,
+                                         const Profile5 &profile, const PhenomenonFilter &filter, u8 minItemAmount,
+                                         u32 minItemDistance, u32 postItemPhenomenonDistance, u32 preItemPhenomenonDistance) :
+    Generator(initialAdvances, maxAdvances, offset, Method::None, profile, filter),
+    area(area),
+    aggregateItems(true),
+    minItemAmount(minItemAmount),
+    minItemDistance(minItemDistance),
+    postItemPhenomenonDistance(postItemPhenomenonDistance),
+    preItemPhenomenonDistance(preItemPhenomenonDistance)
 {
 }
 
@@ -45,6 +65,7 @@ std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
     u16 triggerRate = area.getTriggerRate();
 
     std::vector<PhenomenonState> states;
+    std::vector<u32> phenomenonAdvances;
     for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
     {
         BWRNG go(rng, jump);
@@ -54,11 +75,74 @@ std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
         u32 prng = rng.nextUInt();
         bool phenomenon = ((static_cast<u64>(prng) * 1000) >> 32) < triggerRate;
         PhenomenonState state(prng, advances + initialAdvances + cnt, item, phenomenon, valid);
+        if (phenomenon)
+        {
+            phenomenonAdvances.emplace_back(state.getAdvances());
+        }
         if (filter.compare(state))
         {
             states.emplace_back(state);
         }
     }
 
-    return states;
+    if (!aggregateItems)
+    {
+        return states;
+    }
+
+    std::vector<PhenomenonState> counted;
+    counted.reserve(minItemAmount);
+    std::vector<std::vector<u32>> countedPhenomenonAdvances;
+    countedPhenomenonAdvances.reserve(minItemAmount);
+    u32 previousAdvance = advances + initialAdvances;
+    for (const auto &state : states)
+    {
+        if (!state.isValid())
+        {
+            continue;
+        }
+
+        if (!counted.empty() && state.getAdvances() - counted.back().getAdvances() < minItemDistance)
+        {
+            continue;
+        }
+
+        auto firstPhenomenon = std::ranges::upper_bound(phenomenonAdvances, previousAdvance);
+        while (firstPhenomenon != phenomenonAdvances.cend()
+               && *firstPhenomenon - previousAdvance < postItemPhenomenonDistance)
+        {
+            ++firstPhenomenon;
+        }
+
+        auto lastPhenomenon = phenomenonAdvances.cbegin();
+        if (preItemPhenomenonDistance == 0)
+        {
+            lastPhenomenon = std::ranges::lower_bound(phenomenonAdvances, state.getAdvances());
+        }
+        else if (state.getAdvances() >= preItemPhenomenonDistance)
+        {
+            lastPhenomenon
+                = std::ranges::upper_bound(phenomenonAdvances, state.getAdvances() - preItemPhenomenonDistance);
+        }
+        if (firstPhenomenon < lastPhenomenon)
+        {
+            counted.emplace_back(state);
+            auto firstDisplayedPhenomenon = lastPhenomenon - firstPhenomenon > 3 ? lastPhenomenon - 3 : firstPhenomenon;
+            countedPhenomenonAdvances.emplace_back(firstDisplayedPhenomenon, lastPhenomenon);
+            previousAdvance = state.getAdvances();
+        }
+    }
+
+    if (counted.size() >= minItemAmount)
+    {
+        PhenomenonState result = counted.front();
+        std::vector<u32> targetAdvances;
+        targetAdvances.reserve(counted.size());
+        std::ranges::transform(counted, std::back_inserter(targetAdvances), &PhenomenonState::getAdvances);
+        result.setTargetAdvances(std::move(targetAdvances));
+        result.setTargetPhenomenonAdvances(std::move(countedPhenomenonAdvances));
+        return { result };
+    }
+
+    return {};
 }

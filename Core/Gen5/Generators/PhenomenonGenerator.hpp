@@ -48,6 +48,18 @@ public:
                         const PhenomenonFilter &filter);
 
     /**
+     * @brief Construct a search generator requiring multiple spaced item occurrences
+     *
+     * @param minItemAmount Minimum number of matching items
+     * @param minItemDistance Minimum advances between counted items
+     * @param postItemPhenomenonDistance Minimum advances from an item (or the starting advance) to the next phenomenon
+     * @param preItemPhenomenonDistance Minimum advances from a phenomenon to the next item
+     */
+    PhenomenonGenerator(u32 initialAdvances, u32 maxAdvances, u32 offset, const PhenomenonArea &encounterArea, const Profile5 &profile,
+                        const PhenomenonFilter &filter, u8 minItemAmount, u32 minItemDistance, u32 postItemPhenomenonDistance,
+                        u32 preItemPhenomenonDistance);
+
+    /**
      * @brief Generates states
      *
      * @param seed Starting PRNG state
@@ -58,6 +70,11 @@ public:
 
 private:
     PhenomenonArea area;
+    bool aggregateItems;
+    u8 minItemAmount;
+    u32 minItemDistance;
+    u32 postItemPhenomenonDistance;
+    u32 preItemPhenomenonDistance;
 };
 
 #endif // PHENOMENONGENERATOR_HPP

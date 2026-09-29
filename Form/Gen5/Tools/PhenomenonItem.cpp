@@ -32,47 +32,50 @@
 #include <Core/Util/Translator.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <Form/Gen5/Tools/AdjacentSeeds.hpp>
 #include <Model/Gen5/PhenomenonModel.hpp>
 #include <Model/SortFilterProxyModel.hpp>
+#include <QAction>
 #include <QMessageBox>
 #include <QSettings>
 #include <QTimer>
 
 static const QString settingPrefix = QStringLiteral("phenomenonItem");
 
-PhenomenonItem::PhenomenonItem(QWidget *parent) : QWidget(parent), ui(new Ui::PhenomenonItem)
+PhenomenonItem::PhenomenonItem(QWidget *parent) : QWidget(parent), ui(new Ui::PhenomenonItem), currentProfile(nullptr)
 {
     ui->setupUi(this);
+    ui->gridLayout->setColumnStretch(0, 1);
+    ui->gridLayout->setColumnStretch(1, 2);
+    ui->gridLayout->setColumnStretch(2, 1);
     setAttribute(Qt::WA_QuitOnClose, false);
     setAttribute(Qt::WA_DeleteOnClose);
 
     ui->profileDisplay->setup(settingPrefix, Game::Gen5);
 
-    generatorModel = new PhenomenonGeneratorModel5(ui->tableViewGenerator);
-    ui->tableViewGenerator->setModel(generatorModel);
-
     searcherModel = new PhenomenonSearcherModel5(ui->tableViewSearcher);
     proxyModel = new SortFilterProxyModel(ui->tableViewSearcher, searcherModel);
     ui->tableViewSearcher->setModel(proxyModel);
 
-    ui->textBoxGeneratorSeed->setValues(InputType::Seed64Bit);
-    ui->textBoxGeneratorInitialAdvances->setValues(InputType::Advance32Bit);
-    ui->textBoxGeneratorMaxAdvances->setValues(InputType::Advance32Bit);
-    ui->textBoxGeneratorOffset->setValues(InputType::Advance32Bit);
-
     ui->textBoxSearcherInitialAdvances->setValues(InputType::Advance32Bit);
     ui->textBoxSearcherMaxAdvances->setValues(InputType::Advance32Bit);
 
-    ui->comboBoxGeneratorLocation->enableAutoComplete();
     ui->comboBoxSearcherLocation->enableAutoComplete();
+    ui->comboBoxSearcherEncounter->addItem(tr("Dust Cloud"), toInt(Encounter::DustCloud));
+    ui->comboBoxSearcherEncounter->addItem(tr("Flying Shadow"), toInt(Encounter::FlyingShadow));
+
+    auto *adjacentSeeds = ui->tableViewSearcher->addAction(tr("Adjacent Seeds"));
+    ui->tableViewSearcher->setPrimaryAction(adjacentSeeds);
+    connect(adjacentSeeds, &QAction::triggered, this, &PhenomenonItem::openAdjacentSeeds);
+
+    auto *phenomenonGenerator = ui->tableViewSearcher->addAction(tr("Open in Generator"));
+    ui->tableViewSearcher->setSecondaryAction(phenomenonGenerator);
+    connect(phenomenonGenerator, &QAction::triggered, this, &PhenomenonItem::openPhenomenonGenerator);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &PhenomenonItem::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &PhenomenonItem::profilesChanged);
-    connect(ui->tabRNGSelector, &TabWidget::transferFilters, this, &PhenomenonItem::transferFilters);
-    connect(ui->tabRNGSelector, &TabWidget::transferSettings, this, &PhenomenonItem::transferSettings);
-    connect(ui->comboBoxGeneratorLocation, &QComboBox::currentIndexChanged, this, &PhenomenonItem::generatorLocationIndexChanged);
+    connect(ui->comboBoxSearcherEncounter, &QComboBox::currentIndexChanged, this, &PhenomenonItem::searcherEncounterIndexChanged);
     connect(ui->comboBoxSearcherLocation, &QComboBox::currentIndexChanged, this, &PhenomenonItem::searcherLocationIndexChanged);
-    connect(ui->pushButtonGenerate, &QPushButton::clicked, this, &PhenomenonItem::generate);
     connect(ui->pushButtonSearch, &QPushButton::clicked, this, &PhenomenonItem::search);
 
     updateProfiles();
@@ -116,39 +119,13 @@ void PhenomenonItem::updateProfiles()
     ui->profileDisplay->updateProfiles();
 }
 
-void PhenomenonItem::generate()
-{
-    generatorModel->clearModel();
-
-    u64 seed = ui->textBoxGeneratorSeed->getULong();
-    u32 initialAdvances = ui->textBoxGeneratorInitialAdvances->getUInt();
-    u32 maxAdvances = ui->textBoxGeneratorMaxAdvances->getUInt();
-    u32 offset = ui->textBoxGeneratorOffset->getUInt();
-
-    PhenomenonFilter filter(ui->checkListGeneratorItem->getCheckedData());
-    PhenomenonGenerator generator(initialAdvances, maxAdvances, offset, encounter[ui->comboBoxGeneratorLocation->currentIndex()],
-                                  *currentProfile, filter);
-
-    auto states = generator.generate(seed);
-    generatorModel->addItems(states);
-}
-
-void PhenomenonItem::generatorLocationIndexChanged(int index)
-{
-    if (index >= 0)
-    {
-        auto &area = encounter[ui->comboBoxGeneratorLocation->currentIndex()];
-
-        auto items = area.getUniqueItems();
-        auto itemNames = area.getItemNames();
-
-        ui->checkListGeneratorItem->clear();
-        ui->checkListGeneratorItem->addItems(itemNames, items);
-    }
-}
-
 void PhenomenonItem::search()
 {
+    if (currentProfile == nullptr || ui->comboBoxSearcherLocation->currentIndex() < 0 || encounter.empty())
+    {
+        return;
+    }
+
     Date start = ui->dateEditSearcherStartDate->getDate();
     Date end = ui->dateEditSearcherEndDate->getDate();
     if (start > end)
@@ -165,9 +142,12 @@ void PhenomenonItem::search()
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
 
-    PhenomenonFilter filter(ui->checkListSearcherItem->getCheckedData());
+    PhenomenonFilter filter(ui->comboBoxSearcherItem->getCurrentUShort());
     PhenomenonGenerator generator(initialAdvances, maxAdvances, 0, encounter[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile,
-                                  filter);
+                                  filter, static_cast<u8>(ui->spinBoxSearcherAmount->value()),
+                                  static_cast<u32>(ui->spinBoxSearcherMinItemDistance->value()),
+                                  static_cast<u32>(ui->spinBoxSearcherPostItemPhenomenonDistance->value()),
+                                  static_cast<u32>(ui->spinBoxSearcherPreItemPhenomenonDistance->value()));
     auto *searcher = new PhenomenonSearcher(generator, *currentProfile);
 
     searcher->setMaxProgress(searcher->getMaxProgress(start, end));
@@ -212,61 +192,88 @@ void PhenomenonItem::searcherLocationIndexChanged(int index)
         std::vector<u16> items = area.getUniqueItems();
         std::vector<std::string> itemNames = area.getItemNames();
 
-        ui->checkListSearcherItem->clear();
-        ui->checkListSearcherItem->addItems(itemNames, items);
+        std::vector<std::pair<QString, u16>> itemEntries;
+        itemEntries.reserve(items.size());
+        for (size_t i = 0; i < items.size(); i++)
+        {
+            itemEntries.emplace_back(QString::fromStdString(itemNames[i]), items[i]);
+        }
+        std::ranges::sort(itemEntries, [](const auto &left, const auto &right) {
+            return QString::localeAwareCompare(left.first, right.first) < 0;
+        });
+
+        u16 currentItem = ui->comboBoxSearcherItem->getCurrentUShort();
+        ui->comboBoxSearcherItem->clear();
+        for (const auto &[name, item] : itemEntries)
+        {
+            ui->comboBoxSearcherItem->addItem(name, item);
+        }
+        int currentIndex = ui->comboBoxSearcherItem->findData(currentItem);
+        if (currentIndex >= 0)
+        {
+            ui->comboBoxSearcherItem->setCurrentIndex(currentIndex);
+        }
     }
+}
+
+void PhenomenonItem::openAdjacentSeeds()
+{
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    if (!index.isValid() || currentProfile == nullptr)
+    {
+        return;
+    }
+
+    const auto &state = searcherModel->getItem(index.row());
+    auto *window = new AdjacentSeeds(false, state.getButtons(), state.getDateTime(), *currentProfile);
+    window->show();
+}
+
+void PhenomenonItem::openPhenomenonGenerator()
+{
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    if (!index.isValid() || currentProfile == nullptr || ui->comboBoxSearcherLocation->currentIndex() < 0)
+    {
+        return;
+    }
+
+    const auto &state = searcherModel->getItem(index.row());
+    emit openGenerator(*currentProfile, ui->comboBoxSearcherEncounter->getEnum<Encounter>(),
+                       static_cast<u8>(ui->comboBoxSearcherLocation->getCurrentUShort()), state.getInitialSeed());
+}
+
+void PhenomenonItem::searcherEncounterIndexChanged(int index)
+{
+    if (index < 0 || currentProfile == nullptr)
+    {
+        return;
+    }
+
+    u16 currentLocation = ui->comboBoxSearcherLocation->getCurrentUShort();
+    Encounter selected = ui->comboBoxSearcherEncounter->getEnum<Encounter>();
+    PhenomenonType type = selected == Encounter::DustCloud ? PhenomenonType::Cave : PhenomenonType::Bridge;
+    bool dustCloud = selected == Encounter::DustCloud;
+    ui->spinBoxSearcherMinItemDistance->setValue(dustCloud ? 30 : 0);
+    ui->spinBoxSearcherPostItemPhenomenonDistance->setValue(dustCloud ? 20 : 0);
+    ui->spinBoxSearcherPreItemPhenomenonDistance->setValue(dustCloud ? 10 : 0);
+
+    encounter.clear();
+    EncounterSettings5 settings = { };
+    for (const auto &area : Encounters5::getEncounters(selected, settings, currentProfile))
+    {
+        encounter.emplace_back(area.getLocation(), type);
+    }
+
+    std::vector<u16> locations;
+    std::ranges::transform(encounter, std::back_inserter(locations), [](const PhenomenonArea &area) { return area.getLocation(); });
+    ui->comboBoxSearcherLocation->clear();
+    ui->comboBoxSearcherLocation->addItems(Translator::getLocations(locations, currentProfile->getVersion()), locations);
+    ui->comboBoxSearcherLocation->setCurrentIndexByData(currentLocation);
 }
 
 void PhenomenonItem::profileChanged(const Profile5 &profile)
 {
     currentProfile = &profile;
 
-    encounter.clear();
-    EncounterSettings5 settings = { };
-    for (const auto &area : Encounters5::getEncounters(Encounter::DustCloud, settings, currentProfile))
-    {
-        encounter.emplace_back(area.getLocation(), PhenomenonType::Cave);
-    }
-    for (const auto &area : Encounters5::getEncounters(Encounter::FlyingShadow, settings, currentProfile))
-    {
-        encounter.emplace_back(area.getLocation(), PhenomenonType::Bridge);
-    }
-
-    std::vector<u16> locs;
-    std::ranges::transform(encounter, std::back_inserter(locs), [](const PhenomenonArea &area) { return area.getLocation(); });
-    auto locations = Translator::getLocations(locs, currentProfile->getVersion());
-
-    u16 currentLocationGenerator = ui->comboBoxGeneratorLocation->getCurrentUShort();
-    ui->comboBoxGeneratorLocation->clear();
-    ui->comboBoxGeneratorLocation->addItems(locations, locs);
-    ui->comboBoxGeneratorLocation->setCurrentIndexByData(currentLocationGenerator);
-
-    u16 currentLocationSearcher = ui->comboBoxSearcherLocation->getCurrentUShort();
-    ui->comboBoxSearcherLocation->clear();
-    ui->comboBoxSearcherLocation->addItems(locations, locs);
-    ui->comboBoxSearcherLocation->setCurrentIndexByData(currentLocationSearcher);
-}
-
-void PhenomenonItem::transferFilters(int index)
-{
-    if (index == 0)
-    {
-        ui->checkListSearcherItem->setChecks(ui->checkListGeneratorItem->getChecked());
-    }
-    else
-    {
-        ui->checkListGeneratorItem->setChecks(ui->checkListSearcherItem->getChecked());
-    }
-}
-
-void PhenomenonItem::transferSettings(int index)
-{
-    if (index == 0)
-    {
-        ui->comboBoxSearcherLocation->setCurrentIndex(ui->comboBoxGeneratorLocation->currentIndex());
-    }
-    else
-    {
-        ui->comboBoxGeneratorLocation->setCurrentIndex(ui->comboBoxSearcherLocation->currentIndex());
-    }
+    searcherEncounterIndexChanged(ui->comboBoxSearcherEncounter->currentIndex());
 }

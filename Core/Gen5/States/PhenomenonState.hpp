@@ -21,6 +21,8 @@
 #define PHENOMENONSTATE_HPP
 
 #include <Core/Global.hpp>
+#include <utility>
+#include <vector>
 
 /**
  * @brief State class for Gen5 phenomenon
@@ -40,7 +42,8 @@ public:
         phenomenon(phenomenon),
         valid(valid),
         chatot(((static_cast<u64>(prng) * 0x1fff) >> 32) / 82),
-        needle((static_cast<u64>(prng) * 8) >> 32)
+        needle((static_cast<u64>(prng) * 8) >> 32),
+        targetAdvances({ advances })
     {
     }
 
@@ -52,6 +55,38 @@ public:
     u32 getAdvances() const
     {
         return advances;
+    }
+
+    /**
+     * @brief Returns all counted target advances for an aggregated search result
+     */
+    const std::vector<u32> &getTargetAdvances() const
+    {
+        return targetAdvances;
+    }
+
+    /**
+     * @brief Sets all counted target advances for an aggregated search result
+     */
+    void setTargetAdvances(std::vector<u32> advances)
+    {
+        targetAdvances = std::move(advances);
+    }
+
+    /**
+     * @brief Returns the phenomenon advances paired with the counted target items
+     */
+    const std::vector<std::vector<u32>> &getTargetPhenomenonAdvances() const
+    {
+        return targetPhenomenonAdvances;
+    }
+
+    /**
+     * @brief Sets the phenomenon advances paired with the counted target items
+     */
+    void setTargetPhenomenonAdvances(std::vector<std::vector<u32>> advances)
+    {
+        targetPhenomenonAdvances = std::move(advances);
     }
 
     /**
@@ -113,6 +148,8 @@ private:
     bool valid;
     u8 chatot;
     u8 needle;
+    std::vector<u32> targetAdvances;
+    std::vector<std::vector<u32>> targetPhenomenonAdvances;
 };
 
 #endif // PHENOMENONSTATE_HPP

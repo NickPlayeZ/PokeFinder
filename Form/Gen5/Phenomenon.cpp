@@ -334,6 +334,20 @@ bool Phenomenon::hasProfiles() const
     return !profiles.empty();
 }
 
+void Phenomenon::configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed)
+{
+    auto profileIt = std::ranges::find(profiles, profile);
+    if (profileIt != profiles.end())
+    {
+        ui->comboBoxProfiles->setCurrentIndex(static_cast<int>(std::distance(profiles.begin(), profileIt)));
+    }
+
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->comboBoxGeneratorEncounter->setCurrentIndex(ui->comboBoxGeneratorEncounter->findData(toInt(encounter)));
+    ui->comboBoxGeneratorLocation->setCurrentIndexByData(location);
+    ui->textBoxGeneratorSeed->setText(QString::number(seed, 16).toUpper());
+}
+
 void Phenomenon::updateProfiles()
 {
     profiles = ProfileLoader5::getProfiles(Game::Gen5);

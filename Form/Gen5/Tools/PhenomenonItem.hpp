@@ -20,11 +20,11 @@
 #ifndef PHENOMENONITEM_HPP
 #define PHENOMENONITEM_HPP
 
+#include <Core/Enum/Encounter.hpp>
 #include <QWidget>
 #include <vector>
 
 class PhenomenonArea;
-class PhenomenonGeneratorModel5;
 class PhenomenonSearcherModel5;
 class Profile5;
 class SortFilterProxyModel;
@@ -45,6 +45,11 @@ signals:
      * @brief Emits that the profiles have been changed
      */
     void profilesChanged(int);
+
+    /**
+     * @brief Requests opening the normal phenomenon generator for a selected result
+     */
+    void openGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed);
 
 public:
     /**
@@ -76,7 +81,6 @@ public slots:
 private:
     Ui::PhenomenonItem *ui;
 
-    PhenomenonGeneratorModel5 *generatorModel;
     PhenomenonSearcherModel5 *searcherModel;
     const Profile5 *currentProfile;
     SortFilterProxyModel *proxyModel;
@@ -84,21 +88,26 @@ private:
 
 private slots:
     /**
-     * @brief Generates phenomenon encounters from a starting seed
-     */
-    void generate();
-
-    /**
-     * @brief Updates the phenomenon listed
-     *
-     * @param index Location index
-     */
-    void generatorLocationIndexChanged(int index);
-
-    /**
      * @brief Searches phenomenon encounters from date range
      */
     void search();
+
+    /**
+     * @brief Opens adjacent seeds for the selected search result
+     */
+    void openAdjacentSeeds();
+
+    /**
+     * @brief Opens the selected result in the normal phenomenon generator
+     */
+    void openPhenomenonGenerator();
+
+    /**
+     * @brief Updates the location list for the selected encounter type
+     *
+     * @param index Encounter index
+     */
+    void searcherEncounterIndexChanged(int index);
 
     /**
      * @brief Updates the phenomenon listed
@@ -114,19 +123,6 @@ private slots:
      */
     void profileChanged(const Profile5 &profile);
 
-    /**
-     * @brief Transfers the filters from the active tab to the inactive tab
-     *
-     * @param index Which tab widget to copy from
-     */
-    void transferFilters(int index);
-
-    /**
-     * @brief Transfers the settings from the active tab to the inactive tab
-     *
-     * @param index Which tab widget to copy from
-     */
-    void transferSettings(int index);
 };
 
 #endif // PHENOMENONITEM_HPP

@@ -91,7 +91,7 @@ PhenomenonSearcherModel5::PhenomenonSearcherModel5(QObject *parent) : TableModel
 
 int PhenomenonSearcherModel5::columnCount(const QModelIndex &parent) const
 {
-    return 6;
+    return 7;
 }
 
 QVariant PhenomenonSearcherModel5::data(const QModelIndex &index, int role) const
@@ -106,14 +106,35 @@ QVariant PhenomenonSearcherModel5::data(const QModelIndex &index, int role) cons
         case 0:
             return QString::number(display.getInitialSeed(), 16).toUpper().rightJustified(16, '0');
         case 1:
-            return state.getAdvances();
+        {
+            QStringList advances;
+            for (u32 advance : state.getTargetAdvances())
+            {
+                advances.emplace_back(QString::number(advance));
+            }
+            return advances.join(", ");
+        }
         case 2:
-            return QString::fromStdString(Translator::getItem(state.getItem()));
+        {
+            QStringList groups;
+            for (const auto &phenomenonAdvances : state.getTargetPhenomenonAdvances())
+            {
+                QStringList advances;
+                for (u32 advance : phenomenonAdvances)
+                {
+                    advances.emplace_back(QString::number(advance));
+                }
+                groups.emplace_back(advances.join('/'));
+            }
+            return groups.join(", ");
+        }
         case 3:
-            return QString::fromStdString(display.getDateTime().toString());
+            return QString::fromStdString(Translator::getItem(state.getItem()));
         case 4:
-            return QString::number(display.getTimer0(), 16).toUpper();
+            return QString::fromStdString(display.getDateTime().toString());
         case 5:
+            return QString::number(display.getTimer0(), 16).toUpper();
+        case 6:
             return QString::fromStdString(Translator::getKeypresses(display.getButtons()));
         }
     }

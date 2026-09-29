@@ -591,6 +591,14 @@ void MainWindow::openPhenomenonItem()
     auto *phenomenonItem = new PhenomenonItem();
     connect(phenomenonItem, &PhenomenonItem::profilesChanged, this, &MainWindow::updateProfiles);
     connect(this, &MainWindow::profilesChanged5, phenomenonItem, &PhenomenonItem::updateProfiles);
+    connect(phenomenonItem, &PhenomenonItem::openGenerator, this,
+            [this](const Profile5 &profile, Encounter encounter, u8 location, u64 seed) {
+                openPhenomenon();
+                if (phenomenon && phenomenon->hasProfiles())
+                {
+                    phenomenon->configureGenerator(profile, encounter, location, seed);
+                }
+            });
 
     if (!phenomenonItem->hasProfiles())
     {

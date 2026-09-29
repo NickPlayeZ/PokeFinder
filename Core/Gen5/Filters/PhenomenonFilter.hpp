@@ -36,6 +36,13 @@ public:
     PhenomenonFilter(const std::vector<u16> &items);
 
     /**
+     * @brief Construct a filter for one item
+     *
+     * @param item Item to filter by
+     */
+    PhenomenonFilter(u16 item);
+
+    /**
      * @brief Determines if the \p state meets the filter criteria
      *
      * @param state State to compare

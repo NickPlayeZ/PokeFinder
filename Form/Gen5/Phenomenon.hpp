@@ -33,6 +33,7 @@ class SortFilterProxyModel;
 class WildState5;
 class WildGeneratorModel5;
 class WildSearcherModel5;
+enum class Encounter : u8;
 
 namespace Ui
 {
@@ -71,6 +72,11 @@ public:
      * @return false 0 profiles exist
      */
     bool hasProfiles() const;
+
+    /**
+     * @brief Opens and configures the generator for a known seed and encounter
+     */
+    void configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed);
 
 public slots:
     /**
