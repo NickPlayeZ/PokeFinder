@@ -57,7 +57,7 @@ public:
      */
     PhenomenonGenerator(u32 initialAdvances, u32 maxAdvances, u32 offset, const PhenomenonArea &encounterArea, const Profile5 &profile,
                         const PhenomenonFilter &filter, u8 minItemAmount, u32 minItemDistance, u32 postItemPhenomenonDistance,
-                        u32 preItemPhenomenonDistance);
+                        u32 preItemPhenomenonDistance, const std::vector<u8> &exploringPowers);
 
     /**
      * @brief Generates states
@@ -75,6 +75,7 @@ private:
     u32 minItemDistance;
     u32 postItemPhenomenonDistance;
     u32 preItemPhenomenonDistance;
+    std::vector<u8> exploringPowers;
 };
 
 #endif // PHENOMENONGENERATOR_HPP

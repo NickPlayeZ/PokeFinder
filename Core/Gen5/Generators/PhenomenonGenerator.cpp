@@ -38,21 +38,26 @@ PhenomenonGenerator::PhenomenonGenerator(u32 initialAdvances, u32 maxAdvances, u
     minItemAmount(1),
     minItemDistance(0),
     postItemPhenomenonDistance(0),
-    preItemPhenomenonDistance(0)
+    preItemPhenomenonDistance(0),
+    exploringPowers({ 0 })
 {
 }
 
 PhenomenonGenerator::PhenomenonGenerator(u32 initialAdvances, u32 maxAdvances, u32 offset, const PhenomenonArea &area,
                                          const Profile5 &profile, const PhenomenonFilter &filter, u8 minItemAmount,
-                                         u32 minItemDistance, u32 postItemPhenomenonDistance, u32 preItemPhenomenonDistance) :
+                                         u32 minItemDistance, u32 postItemPhenomenonDistance, u32 preItemPhenomenonDistance,
+                                         const std::vector<u8> &exploringPowers) :
     Generator(initialAdvances, maxAdvances, offset, Method::None, profile, filter),
     area(area),
     aggregateItems(true),
     minItemAmount(minItemAmount),
     minItemDistance(minItemDistance),
     postItemPhenomenonDistance(postItemPhenomenonDistance),
-    preItemPhenomenonDistance(preItemPhenomenonDistance)
+    preItemPhenomenonDistance(preItemPhenomenonDistance),
+    exploringPowers(exploringPowers.empty() ? std::vector<u8> { 0 } : exploringPowers)
 {
+    std::ranges::sort(this->exploringPowers);
+    this->exploringPowers.erase(std::ranges::unique(this->exploringPowers).begin(), this->exploringPowers.end());
 }
 
 std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
@@ -65,7 +70,7 @@ std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
     u16 triggerRate = area.getTriggerRate();
 
     std::vector<PhenomenonState> states;
-    std::vector<u32> phenomenonAdvances;
+    std::vector<std::pair<u32, u16>> phenomenonRolls;
     for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
     {
         BWRNG go(rng, jump);
@@ -73,12 +78,10 @@ std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
         u16 item = area.getItem(go);
 
         u32 prng = rng.nextUInt();
-        bool phenomenon = ((static_cast<u64>(prng) * 1000) >> 32) < triggerRate;
+        u16 phenomenonRoll = (static_cast<u64>(prng) * 1000) >> 32;
+        bool phenomenon = phenomenonRoll < triggerRate;
         PhenomenonState state(prng, advances + initialAdvances + cnt, item, phenomenon, valid);
-        if (phenomenon)
-        {
-            phenomenonAdvances.emplace_back(state.getAdvances());
-        }
+        phenomenonRolls.emplace_back(state.getAdvances(), phenomenonRoll);
         if (filter.compare(state))
         {
             states.emplace_back(state);
@@ -90,58 +93,73 @@ std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
         return states;
     }
 
-    std::vector<PhenomenonState> counted;
-    counted.reserve(minItemAmount);
-    std::vector<std::vector<u32>> countedPhenomenonAdvances;
-    countedPhenomenonAdvances.reserve(minItemAmount);
-    u32 previousAdvance = advances + initialAdvances;
-    for (const auto &state : states)
+    static constexpr u16 triggerModifiers[] = { 0, 100, 150, 200 };
+    for (u8 exploringPower : exploringPowers)
     {
-        if (!state.isValid())
+        exploringPower = std::min<u8>(exploringPower, 3);
+        std::vector<u32> phenomenonAdvances;
+        for (const auto &[advance, roll] : phenomenonRolls)
         {
-            continue;
+            if (roll < triggerRate + triggerModifiers[exploringPower])
+            {
+                phenomenonAdvances.emplace_back(advance);
+            }
         }
 
-        if (!counted.empty() && state.getAdvances() - counted.back().getAdvances() < minItemDistance)
+        std::vector<PhenomenonState> counted;
+        counted.reserve(minItemAmount);
+        std::vector<std::vector<u32>> countedPhenomenonAdvances;
+        countedPhenomenonAdvances.reserve(minItemAmount);
+        u32 previousAdvance = advances + initialAdvances;
+        u32 effectivePostDistance = exploringPower == 3 ? postItemPhenomenonDistance / 2 : postItemPhenomenonDistance;
+        for (const auto &state : states)
         {
-            continue;
+            if (!state.isValid())
+            {
+                continue;
+            }
+
+            if (!counted.empty() && state.getAdvances() - counted.back().getAdvances() < minItemDistance)
+            {
+                continue;
+            }
+
+            auto firstPhenomenon = std::ranges::upper_bound(phenomenonAdvances, previousAdvance);
+            while (firstPhenomenon != phenomenonAdvances.cend() && *firstPhenomenon - previousAdvance < effectivePostDistance)
+            {
+                ++firstPhenomenon;
+            }
+
+            auto lastPhenomenon = phenomenonAdvances.cbegin();
+            if (preItemPhenomenonDistance == 0)
+            {
+                lastPhenomenon = std::ranges::lower_bound(phenomenonAdvances, state.getAdvances());
+            }
+            else if (state.getAdvances() >= preItemPhenomenonDistance)
+            {
+                lastPhenomenon
+                    = std::ranges::upper_bound(phenomenonAdvances, state.getAdvances() - preItemPhenomenonDistance);
+            }
+            if (firstPhenomenon < lastPhenomenon)
+            {
+                counted.emplace_back(state);
+                auto firstDisplayedPhenomenon = lastPhenomenon - firstPhenomenon > 3 ? lastPhenomenon - 3 : firstPhenomenon;
+                countedPhenomenonAdvances.emplace_back(firstDisplayedPhenomenon, lastPhenomenon);
+                previousAdvance = state.getAdvances();
+            }
         }
 
-        auto firstPhenomenon = std::ranges::upper_bound(phenomenonAdvances, previousAdvance);
-        while (firstPhenomenon != phenomenonAdvances.cend()
-               && *firstPhenomenon - previousAdvance < postItemPhenomenonDistance)
+        if (counted.size() >= minItemAmount)
         {
-            ++firstPhenomenon;
+            PhenomenonState result = counted.front();
+            std::vector<u32> targetAdvances;
+            targetAdvances.reserve(counted.size());
+            std::ranges::transform(counted, std::back_inserter(targetAdvances), &PhenomenonState::getAdvances);
+            result.setTargetAdvances(std::move(targetAdvances));
+            result.setTargetPhenomenonAdvances(std::move(countedPhenomenonAdvances));
+            result.setExploringPower(exploringPower);
+            return { result };
         }
-
-        auto lastPhenomenon = phenomenonAdvances.cbegin();
-        if (preItemPhenomenonDistance == 0)
-        {
-            lastPhenomenon = std::ranges::lower_bound(phenomenonAdvances, state.getAdvances());
-        }
-        else if (state.getAdvances() >= preItemPhenomenonDistance)
-        {
-            lastPhenomenon
-                = std::ranges::upper_bound(phenomenonAdvances, state.getAdvances() - preItemPhenomenonDistance);
-        }
-        if (firstPhenomenon < lastPhenomenon)
-        {
-            counted.emplace_back(state);
-            auto firstDisplayedPhenomenon = lastPhenomenon - firstPhenomenon > 3 ? lastPhenomenon - 3 : firstPhenomenon;
-            countedPhenomenonAdvances.emplace_back(firstDisplayedPhenomenon, lastPhenomenon);
-            previousAdvance = state.getAdvances();
-        }
-    }
-
-    if (counted.size() >= minItemAmount)
-    {
-        PhenomenonState result = counted.front();
-        std::vector<u32> targetAdvances;
-        targetAdvances.reserve(counted.size());
-        std::ranges::transform(counted, std::back_inserter(targetAdvances), &PhenomenonState::getAdvances);
-        result.setTargetAdvances(std::move(targetAdvances));
-        result.setTargetPhenomenonAdvances(std::move(countedPhenomenonAdvances));
-        return { result };
     }
 
     return {};

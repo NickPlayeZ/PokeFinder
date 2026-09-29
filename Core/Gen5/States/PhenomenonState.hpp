@@ -141,6 +141,22 @@ public:
         return valid;
     }
 
+    /**
+     * @brief Returns the minimum Exploring Power required by this result
+     */
+    u8 getExploringPower() const
+    {
+        return exploringPower;
+    }
+
+    /**
+     * @brief Sets the minimum Exploring Power required by this result
+     */
+    void setExploringPower(u8 power)
+    {
+        exploringPower = power;
+    }
+
 private:
     u32 advances;
     u16 item;
@@ -148,6 +164,7 @@ private:
     bool valid;
     u8 chatot;
     u8 needle;
+    u8 exploringPower = 0;
     std::vector<u32> targetAdvances;
     std::vector<std::vector<u32>> targetPhenomenonAdvances;
 };

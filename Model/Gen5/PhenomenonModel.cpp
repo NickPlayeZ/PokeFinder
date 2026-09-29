@@ -91,7 +91,7 @@ PhenomenonSearcherModel5::PhenomenonSearcherModel5(QObject *parent) : TableModel
 
 int PhenomenonSearcherModel5::columnCount(const QModelIndex &parent) const
 {
-    return 7;
+    return 8;
 }
 
 QVariant PhenomenonSearcherModel5::data(const QModelIndex &index, int role) const
@@ -131,10 +131,22 @@ QVariant PhenomenonSearcherModel5::data(const QModelIndex &index, int role) cons
         case 3:
             return QString::fromStdString(Translator::getItem(state.getItem()));
         case 4:
-            return QString::fromStdString(display.getDateTime().toString());
+            switch (state.getExploringPower())
+            {
+            case 1:
+                return tr("↑");
+            case 2:
+                return tr("↑↑");
+            case 3:
+                return tr("↑↑↑ / S");
+            default:
+                return tr("None");
+            }
         case 5:
-            return QString::number(display.getTimer0(), 16).toUpper();
+            return QString::fromStdString(display.getDateTime().toString());
         case 6:
+            return QString::number(display.getTimer0(), 16).toUpper();
+        case 7:
             return QString::fromStdString(Translator::getKeypresses(display.getButtons()));
         }
     }

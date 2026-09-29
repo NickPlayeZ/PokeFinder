@@ -76,7 +76,7 @@ public:
     /**
      * @brief Opens and configures the generator for a known seed and encounter
      */
-    void configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed);
+    void configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower = 0);
 
 public slots:
     /**

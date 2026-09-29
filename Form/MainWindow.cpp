@@ -592,11 +592,11 @@ void MainWindow::openPhenomenonItem()
     connect(phenomenonItem, &PhenomenonItem::profilesChanged, this, &MainWindow::updateProfiles);
     connect(this, &MainWindow::profilesChanged5, phenomenonItem, &PhenomenonItem::updateProfiles);
     connect(phenomenonItem, &PhenomenonItem::openGenerator, this,
-            [this](const Profile5 &profile, Encounter encounter, u8 location, u64 seed) {
+            [this](const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower) {
                 openPhenomenon();
                 if (phenomenon && phenomenon->hasProfiles())
                 {
-                    phenomenon->configureGenerator(profile, encounter, location, seed);
+                    phenomenon->configureGenerator(profile, encounter, location, seed, exploringPower);
                 }
             });
 

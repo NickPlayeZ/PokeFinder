@@ -31,6 +31,7 @@
 #include <Core/Parents/ProfileLoader.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Form/Controls/Controls.hpp>
+#include <Form/Controls/ComboMenu.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
 #include <Model/Gen5/PhenomenonModel.hpp>
@@ -38,9 +39,26 @@
 #include <QAction>
 #include <QMessageBox>
 #include <QSettings>
+#include <QSizePolicy>
 #include <QTimer>
 
 static const QString settingPrefix = QStringLiteral("phenomenonItem");
+
+static std::vector<u8> getExploringPowers(const ComboMenu *comboMenu)
+{
+    std::vector<u8> powers;
+    for (int power : comboMenu->getCheckedData())
+    {
+        powers.emplace_back(power);
+    }
+    if (powers.empty())
+    {
+        powers.emplace_back(0);
+    }
+    std::ranges::sort(powers);
+    powers.erase(std::ranges::unique(powers).begin(), powers.end());
+    return powers;
+}
 
 PhenomenonItem::PhenomenonItem(QWidget *parent) : QWidget(parent), ui(new Ui::PhenomenonItem), currentProfile(nullptr)
 {
@@ -63,6 +81,14 @@ PhenomenonItem::PhenomenonItem(QWidget *parent) : QWidget(parent), ui(new Ui::Ph
     ui->comboBoxSearcherLocation->enableAutoComplete();
     ui->comboBoxSearcherEncounter->addItem(tr("Dust Cloud"), toInt(Encounter::DustCloud));
     ui->comboBoxSearcherEncounter->addItem(tr("Flying Shadow"), toInt(Encounter::FlyingShadow));
+
+    ui->comboBoxSearcherExploringPower->setMultiSelect(true);
+    ui->comboBoxSearcherExploringPower->addAction(tr("None"), 0);
+    ui->comboBoxSearcherExploringPower->addAction(tr("↑"), 1);
+    ui->comboBoxSearcherExploringPower->addAction(tr("↑↑"), 2);
+    ui->comboBoxSearcherExploringPower->addAction(tr("↑↑↑ / S"), 3);
+    ui->comboBoxSearcherExploringPower->setCheckedData({ 0 });
+    ui->comboBoxSearcherExploringPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
     auto *adjacentSeeds = ui->tableViewSearcher->addAction(tr("Adjacent Seeds"));
     ui->tableViewSearcher->setPrimaryAction(adjacentSeeds);
@@ -135,19 +161,44 @@ void PhenomenonItem::search()
         return;
     }
 
+    u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
+    u64 minItemDistance = ui->spinBoxSearcherMinItemDistance->value();
+    u64 postItemPhenomenonDistance = ui->spinBoxSearcherPostItemPhenomenonDistance->value();
+    u64 preItemPhenomenonDistance = ui->spinBoxSearcherPreItemPhenomenonDistance->value();
+    u64 amount = ui->spinBoxSearcherAmount->value();
+    bool rangeCanFit = false;
+    for (u8 exploringPower : getExploringPowers(ui->comboBoxSearcherExploringPower))
+    {
+        u64 effectivePostDistance = exploringPower == 3 ? postItemPhenomenonDistance / 2 : postItemPhenomenonDistance;
+        u64 phenomenonGap = std::max<u64>(1, effectivePostDistance) + std::max<u64>(1, preItemPhenomenonDistance);
+        u64 requiredAdvances = phenomenonGap + (amount - 1) * std::max(minItemDistance, phenomenonGap);
+        if (maxAdvances >= requiredAdvances)
+        {
+            rangeCanFit = true;
+            break;
+        }
+    }
+    if (!rangeCanFit)
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("Max Advances too low"),
+                        tr("Max Advances too low to allow for the filtered item amount to be found with the current distance settings."));
+        msg.exec();
+        return;
+    }
+
     searcherModel->clearModel();
     ui->pushButtonSearch->setEnabled(false);
     ui->pushButtonCancel->setEnabled(true);
 
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
-    u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
 
     PhenomenonFilter filter(ui->comboBoxSearcherItem->getCurrentUShort());
     PhenomenonGenerator generator(initialAdvances, maxAdvances, 0, encounter[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile,
                                   filter, static_cast<u8>(ui->spinBoxSearcherAmount->value()),
                                   static_cast<u32>(ui->spinBoxSearcherMinItemDistance->value()),
                                   static_cast<u32>(ui->spinBoxSearcherPostItemPhenomenonDistance->value()),
-                                  static_cast<u32>(ui->spinBoxSearcherPreItemPhenomenonDistance->value()));
+                                  static_cast<u32>(ui->spinBoxSearcherPreItemPhenomenonDistance->value()),
+                                  getExploringPowers(ui->comboBoxSearcherExploringPower));
     auto *searcher = new PhenomenonSearcher(generator, *currentProfile);
 
     searcher->setMaxProgress(searcher->getMaxProgress(start, end));
@@ -239,7 +290,8 @@ void PhenomenonItem::openPhenomenonGenerator()
 
     const auto &state = searcherModel->getItem(index.row());
     emit openGenerator(*currentProfile, ui->comboBoxSearcherEncounter->getEnum<Encounter>(),
-                       static_cast<u8>(ui->comboBoxSearcherLocation->getCurrentUShort()), state.getInitialSeed());
+                       static_cast<u8>(ui->comboBoxSearcherLocation->getCurrentUShort()), state.getInitialSeed(),
+                       state.getState().getExploringPower());
 }
 
 void PhenomenonItem::searcherEncounterIndexChanged(int index)
@@ -274,6 +326,14 @@ void PhenomenonItem::searcherEncounterIndexChanged(int index)
 void PhenomenonItem::profileChanged(const Profile5 &profile)
 {
     currentProfile = &profile;
+
+    bool bw2 = (profile.getVersion() & Game::BW2) != Game::None;
+    ui->labelSearcherExploringPower->setVisible(bw2);
+    ui->comboBoxSearcherExploringPower->setVisible(bw2);
+    if (!bw2)
+    {
+        ui->comboBoxSearcherExploringPower->setCheckedData({ 0 });
+    }
 
     searcherEncounterIndexChanged(ui->comboBoxSearcherEncounter->currentIndex());
 }

@@ -270,9 +270,11 @@ static bool canYieldPhenomenonItem(Encounter encounter)
     return encounter == Encounter::DustCloud || encounter == Encounter::FlyingShadow;
 }
 
-static u16 getPhenomenonRate(Encounter encounter)
+static u16 getPhenomenonRate(Encounter encounter, u8 exploringPower)
 {
-    return encounter == Encounter::FlyingShadow ? 150 : 100;
+    static constexpr u16 modifiers[] = { 0, 100, 150, 200 };
+    u16 rate = encounter == Encounter::FlyingShadow ? 150 : 100;
+    return rate + modifiers[std::min<u8>(exploringPower, 3)];
 }
 
 static bool skipsLeadCheck(Encounter encounter, Lead lead)
@@ -336,8 +338,7 @@ static u16 getFlyingShadowItem(BWRNG &rng)
 {
     constexpr std::array<u16, 6> wings = { 565, 566, 567, 568, 569, 570 };
 
-    u32 current = rng.getSeed() >> 32;
-    if (((static_cast<u64>(current) * 1000) >> 32) > 900)
+    if (rng.nextUInt(1000) >= 900)
     {
         return 571;
     }
@@ -363,6 +364,14 @@ WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset,
 {
 }
 
+WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, u8 luckyPower, u8 exploringPower,
+                               const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter) :
+    WildGenerator5(initialAdvances, maxAdvances, offset, method, std::vector<Lead> { lead },
+                   std::vector<u8> { PassPower5::combineExploring(luckyPower, exploringPower) }, false, false, area, profile, filter, false,
+                   false, true)
+{
+}
+
 WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, const std::vector<u8> &passPowers,
                                bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area, const Profile5 &profile,
                                const WildStateFilter &filter, bool requirePassPowerIVAdvance) :
@@ -380,14 +389,15 @@ WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset,
 WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
                                const std::vector<u8> &passPowers, bool searchMovingTrigger, bool requireMovingTrigger,
                                const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter,
-                               bool requirePassPowerIVAdvance, bool filterNonRequiredLeads) :
+                               bool requirePassPowerIVAdvance, bool filterNonRequiredLeads, bool useExploringPower) :
     WildGenerator(initialAdvances, maxAdvances, offset, method, leads.empty() ? Lead::None : leads.front(), area, profile, filter),
     passPowers(passPowers),
     leads(leads.empty() ? std::vector<Lead> { Lead::None } : leads),
     searchMovingTrigger(searchMovingTrigger),
     requireMovingTrigger(requireMovingTrigger),
     requirePassPowerIVAdvance(requirePassPowerIVAdvance),
-    filterNonRequiredLeads(filterNonRequiredLeads)
+    filterNonRequiredLeads(filterNonRequiredLeads),
+    useExploringPower(useExploringPower)
 {
     if ((profile.getVersion() & Game::BW) != Game::None)
     {
@@ -397,7 +407,7 @@ WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset,
         }
     }
 
-    if (!searchMovingTrigger)
+    if (!searchMovingTrigger && !useExploringPower)
     {
         for (u8 &passPower : this->passPowers)
         {
@@ -628,7 +638,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             getPercentRand(go, bw);
         }
 
-        if (area.getEncounter() == Encounter::FlyingShadow && !skipsLeadCheck(area.getEncounter(), currentLead))
+        if (!phenomenonItem && area.getEncounter() == Encounter::FlyingShadow && !skipsLeadCheck(area.getEncounter(), currentLead))
         {
             if (currentLead == Lead::CuteCharmM || currentLead == Lead::CuteCharmF)
             {
@@ -789,7 +799,9 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             resultRng.nextUInt(0x1fff);
         }
         bool phenomenon
-            = canTriggerPhenomenon(area.getEncounter()) && BWRNG(resultRng).nextUInt(1000) < getPhenomenonRate(area.getEncounter());
+            = canTriggerPhenomenon(area.getEncounter())
+            && BWRNG(resultRng).nextUInt(1000)
+                < getPhenomenonRate(area.getEncounter(), useExploringPower ? PassPower5::getExploringPower(passPower) : 0);
         u32 prng = resultRng.nextUInt();
 
         u64 resultLeadMask = getLeadFlag(currentLead);

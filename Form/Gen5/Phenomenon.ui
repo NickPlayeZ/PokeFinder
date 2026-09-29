@@ -262,33 +262,12 @@
           <item row="6" column="0">
            <widget class="QLabel" name="labelGeneratorLuckyPower">
             <property name="text">
-             <string>Lucky Power</string>
+             <string>Pass Power</string>
             </property>
            </widget>
           </item>
           <item row="6" column="1">
-           <widget class="ComboBox" name="comboBoxGeneratorLuckyPower">
-            <item>
-             <property name="text">
-              <string notr="true">0</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string notr="true">1</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string notr="true">2</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string notr="true">3/S</string>
-             </property>
-            </item>
-           </widget>
+           <widget class="ComboMenu" name="comboBoxGeneratorLuckyPower"/>
           </item>
           <item row="7" column="0" colspan="2">
            <widget class="QPushButton" name="pushButtonGenerate">

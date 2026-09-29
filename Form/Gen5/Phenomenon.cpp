@@ -50,6 +50,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QTimer>
 #include <algorithm>
@@ -99,6 +100,92 @@ namespace
     bool hasPassPower(const std::vector<u8> &powers)
     {
         return std::ranges::find_if(powers, [](u8 power) { return power != PassPower5::None; }) != powers.end();
+    }
+
+    bool isLuckyPower(int power)
+    {
+        return power >= PassPower5::Lucky1 && power <= PassPower5::Lucky3;
+    }
+
+    bool isExploringPower(int power)
+    {
+        return power >= PassPower5::Exploring1 && power <= PassPower5::Exploring3
+            && PassPower5::getLuckyPower(power) == PassPower5::None;
+    }
+
+    std::vector<int> normalizeGeneratorPowers(const std::vector<int> &powers, const std::vector<int> &previous)
+    {
+        if (std::ranges::contains(powers, static_cast<int>(PassPower5::None))
+            && !std::ranges::contains(previous, static_cast<int>(PassPower5::None)))
+        {
+            return { PassPower5::None };
+        }
+
+        auto selectPower = [&](auto predicate) {
+            for (int power : previous)
+            {
+                if (predicate(power) && std::ranges::contains(powers, power))
+                {
+                    return power;
+                }
+            }
+            auto power = std::ranges::find_if(powers, predicate);
+            return power == powers.end() ? static_cast<int>(PassPower5::None) : *power;
+        };
+
+        int luckyPower = selectPower(isLuckyPower);
+        int exploringPower = selectPower(isExploringPower);
+        std::vector<int> normalized;
+        if (luckyPower != PassPower5::None)
+        {
+            normalized.emplace_back(luckyPower);
+        }
+        if (exploringPower != PassPower5::None)
+        {
+            normalized.emplace_back(exploringPower);
+        }
+        return normalized.empty() ? std::vector<int> { PassPower5::None } : normalized;
+    }
+
+    std::vector<int> getGeneratorPowerProperty(const ComboMenu *comboMenu)
+    {
+        std::vector<int> powers;
+        for (const auto &value : comboMenu->property("phenomenonGeneratorPowers").toList())
+        {
+            powers.emplace_back(value.toInt());
+        }
+        return powers;
+    }
+
+    void setGeneratorPowers(ComboMenu *comboMenu, const std::vector<int> &powers)
+    {
+        QVariantList values;
+        for (int power : powers)
+        {
+            values.emplace_back(power);
+        }
+        comboMenu->setProperty("phenomenonGeneratorPowers", values);
+        comboMenu->setCheckedData(powers);
+    }
+
+    u8 getGeneratorPassPower(ComboMenu *comboMenu)
+    {
+        auto powers = normalizeGeneratorPowers(comboMenu->getRawCheckedData(), getGeneratorPowerProperty(comboMenu));
+
+        u8 luckyPower = PassPower5::None;
+        u8 exploringPower = PassPower5::None;
+        for (int power : powers)
+        {
+            if (isLuckyPower(power))
+            {
+                luckyPower = PassPower5::getLuckyPower(power);
+            }
+            else if (isExploringPower(power))
+            {
+                exploringPower = PassPower5::getExploringPower(power);
+            }
+        }
+        return PassPower5::combineExploring(luckyPower, exploringPower);
     }
 
     std::vector<u8> getLuckyPowers(std::vector<u8> powers, bool bw)
@@ -247,11 +334,16 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     ui->comboBoxGeneratorLocation->enableAutoComplete();
     ui->comboBoxSearcherLocation->enableAutoComplete();
 
-    ui->comboBoxGeneratorLuckyPower->setup({ 0, 1, 2, 3 });
-    ui->comboBoxGeneratorLuckyPower->setItemText(0, tr("None"));
-    ui->comboBoxGeneratorLuckyPower->setItemText(1, tr("↑"));
-    ui->comboBoxGeneratorLuckyPower->setItemText(2, tr("↑↑"));
-    ui->comboBoxGeneratorLuckyPower->setItemText(3, tr("↑↑↑ / S"));
+    ui->comboBoxGeneratorLuckyPower->setMultiSelect(true);
+    ui->comboBoxGeneratorLuckyPower->addAction(tr("None"), PassPower5::None);
+    ui->comboBoxGeneratorLuckyPower->addAction(tr("Lucky Power ↑"), PassPower5::Lucky1);
+    ui->comboBoxGeneratorLuckyPower->addAction(tr("Lucky Power ↑↑"), PassPower5::Lucky2);
+    ui->comboBoxGeneratorLuckyPower->addAction(tr("Lucky Power ↑↑↑ / S"), PassPower5::Lucky3);
+    ui->comboBoxGeneratorLuckyPower->addAction(tr("Exploring Power ↑"), PassPower5::Exploring1);
+    ui->comboBoxGeneratorLuckyPower->addAction(tr("Exploring Power ↑↑"), PassPower5::Exploring2);
+    ui->comboBoxGeneratorLuckyPower->addAction(tr("Exploring Power ↑↑↑ / S"), PassPower5::Exploring3);
+    ui->comboBoxGeneratorLuckyPower->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+    setGeneratorPowers(ui->comboBoxGeneratorLuckyPower, { PassPower5::None });
     ui->comboBoxSearcherLuckyPower->setMultiSelect(true);
     ui->comboBoxSearcherLuckyPower->addAction(tr("None"), PassPower5::None);
     ui->comboBoxSearcherLuckyPower->addAction(tr("↑"), PassPower5::Lucky1);
@@ -274,6 +366,12 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     connect(ui->pushButtonGenerate, &QPushButton::clicked, this, &Phenomenon::generate);
     connect(ui->pushButtonSearch, &QPushButton::clicked, this, &Phenomenon::search);
     connect(ui->comboBoxGeneratorEncounter, &QComboBox::currentIndexChanged, this, &Phenomenon::generatorEncounterIndexChanged);
+    connect(ui->comboBoxGeneratorLuckyPower, &ComboMenu::checkedDataChanged, this, [this] {
+        QSignalBlocker blocker(ui->comboBoxGeneratorLuckyPower);
+        auto powers = normalizeGeneratorPowers(ui->comboBoxGeneratorLuckyPower->getRawCheckedData(),
+                                               getGeneratorPowerProperty(ui->comboBoxGeneratorLuckyPower));
+        setGeneratorPowers(ui->comboBoxGeneratorLuckyPower, powers);
+    });
     connect(ui->comboBoxSearcherEncounter, &QComboBox::currentIndexChanged, this, &Phenomenon::searcherEncounterIndexChanged);
     connect(ui->comboBoxGeneratorLocation, &QComboBox::currentIndexChanged, this, &Phenomenon::generatorLocationIndexChanged);
     connect(ui->comboBoxSearcherLocation, &QComboBox::currentIndexChanged, this, &Phenomenon::searcherLocationIndexChanged);
@@ -334,7 +432,7 @@ bool Phenomenon::hasProfiles() const
     return !profiles.empty();
 }
 
-void Phenomenon::configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed)
+void Phenomenon::configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower)
 {
     auto profileIt = std::ranges::find(profiles, profile);
     if (profileIt != profiles.end())
@@ -346,6 +444,8 @@ void Phenomenon::configureGenerator(const Profile5 &profile, Encounter encounter
     ui->comboBoxGeneratorEncounter->setCurrentIndex(ui->comboBoxGeneratorEncounter->findData(toInt(encounter)));
     ui->comboBoxGeneratorLocation->setCurrentIndexByData(location);
     ui->textBoxGeneratorSeed->setText(QString::number(seed, 16).toUpper());
+    setGeneratorPowers(ui->comboBoxGeneratorLuckyPower,
+                       { exploringPower == 0 ? PassPower5::None : exploringPower << PassPower5::ExploringShift });
 }
 
 void Phenomenon::updateProfiles()
@@ -474,10 +574,13 @@ void Phenomenon::generate()
     u32 maxAdvances = ui->textBoxGeneratorMaxAdvances->getUInt();
     u32 offset = ui->textBoxGeneratorOffset->getUInt();
     auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
-    u8 luckyPower = (currentProfile->getVersion() & Game::BW2) != Game::None ? ui->comboBoxGeneratorLuckyPower->getCurrentUChar() : PassPower5::None;
+    u8 passPower
+        = (currentProfile->getVersion() & Game::BW2) != Game::None ? getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower) : PassPower5::None;
+    u8 luckyPower = PassPower5::getLuckyPower(passPower);
+    u8 exploringPower = PassPower5::getExploringPower(passPower);
 
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
-    WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, false, false,
+    WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, exploringPower,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
 
     bool itemFilterVisible = checkListGeneratorItem->isVisible();
@@ -495,7 +598,7 @@ void Phenomenon::generate()
     std::erase_if(states, [=](const WildState5 &state) { return state.getPhenomenonItem() || !generatePokemon; });
     if (generateItems)
     {
-        WildGenerator5 itemGenerator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, false, false,
+        WildGenerator5 itemGenerator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, exploringPower,
                                      encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile,
                                      getUnfilteredWildStateFilter());
         auto itemStates = itemGenerator.generate(seed, ivAdvances, 0);
@@ -657,7 +760,7 @@ void Phenomenon::profileIndexChanged(int index)
         ui->comboBoxSearcherLuckyPower->setVisible(flag);
         if (!flag)
         {
-            ui->comboBoxGeneratorLuckyPower->setCurrentIndex(0);
+            setGeneratorPowers(ui->comboBoxGeneratorLuckyPower, { PassPower5::None });
             ui->comboBoxSearcherLuckyPower->setCheckedData({ PassPower5::None });
         }
 
@@ -903,7 +1006,8 @@ void Phenomenon::transferSettings(int index)
         ui->comboBoxSearcherLocation->setCurrentIndex(ui->comboBoxGeneratorLocation->currentIndex());
         ui->comboBoxSearcherPokemon->setCurrentIndex(ui->comboBoxGeneratorPokemon->currentIndex());
         ui->comboBoxSearcherSeason->setCurrentIndex(ui->comboBoxGeneratorSeason->currentIndex());
-        ui->comboBoxSearcherLuckyPower->setCheckedData({ ui->comboBoxGeneratorLuckyPower->getCurrentUChar() });
+        ui->comboBoxSearcherLuckyPower->setCheckedData(
+            { PassPower5::getLuckyPower(getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower)) });
     }
     else
     {
@@ -914,6 +1018,7 @@ void Phenomenon::transferSettings(int index)
         auto luckyPowers = (currentProfile->getVersion() & Game::BW2) != Game::None
             ? getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), (currentProfile->getVersion() & Game::BW) != Game::None)
             : std::vector<u8> { PassPower5::None };
-        ui->comboBoxGeneratorLuckyPower->setCurrentIndex(luckyPowers.empty() ? 0 : luckyPowers.front());
+        setGeneratorPowers(ui->comboBoxGeneratorLuckyPower,
+                           { luckyPowers.empty() ? PassPower5::None : luckyPowers.front() });
     }
 }

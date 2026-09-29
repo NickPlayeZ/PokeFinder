@@ -49,7 +49,7 @@ signals:
     /**
      * @brief Requests opening the normal phenomenon generator for a selected result
      */
-    void openGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed);
+    void openGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower);
 
 public:
     /**

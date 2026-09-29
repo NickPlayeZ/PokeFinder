@@ -41,6 +41,11 @@ namespace PassPower5
     constexpr u8 Encounter2 = 2 << EncounterShift;
     constexpr u8 Encounter3 = 3 << EncounterShift;
 
+    constexpr u8 ExploringShift = EncounterShift;
+    constexpr u8 Exploring1 = 1 << ExploringShift;
+    constexpr u8 Exploring2 = 2 << ExploringShift;
+    constexpr u8 Exploring3 = 3 << ExploringShift;
+
     constexpr u8 getLuckyPower(u8 passPower)
     {
         return passPower & 0xf;
@@ -51,9 +56,19 @@ namespace PassPower5
         return passPower >> EncounterShift;
     }
 
+    constexpr u8 getExploringPower(u8 passPower)
+    {
+        return passPower >> ExploringShift;
+    }
+
     constexpr u8 combine(u8 luckyPower, u8 encounterPower)
     {
         return luckyPower | (encounterPower << EncounterShift);
+    }
+
+    constexpr u8 combineExploring(u8 luckyPower, u8 exploringPower)
+    {
+        return luckyPower | (exploringPower << ExploringShift);
     }
 }
 
@@ -78,6 +93,9 @@ public:
     WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, u8 passPower, bool searchMovingTrigger,
                    bool requireMovingTrigger, const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter);
 
+    WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, u8 luckyPower, u8 exploringPower,
+                   const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter);
+
     WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, const std::vector<u8> &passPowers,
                    bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area, const Profile5 &profile,
                    const WildStateFilter &filter, bool requirePassPowerIVAdvance = false);
@@ -101,7 +119,7 @@ public:
     WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
                    const std::vector<u8> &passPowers, bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area,
                    const Profile5 &profile, const WildStateFilter &filter, bool requirePassPowerIVAdvance = false,
-                   bool filterNonRequiredLeads = true);
+                   bool filterNonRequiredLeads = true, bool useExploringPower = false);
 
     /**
      * @brief Generates states for the \p encounterArea
@@ -131,6 +149,7 @@ private:
     bool requireMovingTrigger;
     bool requirePassPowerIVAdvance;
     bool filterNonRequiredLeads;
+    bool useExploringPower;
 
     std::vector<WildState5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower) const;
 };
