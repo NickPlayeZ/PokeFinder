@@ -90,17 +90,16 @@ static constexpr u64 synchronizeMask()
     return (1ULL << 25) - 1;
 }
 
-WildSearcher3::WildSearcher3(Method method, Lead lead, bool feebasTile, bool bike, Item item, const EncounterArea3 &area,
+WildSearcher3::WildSearcher3(Method method, Lead lead, bool feebasTile, Item item, const EncounterArea3 &area,
                              const Profile3 &profile, const WildStateFilter &filter) :
-    WildSearcher3(method, std::vector<Lead> { lead }, feebasTile, bike, item, area, profile, filter)
+    WildSearcher3(method, std::vector<Lead> { lead }, feebasTile, item, area, profile, filter)
 {
 }
 
-WildSearcher3::WildSearcher3(Method method, const std::vector<Lead> &leads, bool feebasTile, bool bike, Item item,
+WildSearcher3::WildSearcher3(Method method, const std::vector<Lead> &leads, bool feebasTile, Item item,
                              const EncounterArea3 &area, const Profile3 &profile, const WildStateFilter &filter) :
     WildSearcher(method, leads.empty() ? Lead::None : leads[0], area, profile, filter),
     rate(0),
-    bike(bike),
     feebasTile(feebasTile),
     ivAdvance(method == Method::Method2),
     item(item),
@@ -111,20 +110,7 @@ WildSearcher3::WildSearcher3(Method method, const std::vector<Lead> &leads, bool
     {
         rate = area.getRate() * 16;
 
-        if (bike)
-        {
-            rate = (rate * 80) / 100;
-        }
-
-        if (item == Item::BlackFlute)
-        {
-            rate /= 2;
-        }
-        else if (item == Item::CleanseTag)
-        {
-            rate = (rate * 2) / 3;
-        }
-        else if (item == Item::WhiteFlute)
+        if (item == Item::WhiteFlute)
         {
             rate += rate / 2;
         }

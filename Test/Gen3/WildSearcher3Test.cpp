@@ -55,7 +55,6 @@ void WildSearcher3Test::search_data()
     QTest::addColumn<Encounter>("encounter");
     QTest::addColumn<Lead>("lead");
     QTest::addColumn<bool>("feebasTile");
-    QTest::addColumn<bool>("bike");
     QTest::addColumn<Item>("item");
     QTest::addColumn<int>("location");
     QTest::addColumn<int>("results");
@@ -65,8 +64,8 @@ void WildSearcher3Test::search_data()
     {
         QTest::newRow(d["name"].get<std::string>().data())
             << d["min"].get<IVs>() << d["max"].get<IVs>() << d["version"].get<Game>() << d["method"].get<Method>()
-            << d["encounter"].get<Encounter>() << d["lead"].get<Lead>() << d.value("feebasTile", false) << d.value("bike", false)
-            << d.value("item", Item::None) << d["location"].get<int>() << d["results"].get<int>();
+            << d["encounter"].get<Encounter>() << d["lead"].get<Lead>() << d.value("feebasTile", false) << d.value("item", Item::None)
+            << d["location"].get<int>() << d["results"].get<int>();
     }
 }
 
@@ -79,7 +78,6 @@ void WildSearcher3Test::search()
     QFETCH(Encounter, encounter);
     QFETCH(Lead, lead);
     QFETCH(bool, feebasTile);
-    QFETCH(bool, bike);
     QFETCH(Item, item);
     QFETCH(int, location);
     QFETCH(int, results);
@@ -104,7 +102,7 @@ void WildSearcher3Test::search()
                                [location](const EncounterArea3 &encounterArea) { return encounterArea.getLocation() == location; });
 
     WildStateFilter filter(255, 255, 255, 1, 100, 0, 255, 0, 255, false, min, max, natures, powers, encounterSlots);
-    WildSearcher3 searcher(method, lead, settings.feebasTile, bike, item, *encounterArea, profile, filter);
+    WildSearcher3 searcher(method, lead, settings.feebasTile, item, *encounterArea, profile, filter);
 
     searcher.startSearch(min, max);
     while (searcher.isSearching())
@@ -118,8 +116,8 @@ void WildSearcher3Test::search()
     for (const auto &state : states)
     {
         // Ensure generator agrees
-        WildGenerator3 generator(0, 0, 0, method, lead != Lead::Synchronize ? lead : lead + state.getNature(), settings.feebasTile, bike,
-                                 item, *encounterArea, profile, filter);
+        WildGenerator3 generator(0, 0, 0, method, lead != Lead::Synchronize ? lead : lead + state.getNature(), settings.feebasTile, item,
+                                 *encounterArea, profile, filter);
         auto generatorStates = generator.generate(state.getSeed());
 
         QCOMPARE(generatorStates.size(), 1);

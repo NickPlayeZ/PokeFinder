@@ -84,11 +84,11 @@ public:
     /**
      * @brief Gets various parent information: IVs, ability, gender, item masuda, etc.
      *
+     * @param ovalCharm Whether Oval Charm has been obtained
+     *
      * @return Parent information
      */
-    Daycare getDaycare() const;
-
-    u8 getCompatibility() const;
+    Daycare getDaycare(bool ovalCharm) const;
 
     void setCompatibilityVisible(bool visible);
 

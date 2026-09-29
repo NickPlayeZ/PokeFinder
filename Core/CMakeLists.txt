@@ -202,6 +202,7 @@ add_library(PokeFinderCore STATIC
     Gen5/Searchers/IVCacheSearcher.hpp
     Gen5/Searchers/IVSearcher5.cpp
     Gen5/Searchers/IVSearcher5.hpp
+    Gen5/Searchers/PhenomenonSearcher.hpp
     Gen5/Searchers/ProfileSearcher5.cpp
     Gen5/Searchers/ProfileSearcher5.hpp
     Gen5/Searchers/SHA1CacheSearcher.cpp
@@ -302,7 +303,6 @@ add_library(PokeFinderCore STATIC
     RNG/LCRNG64.hpp
     RNG/MT.cpp
     RNG/MT.hpp
-    RNG/MTFast.hpp
     RNG/RNGList.hpp
     RNG/SFMT.cpp
     RNG/SFMT.hpp

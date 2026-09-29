@@ -294,6 +294,11 @@ private slots:
     void openPhenomenon();
 
     /**
+     * @brief Opens the standalone Gen 5 Phenomenon item tool
+     */
+    void openPhenomenonItem();
+
+    /**
      * @brief Opens the Gen 5 Static window
      */
     void openStatic5();

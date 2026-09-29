@@ -17,31 +17,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef ITEM_HPP
-#define ITEM_HPP
+#ifndef PHENOMENONRADARSEARCHER_HPP
+#define PHENOMENONRADARSEARCHER_HPP
 
-#include <Core/Global.hpp>
+#include <Core/Gen5/Generators/PhenomenonGenerator.hpp>
+#include <Core/Gen5/Searchers/Searcher5.hpp>
+#include <Core/Gen5/States/PhenomenonState.hpp>
+#include <Core/Gen5/States/SearcherState5.hpp>
 
-/**
- * @brief Enum to encompass different items
- */
-enum class Item : u8
-{
-    None,
+using PhenomenonSearcher = Searcher5<PhenomenonGenerator, PhenomenonState>;
 
-    WhiteFlute
-};
-
-/**
- * @brief Converts enum to number
- *
- * @param item Input item
- *
- * @return Converted number
- */
-constexpr u8 toInt(Item item)
-{
-    return static_cast<u8>(item);
-}
-
-#endif // ITEM_HPP
+#endif // PHENOMENONRADARSEARCHER_HPP

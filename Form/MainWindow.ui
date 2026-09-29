@@ -286,6 +286,7 @@
     </property>
     <addaction name="actionAdjacentSeed"/>
     <addaction name="actionIVCache"/>
+    <addaction name="actionPhenomenonItems"/>
     <addaction name="actionProfileCalibrator"/>
     <addaction name="actionProfileManager5"/>
     <addaction name="actionSHA1Cache"/>
@@ -421,6 +422,11 @@
   <action name="actionAdjacentSeed">
    <property name="text">
     <string>Adjacent Seeds</string>
+   </property>
+  </action>
+  <action name="actionPhenomenonItems">
+   <property name="text">
+    <string>Phenomenon Items</string>
    </property>
   </action>
  </widget>

@@ -20,6 +20,8 @@
 #include "PhenomenonModel.hpp"
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
+#include <QColor>
+#include <QFont>
 
 PhenomenonGeneratorModel5::PhenomenonGeneratorModel5(QObject *parent) : TableModel(parent)
 {
@@ -27,15 +29,36 @@ PhenomenonGeneratorModel5::PhenomenonGeneratorModel5(QObject *parent) : TableMod
 
 int PhenomenonGeneratorModel5::columnCount(const QModelIndex &parent) const
 {
-    return 3;
+    return 5;
 }
 
 QVariant PhenomenonGeneratorModel5::data(const QModelIndex &index, int role) const
 {
-    if (role == Qt::DisplayRole)
+    const auto &state = model[index.row()];
+    if (role == Qt::FontRole)
     {
-        const auto &state = model[index.row()];
+        if (!state.isValid())
+        {
+            QFont font;
+            font.setItalic(true);
+            return font;
+        }
+    }
+    else if (role == Qt::ForegroundRole)
+    {
+        if (!state.isValid())
+        {
+            return QColor(128, 128, 128);
+        }
+    }
+    else if (role == Qt::DisplayRole)
+    {
         int column = index.column();
+        if (!state.isValid() && column > 3)
+        {
+            return "-";
+        }
+
         switch (column)
         {
         case 0:
@@ -43,14 +66,11 @@ QVariant PhenomenonGeneratorModel5::data(const QModelIndex &index, int role) con
         case 1:
             return QString::fromStdString(Utilities5::getChatot(state.getChatot()));
         case 2:
-            if (state.getItem())
-            {
-                return QString::fromStdString(Translator::getItem(state.getData()));
-            }
-            else
-            {
-                return tr("Pokemon");
-            }
+            return QString::fromStdString(Translator::getNeedle(state.getNeedle()));
+        case 3:
+            return state.getPhenomenon() ? tr("Yes") : tr("No");
+        case 4:
+            return QString::fromStdString(Translator::getItem(state.getItem()));
         }
     }
     return QVariant();
@@ -88,14 +108,7 @@ QVariant PhenomenonSearcherModel5::data(const QModelIndex &index, int role) cons
         case 1:
             return state.getAdvances();
         case 2:
-            if (state.getItem())
-            {
-                return QString::fromStdString(Translator::getItem(state.getData()));
-            }
-            else
-            {
-                return tr("Pokemon");
-            }
+            return QString::fromStdString(Translator::getItem(state.getItem()));
         case 3:
             return QString::fromStdString(display.getDateTime().toString());
         case 4:

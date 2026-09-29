@@ -24,6 +24,7 @@
 #include <Core/Global.hpp>
 #include <cassert>
 #include <type_traits>
+#include <utility>
 
 /**
  * @brief Provides a storage container to reuse RNG calculations and cycle out old states with new states
@@ -37,26 +38,16 @@ template <typename Integer, class RNG, u16 size, Integer (*generate)(RNG &) = nu
 class RNGList
 {
     static_assert(size && ((size & (size - 1)) == 0), "Number is not a perfect multiple of two");
+
 public:
     /**
      * @brief Construct a new RNGList object
      *
-     * @param seed Starting PRNG state
-     * @param advances Initial advances
+     * @tparam Args Variadic template types
+     * @param args Parameters to pass to RNG constructor
      */
-    RNGList(u32 seed, u32 advances) : rng(seed, advances), head(0), pointer(0)
-    {
-        init();
-    }
-
-    /**
-     * @brief Construct a new RNGList object
-     *
-     * @param seed0 Starting PRNG state0
-     * @param seed1 Starting PRNG state1
-     * @param advances Initial advances
-     */
-    RNGList(u64 seed0, u64 seed1, u32 advances) : rng(seed0, seed1, advances), head(0), pointer(0)
+    template <typename... Args>
+    RNGList(Args&&... args) : rng(std::forward<Args>(args)...), head(0), pointer(0)
     {
         init();
     }
@@ -101,18 +92,14 @@ public:
     {
         if constexpr (generate != nullptr)
         {
-            list[head++] = generate(rng);
+            list[head] = generate(rng);
         }
         else
         {
-            list[head++] = rng.next();
+            list[head] = rng.next();
         }
 
-        if constexpr (size != 256)
-        {
-            head %= size;
-        }
-
+        head = (head + 1) & MASK;
         pointer = head;
     }
 
@@ -123,11 +110,7 @@ public:
      */
     void advance(u32 advances)
     {
-        pointer += advances;
-        if constexpr (size != 256)
-        {
-            pointer %= size;
-        }
+        pointer = (pointer + advances) & MASK;
     }
 
     /**
@@ -137,12 +120,8 @@ public:
      */
     Integer next()
     {
-        Integer result = list[pointer++];
-
-        if constexpr (size != 256)
-        {
-            pointer %= size;
-        }
+        Integer result = list[pointer];
+        pointer = (pointer + 1) & MASK;
 
         // Debug assert to help discover if the array is too small
         // Only check on bigger sizes. Smaller sizes are prone to false positives if we use size number of prng calls
@@ -156,7 +135,7 @@ public:
 
     /**
      * @brief Gets the next PRNG state
-     * 
+     *
      * @param max Max bounding value
      *
      * @return PRNG state
@@ -189,6 +168,7 @@ public:
     }
 
 private:
+    static constexpr u16 MASK = size - 1;
     using SizeType = std::conditional_t<size <= 256, u8, u16>;
 
     RNG rng;

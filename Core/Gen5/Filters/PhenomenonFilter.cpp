@@ -21,21 +21,16 @@
 #include <Core/Gen5/States/PhenomenonState.hpp>
 #include <algorithm>
 
-PhenomenonFilter::PhenomenonFilter(bool encounter, const std::vector<u16> &items) : encounter(encounter), items(items)
+PhenomenonFilter::PhenomenonFilter(const std::vector<u16> &items) : items(items)
 {
 }
 
 bool PhenomenonFilter::compare(const PhenomenonState &state) const
 {
-    if (state.getItem() && (encounter || std::find(items.begin(), items.end(), state.getData()) == items.end()))
+    if (std::ranges::find(items, state.getItem()) == items.end())
     {
         return false;
     }
 
     return true;
-}
-
-bool PhenomenonFilter::compareState(const PhenomenonState &state) const
-{
-    return compare(state);
 }

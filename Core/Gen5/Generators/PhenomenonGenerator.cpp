@@ -37,34 +37,26 @@ PhenomenonGenerator::PhenomenonGenerator(u32 initialAdvances, u32 maxAdvances, u
 
 std::vector<PhenomenonState> PhenomenonGenerator::generate(u64 seed) const
 {
-    u32 advances = Utilities5::initialAdvancesBW2(seed, profile.getMemoryLink());
+    u32 advances = Utilities5::initialAdvances(seed, profile);
     BWRNG rng(seed, advances + initialAdvances);
     auto jump = rng.getJump(offset);
 
-    u16 rate = area.getRate();
+    u16 ratio = area.getRate();
+    u16 triggerRate = area.getTriggerRate();
 
     std::vector<PhenomenonState> states;
     for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
     {
         BWRNG go(rng, jump);
-        u16 prng = rng.nextUInt(0x1fff);
+        bool valid = go.nextUInt(1000) >= ratio;
+        u16 item = area.getItem(go);
 
-        if (go.nextUInt(1000) < rate)
+        u32 prng = rng.nextUInt();
+        bool phenomenon = ((static_cast<u64>(prng) * 1000) >> 32) < triggerRate;
+        PhenomenonState state(prng, advances + initialAdvances + cnt, item, phenomenon, valid);
+        if (filter.compare(state))
         {
-            PhenomenonState state(prng, advances + initialAdvances + cnt);
-            if (filter.compare(state))
-            {
-                states.emplace_back(state);
-            }
-        }
-        else
-        {
-            u16 item = area.getItem(go);
-            PhenomenonState state(prng, advances + initialAdvances + cnt, item);
-            if (filter.compare(state))
-            {
-                states.emplace_back(state);
-            }
+            states.emplace_back(state);
         }
     }
 

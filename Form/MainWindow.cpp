@@ -53,6 +53,7 @@
 #include <Form/Gen5/Static5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
 #include <Form/Gen5/Tools/IVCacheFinder.hpp>
+#include <Form/Gen5/Tools/PhenomenonItem.hpp>
 #include <Form/Gen5/Tools/SHA1CacheFinder.hpp>
 #include <Form/Gen5/Wild5.hpp>
 #include <Form/Gen8/Eggs8.hpp>
@@ -121,6 +122,7 @@ MainWindow::MainWindow(bool profile, QWidget *parent) : QMainWindow(parent), ui(
     connect(ui->pushButtonWild5, &QPushButton::clicked, this, &MainWindow::openWild5);
     connect(ui->actionAdjacentSeed, &QAction::triggered, this, &MainWindow::openAdjacentSeed);
     connect(ui->actionIVCache, &QAction::triggered, this, &MainWindow::openIVCacheFinder);
+    connect(ui->actionPhenomenonItems, &QAction::triggered, this, &MainWindow::openPhenomenonItem);
     connect(ui->actionProfileCalibrator, &QAction::triggered, this, &MainWindow::openProfileCalibrator);
     connect(ui->actionProfileManager5, &QAction::triggered, this, &MainWindow::openProfileManager5);
     connect(ui->actionSHA1Cache, &QAction::triggered, this, &MainWindow::openSHA1CacheFinder);
@@ -581,6 +583,26 @@ void MainWindow::openPhenomenon()
     {
         phenomenon->show();
         phenomenon->raise();
+    }
+}
+
+void MainWindow::openPhenomenonItem()
+{
+    auto *phenomenonItem = new PhenomenonItem();
+    connect(phenomenonItem, &PhenomenonItem::profilesChanged, this, &MainWindow::updateProfiles);
+    connect(this, &MainWindow::profilesChanged5, phenomenonItem, &PhenomenonItem::updateProfiles);
+
+    if (!phenomenonItem->hasProfiles())
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("No profiles found"),
+                        tr("Please use the Profile Calibrator under Gen 5 Tools to create one"));
+        msg.exec();
+        phenomenonItem->close();
+    }
+    else
+    {
+        phenomenonItem->show();
+        phenomenonItem->raise();
     }
 }
 

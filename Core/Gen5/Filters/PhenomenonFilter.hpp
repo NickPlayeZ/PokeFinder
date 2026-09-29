@@ -31,10 +31,9 @@ public:
     /**
      * @brief Construct a new PhenomenonFilter object
      *
-     * @param encounter Encounter to filter by
      * @param items Items to filter by
      */
-    PhenomenonFilter(bool encounter, const std::vector<u16> &items);
+    PhenomenonFilter(const std::vector<u16> &items);
 
     /**
      * @brief Determines if the \p state meets the filter criteria
@@ -45,11 +44,9 @@ public:
      * @return false State does not pass the filter
      */
     bool compare(const PhenomenonState &state) const;
-    bool compareState(const PhenomenonState &state) const;
 
 private:
     std::vector<u16> items;
-    bool encounter;
 };
 
 #endif // PHENOMENONFILTER_HPP

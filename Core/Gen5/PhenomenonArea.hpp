@@ -78,6 +78,13 @@ public:
     u16 getRate() const;
 
     /**
+     * @brief Returns the chance out of 1000 that a phenomenon tile is generated
+     *
+     * @return Phenomenon trigger rate
+     */
+    u16 getTriggerRate() const;
+
+    /**
      * @brief Return the item numbers of unique item of the area
      *
      * @return Vector of item numbers

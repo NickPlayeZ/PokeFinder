@@ -44,7 +44,7 @@ public:
      * @param filter State filter
      */
     EggGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, const Daycare &daycare, const Profile5 &profile,
-                  const StateFilter &filter, u8 compatibility = 20);
+                  const StateFilter &filter);
 
     /**
      * @brief Generates states

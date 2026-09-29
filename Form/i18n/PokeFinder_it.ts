@@ -830,11 +830,11 @@
     <name>EggGeneratorModel5</name>
     <message>
         <source>Egg</source>
-        <translation type="unfinished"></translation>
+        <translation>Uovo</translation>
     </message>
     <message>
         <source>Yes</source>
-        <translation type="unfinished"></translation>
+        <translation>Si</translation>
     </message>
     <message>
         <location filename="../../Model/Gen5/EggModel5.cpp" line="52"/>
@@ -1353,7 +1353,7 @@
     <name>EggSettings</name>
     <message>
         <source>Compatibility</source>
-        <translation type="unfinished"></translation>
+        <translation>Compatibilità</translation>
     </message>
     <message>
         <source>The two don't really seem to like each other much.</source>
@@ -5743,7 +5743,7 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     <name>ProfileEditor5</name>
     <message>
         <source>Oval Charm</source>
-        <translation type="unfinished"></translation>
+        <translation>Ovamuleto</translation>
     </message>
     <message>
         <source>Profile Editor Gen 5</source>
@@ -6295,7 +6295,7 @@ Il profilo è mancante o ha una cache SHA incompatibile.</translation>
     <name>ProfileModel5</name>
     <message>
         <source>Oval Charm</source>
-        <translation type="unfinished"></translation>
+        <translation>Ovamuleto</translation>
     </message>
     <message>
         <location filename="../../Model/Gen5/ProfileModel5.cpp" line="64"/>

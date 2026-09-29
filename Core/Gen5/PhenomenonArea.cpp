@@ -130,6 +130,19 @@ u16 PhenomenonArea::getRate() const
     }
 }
 
+u16 PhenomenonArea::getTriggerRate() const
+{
+    switch (type)
+    {
+    case PhenomenonType::Bridge:
+        return 150;
+    case PhenomenonType::Cave:
+        return 100;
+    default:
+        return 0;
+    }
+}
+
 std::vector<u16> PhenomenonArea::getUniqueItems() const
 {
     std::vector<u16> nums;

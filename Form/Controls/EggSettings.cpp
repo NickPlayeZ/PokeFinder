@@ -171,7 +171,7 @@ void EggSettings::copyFrom(const EggSettings *other)
     ui->checkBoxShowInheritance->setCheckState(other->ui->checkBoxShowInheritance->checkState());
 }
 
-Daycare EggSettings::getDaycare() const
+Daycare EggSettings::getDaycare(bool ovalCharm) const
 {
     std::array<std::array<u8, 6>, 2> parentIVs
         = { { { static_cast<u8>(ui->spinBoxParentAHP->value()), static_cast<u8>(ui->spinBoxParentAAtk->value()),
@@ -195,12 +195,14 @@ Daycare EggSettings::getDaycare() const
     u16 specie = ui->comboBoxEggSpecie->getCurrentUShort();
     bool masuda = ui->checkBoxMasuda->isChecked();
 
-    return Daycare(parentIVs, parentAbility, parentGender, parentItem, parentNature, specie, masuda);
-}
+    u8 compatibility = ui->comboBoxCompatibility->getCurrentUChar();
+    if (ovalCharm)
+    {
+        constexpr u8 oval[] = { 40, 80, 88 };
+        compatibility = oval[ui->comboBoxCompatibility->currentIndex()];
+    }
 
-u8 EggSettings::getCompatibility() const
-{
-    return ui->comboBoxCompatibility->getCurrentUChar();
+    return Daycare(parentIVs, parentAbility, parentGender, parentItem, parentNature, specie, masuda, compatibility);
 }
 
 void EggSettings::setCompatibilityVisible(bool visible)
@@ -228,7 +230,7 @@ bool EggSettings::reorderParents()
 
     if (flag)
     {
-        Daycare daycare = getDaycare();
+        Daycare daycare = getDaycare(false);
 
         ui->spinBoxParentAHP->setValue(daycare.getParentIV(1, 0));
         ui->spinBoxParentAAtk->setValue(daycare.getParentIV(1, 1));

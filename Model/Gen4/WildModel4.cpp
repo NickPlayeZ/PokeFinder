@@ -237,7 +237,6 @@ QVariant WildGeneratorModel4::headerData(int section, Qt::Orientation orientatio
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
         section = getColumn(section);
-
         return header[section];
     }
     return QVariant();

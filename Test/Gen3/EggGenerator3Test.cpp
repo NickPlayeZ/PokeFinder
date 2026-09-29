@@ -106,9 +106,9 @@ void EggGenerator3Test::generate()
 
     Profile3 profile("-", version, 12345, 54321, false);
 
-    Daycare daycare(parentIVs, parentAbility, parentGender, parentItem, parentNature, pokemon, false);
+    Daycare daycare(parentIVs, parentAbility, parentGender, parentItem, parentNature, pokemon, false, compatability);
     StateFilter filter(255, 255, 255, 1, 100, 0, 255, 0, 255, false, min, max, natures, powers);
-    EggGenerator3 generator(0, 9, 0, 0, 9, 0, calibration, minRedraw, maxRedraw, method, compatability, daycare, profile, filter);
+    EggGenerator3 generator(0, 9, 0, 0, 9, 0, calibration, minRedraw, maxRedraw, method, daycare, profile, filter);
 
     auto states = generator.generate(seed, seedPickup);
     QCOMPARE(states.size(), j.size());
