@@ -948,7 +948,7 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
     }
 
     u32 end = pokemon.getAdvances() - minPatchDistance;
-    constexpr u32 maxPatchMatches = 5;
+    u32 maxPatchMatches = isShinyPatchType(searchChainType) ? 5 : 1;
 
     for (u32 patchAdvances = end;; patchAdvances--)
     {
@@ -1035,6 +1035,7 @@ void PokeRadarSearcher::addManualPatchMatches(const WildSearcherState4 &pokemon,
 
 void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &pokemon, u16 chainMin, u16 chainMax, PokeRadarChainType searchChainType)
 {
+    u32 maxPatchMatches = isShinyPatchType(searchChainType) ? 5 : 1;
     u32 displayedAdvance = getDisplayedPokemonAdvance(pokemon.getAdvances(), chainMin, searchChainType);
     auto [noGraceSkip, graceSkip] = PokeRadarGenerator::getSkips(pokemon.getSeed(), displayedAdvance);
     if (noGraceSkip != 0 && graceSkip != 0)
@@ -1108,7 +1109,7 @@ void PokeRadarSearcher::addPostBattlePatchMatches(const WildSearcherState4 &poke
             }
 
             targetPatches.emplace_back(PokeRadarTargetPatch { candidate.battleStartAdvance, candidate.patch->state.getPatches() });
-            if (targetPatches.size() == 5)
+            if (targetPatches.size() == maxPatchMatches)
             {
                 break;
             }
