@@ -49,9 +49,9 @@
         <item row="1" column="1"><widget class="ComboBoxProxy" name="comboBoxSearcherLocation"/></item>
         <item row="2" column="0"><widget class="QLabel" name="labelSearcherMinItemDistance"><property name="text"><string>Min Item Distance</string></property></widget></item>
         <item row="2" column="1"><widget class="QSpinBox" name="spinBoxSearcherMinItemDistance"><property name="maximum"><number>999999999</number></property></widget></item>
-        <item row="3" column="0"><widget class="QLabel" name="labelSearcherPostItemPhenomenonDistance"><property name="text"><string>Post Item Phenomenon Distance</string></property></widget></item>
+        <item row="3" column="0"><widget class="QLabel" name="labelSearcherPostItemPhenomenonDistance"><property name="text"><string>Post Last Item Phenomenon Distance</string></property></widget></item>
         <item row="3" column="1"><widget class="QSpinBox" name="spinBoxSearcherPostItemPhenomenonDistance"><property name="maximum"><number>999999999</number></property></widget></item>
-        <item row="4" column="0"><widget class="QLabel" name="labelSearcherPreItemPhenomenonDistance"><property name="text"><string>Pre Item Phenomenon Distance</string></property></widget></item>
+        <item row="4" column="0"><widget class="QLabel" name="labelSearcherPreItemPhenomenonDistance"><property name="text"><string>Pre Next Item Phenomenon Distance</string></property></widget></item>
         <item row="4" column="1"><widget class="QSpinBox" name="spinBoxSearcherPreItemPhenomenonDistance"><property name="maximum"><number>999999999</number></property></widget></item>
        </layout>
       </widget>

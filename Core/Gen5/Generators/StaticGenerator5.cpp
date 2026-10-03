@@ -157,6 +157,11 @@ std::vector<State5> StaticGenerator5::generate(u64 seed, u32 initialAdvances, u3
                 iv[4] = rng.next();
                 iv[5] = rng.next();
             }
+            // The Magikarp gift on Marvelous Bridge has its Speed IV overwritten after generation.
+            if (staticTemplate.getSpecie() == 129)
+            {
+                iv[5] = 31;
+            }
             if (filter.compareIV(iv) && filter.compareHiddenPower(iv))
             {
                 ivs.emplace_back(initialAdvances + cnt, iv);
@@ -176,13 +181,33 @@ std::vector<State5> StaticGenerator5::generate(u64 seed, u32 initialAdvances, u3
 
 std::vector<State5> StaticGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const
 {
+    std::vector<std::pair<u32, std::array<u8, 6>>> adjustedIVs;
+    const auto *generatedIVs = &ivs;
+    if (staticTemplate.getSpecie() == 129)
+    {
+        adjustedIVs = ivs;
+        for (auto &entry : adjustedIVs)
+        {
+            entry.second[5] = 31;
+        }
+        std::erase_if(adjustedIVs, [this](const auto &entry) {
+            return !filter.compareIV(entry.second) || !filter.compareHiddenPower(entry.second);
+        });
+
+        if (adjustedIVs.empty())
+        {
+            return {};
+        }
+        generatedIVs = &adjustedIVs;
+    }
+
     if (staticTemplate.getWild())
     {
-        return generateWild(seed, ivs);
+        return generateWild(seed, *generatedIVs);
     }
     else
     {
-        return generateNonWild(seed, ivs);
+        return generateNonWild(seed, *generatedIVs);
     }
 }
 
@@ -219,10 +244,10 @@ std::vector<State5> StaticGenerator5::generateNonWild(u64 seed, const std::vecto
         u8 gender = Utilities::getGender(pid, info);
         u8 shiny = Utilities::getShiny<true>(pid, tsv);
         u8 nature = go.nextUInt(25);
+        u32 prng = rng.nextUInt();
 
         if (filter.compare(ability, gender, nature, shiny))
         {
-            u32 prng = rng.nextUInt();
             for (const auto &iv : ivs)
             {
                 states.emplace_back(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender,
