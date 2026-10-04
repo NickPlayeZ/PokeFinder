@@ -29,11 +29,11 @@
 struct SeedCache
 {
     std::array<u16, 10> entralinkCount;
-    std::array<u16, 8> normalCount;
+    std::array<u16, 9> normalCount;
     std::array<u16, 6> roamerCount;
     u32 seeds[];
 };
-static_assert(sizeof(SeedCache) == 48);
+static_assert(sizeof(SeedCache) == 52);
 
 static std::array<u8, 6> computeIVs(u32 seed, u32 advance, CacheType type)
 {
@@ -108,7 +108,7 @@ IVCache::IVCache(std::string_view file, bool read) : valid(false)
         if (read)
         {
             std::vector<u32> entralinkCount(maxAdvances + 5);
-            std::vector<u32> normalCount(maxAdvances + 3);
+            std::vector<u32> normalCount(maxAdvances + 4);
             std::vector<u32> roamerCount(maxAdvances + 1);
 
             stream.read(reinterpret_cast<char *>(entralinkCount.data()), entralinkCount.size() * sizeof(u32));

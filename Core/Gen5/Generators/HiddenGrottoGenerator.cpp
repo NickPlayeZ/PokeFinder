@@ -328,9 +328,9 @@ std::vector<State5> HiddenGrottoGenerator::generate(u64 seed, const std::vector<
             nature = toInt(lead);
         }
 
+        u32 prng = rng.nextUInt();
         if (filter.compare(level, nature))
         {
-            u32 prng = rng.nextUInt();
             for (const auto &iv : ivs)
             {
                 states.emplace_back(prng, advances + initialAdvances + cnt, iv.first, pid, iv.second, ability, gender, level, nature, 0,
