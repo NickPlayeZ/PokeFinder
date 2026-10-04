@@ -142,7 +142,7 @@ IVCache::IVCache(std::string_view file, bool read) : valid(false)
 }
 
 fph::MetaFphMap<u64, std::array<u8, 6>> IVCache::getCache(u32 initialAdvances, u32 maxAdvances, Game version, CacheType type,
-                                                          const StateFilter &filter) const
+                                                          const StateFilter &filter, u32 normalOffset) const
 {
     if (type == CacheType::Entralink)
     {
@@ -150,7 +150,7 @@ fph::MetaFphMap<u64, std::array<u8, 6>> IVCache::getCache(u32 initialAdvances, u
     }
     else if (type == CacheType::Normal)
     {
-        return getNormalCache(initialAdvances, maxAdvances, version, filter);
+        return getNormalCache(initialAdvances, maxAdvances, version, filter, normalOffset);
     }
     else
     {
@@ -219,16 +219,17 @@ fph::MetaFphMap<u64, std::array<u8, 6>> IVCache::getEntralinkCache(u32 initialAd
 }
 
 fph::MetaFphMap<u64, std::array<u8, 6>> IVCache::getNormalCache(u32 initialAdvances, u32 maxAdvances, Game version,
-                                                                const StateFilter &filter) const
+                                                                const StateFilter &filter, u32 offset) const
 {
     fph::MetaFphMap<u64, std::array<u8, 6>> cache;
 
     bool bw = (version & Game::BW) != Game::None;
-    for (u64 i = initialAdvances; i <= (initialAdvances + maxAdvances) && (i + (bw ? 0 : 2)) < normalSeeds.size(); i++)
+    for (u64 i = initialAdvances; i <= (initialAdvances + maxAdvances) && (i + (bw ? 0 : 2) + offset) < normalSeeds.size(); i++)
     {
-        for (u32 seed : normalSeeds[i + (bw ? 0 : 2)])
+        u64 advance = i + (bw ? 0 : 2) + offset;
+        for (u32 seed : normalSeeds[advance])
         {
-            auto ivs = computeIVs(seed, i + (bw ? 0 : 2), CacheType::Normal);
+            auto ivs = computeIVs(seed, advance, CacheType::Normal);
             if (filter.compareIV(ivs) && filter.compareHiddenPower(ivs))
             {
                 cache.emplace((i << 32) | seed, ivs);

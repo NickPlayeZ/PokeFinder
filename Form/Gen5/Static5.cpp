@@ -221,6 +221,10 @@ bool Static5::fastSearchEnabled() const
 
     u32 initialAdvances = ui->textBoxSearcherInitialIVAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxIVAdvances->getUInt();
+    const StaticTemplate5 *staticTemplate
+        = Encounters5::getStaticEncounter(ui->comboBoxSearcherCategory->currentIndex(), ui->comboBoxSearcherPokemon->getCurrentInt());
+    u32 ivOffset = staticTemplate->getEgg() ? 1 : 0;
+    initialAdvances += ivOffset;
 
     if (initialAdvances < ivCache->getInitialAdvances()
         || (initialAdvances + maxAdvances) > (ivCache->getInitialAdvances() + ivCache->getMaxAdvances()))
@@ -231,8 +235,6 @@ bool Static5::fastSearchEnabled() const
     auto min = ui->filterSearcher->getMinIVs();
     auto max = ui->filterSearcher->getMaxIVs();
 
-    const StaticTemplate5 *staticTemplate
-        = Encounters5::getStaticEncounter(ui->comboBoxSearcherCategory->currentIndex(), ui->comboBoxSearcherPokemon->getCurrentInt());
     if (staticTemplate->getRoamer())
     {
         return min[0] >= 30 && min[2] >= 30 && min[4] >= 30 && min[5] >= 30 && (min[1] >= 30 || min[3] >= 30);
@@ -442,7 +444,8 @@ void Static5::search()
     if (fastSearchEnabled())
     {
         CacheType type = staticTemplate->getRoamer() ? CacheType::Roamer : CacheType::Normal;
-        auto ivMap = ivCache->getCache(initialIVAdvances, maxIVAdvances, currentProfile->getVersion(), type, filter);
+        auto ivMap = ivCache->getCache(initialIVAdvances, maxIVAdvances, currentProfile->getVersion(), type, filter,
+                                       staticTemplate->getEgg() ? 1 : 0);
         if (shaCache && shaCache->isValid(*currentProfile))
         {
             auto shaMap = shaCache->getCache(initialAdvances, maxIVAdvances, start, end, ivMap, type, *currentProfile);

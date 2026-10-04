@@ -57,11 +57,12 @@ public:
      * @param version Game version
      * @param type What cache type to get
      * @param filter IV filter
+     * @param normalOffset Additional advance for normal encounter caches
      *
      * @return IV caches
      */
     fph::MetaFphMap<u64, std::array<u8, 6>> getCache(u32 initialAdvances, u32 maxAdvances, Game version, CacheType type,
-                                                     const StateFilter &filter) const;
+                                                     const StateFilter &filter, u32 normalOffset = 0) const;
 
     /**
      * @brief Returns the initial advance supported by the cache
@@ -124,11 +125,12 @@ private:
      * @param maxAdvance Maximum IV advances
      * @param version Game version
      * @param filter IV filter
+     * @param offset Additional advance applied while retaining the requested advance as the result key
      *
      * @return IV caches
      */
     fph::MetaFphMap<u64, std::array<u8, 6>> getNormalCache(u32 initialAdvances, u32 maxAdvances, Game version,
-                                                           const StateFilter &filter) const;
+                                                           const StateFilter &filter, u32 offset) const;
 
     /**
      * @brief Returns the IV caches for roamers

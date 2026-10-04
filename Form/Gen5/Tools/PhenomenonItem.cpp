@@ -305,8 +305,8 @@ void PhenomenonItem::searcherEncounterIndexChanged(int index)
     Encounter selected = ui->comboBoxSearcherEncounter->getEnum<Encounter>();
     PhenomenonType type = selected == Encounter::DustCloud ? PhenomenonType::Cave : PhenomenonType::Bridge;
     bool dustCloud = selected == Encounter::DustCloud;
-    ui->spinBoxSearcherMinItemDistance->setValue(dustCloud ? 30 : 0);
-    ui->spinBoxSearcherPostItemPhenomenonDistance->setValue(dustCloud ? 20 : 0);
+    ui->spinBoxSearcherMinItemDistance->setValue(dustCloud ? 40 : 0);
+    ui->spinBoxSearcherPostItemPhenomenonDistance->setValue(dustCloud ? 30 : 0);
     ui->spinBoxSearcherPreItemPhenomenonDistance->setValue(dustCloud ? 10 : 0);
 
     encounter.clear();
