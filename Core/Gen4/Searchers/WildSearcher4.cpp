@@ -430,9 +430,22 @@ static bool getBestHGSSStepEncounter(u32 seed, u32 targetAdvance, u16 encounterR
         if (getHGSSStepEncounter(seed, targetAdvance, encounterRate, encounter, lead, whiteFlute, candidate.movement, radio, &currentMovements))
         {
             bool lowAdvanceRadioSearch = targetAdvance <= 20 && (stepOptions & (StepPokemonMarch | StepPokemonLullaby)) != 0;
-            u8 modifierPriority = candidate.modifier == NoStepModifier ? 0 : whiteFlute ? 1 : 2;
+            bool usesRadio = radio != 0;
+            u8 modifierPriority = 3;
+            if (candidate.modifier == NoStepModifier)
+            {
+                modifierPriority = 0;
+            }
+            else if (whiteFlute && !usesRadio)
+            {
+                modifierPriority = 1;
+            }
+            else if (!whiteFlute && usesRadio)
+            {
+                modifierPriority = 2;
+            }
             std::array<u8, 4> score = lowAdvanceRadioSearch
-                ? std::array<u8, 4> { currentMovements, modifierPriority, candidate.score[0], candidate.score[1] }
+                ? std::array<u8, 4> { currentMovements, candidate.score[0], modifierPriority, candidate.score[1] }
                 : candidate.score;
             if (!best || score < best->score)
             {
