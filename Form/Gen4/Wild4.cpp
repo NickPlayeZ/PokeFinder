@@ -656,6 +656,13 @@ u16 Wild4::getSearcherStepOptions() const
         options |= data;
     }
 
+    // Only one radio program can be active at a time. Hoenn Sound, Sinnoh Sound, and
+    // Mysterious Transmission therefore cannot be combined with Pokemon March or Lullaby.
+    if (ui->checkBoxSearcherRadio->isChecked())
+    {
+        options &= ~(StepPokemonMarch | StepPokemonLullaby);
+    }
+
     auto encounter = ui->comboBoxSearcherEncounter->getEnum<Encounter>();
     bool hgss = (currentProfile->getVersion() & Game::HGSS) != Game::None;
     bool surf = encounter == Encounter::Surfing;
