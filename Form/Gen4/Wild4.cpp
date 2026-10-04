@@ -44,6 +44,7 @@
 #include <QAction>
 #include <QGridLayout>
 #include <QLineEdit>
+#include <QListView>
 #include <QMessageBox>
 #include <QSettings>
 #include <QSizePolicy>
@@ -108,6 +109,20 @@ static bool isBikeRestrictedLocation(Game version, Encounter encounter, u8 locat
     }
     return encounter == Encounter::BugCatchingContest || location == 6 || location == 11 || location == 28 || location == 29
         || location == 30 || location == 89;
+}
+
+static void updateMysteriousTransmission(QComboBox *comboBox, const EncounterArea4 &area)
+{
+    bool visible = area.getLocation() == 11
+        && std::ranges::any_of(area.getPokemon(), [](const Slot &slot) { return slot.getSpecie() == 201; });
+    if (!visible && comboBox->currentIndex() == 2)
+    {
+        comboBox->setCurrentIndex(0);
+    }
+    if (auto *view = qobject_cast<QListView *>(comboBox->view()))
+    {
+        view->setRowHidden(2, !visible);
+    }
 }
 
 static const QString settingPrefix = QStringLiteral("wild4");
@@ -876,6 +891,7 @@ void Wild4::generatorLocationIndexChanged(int index)
         ui->comboBoxGeneratorMovement->setCurrentIndex(0);
 
         ui->filterGenerator->setEncounterSlots(area.getCount());
+        updateMysteriousTransmission(ui->comboBoxGeneratorRadio, area);
 
         ui->checkBoxGeneratorReplacement->setVisible(greatMarsh || trophyGarden);
         ui->comboBoxGeneratorReplacement0->setVisible(greatMarsh || trophyGarden);
@@ -1247,6 +1263,7 @@ void Wild4::searcherLocationIndexChanged(int index)
         updateSearcherStepOptions();
 
         ui->filterSearcher->setEncounterSlots(area.getCount());
+        updateMysteriousTransmission(ui->comboBoxSearcherRadio, area);
 
         ui->checkBoxSearcherReplacement->setVisible(greatMarsh || trophyGarden);
         ui->comboBoxSearcherReplacement0->setVisible(greatMarsh || trophyGarden);
