@@ -76,7 +76,8 @@ public:
     /**
      * @brief Opens and configures the generator for a known seed and encounter
      */
-    void configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower = 0);
+    void configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower = 0,
+                            const std::vector<u32> &targetAdvances = {});
 
 public slots:
     /**

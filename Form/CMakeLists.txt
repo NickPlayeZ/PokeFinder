@@ -186,6 +186,8 @@ set(PROJECT_SOURCES
     Gen4/Tools/ChainedSID.hpp
     Gen4/Tools/RoamerMap.cpp
     Gen4/Tools/RoamerMap.hpp
+    Gen4/Tools/RockSmashItem.cpp
+    Gen4/Tools/RockSmashItem.hpp
     Gen4/Tools/SearchCalls.cpp
     Gen4/Tools/SearchCalls.hpp
     Gen4/Tools/SearchCoinFlips.cpp

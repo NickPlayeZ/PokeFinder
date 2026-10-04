@@ -22,7 +22,7 @@
 
 #include <Core/Global.hpp>
 #include <QTableView>
-#include <optional>
+#include <vector>
 
 class QAction;
 
@@ -60,6 +60,11 @@ public:
     void setTargetAdvance(u32 advance);
 
     /**
+     * @brief Highlights rows whose Advances value matches any target
+     */
+    void setTargetAdvances(const std::vector<u32> &advances);
+
+    /**
      * @brief Removes the target advance highlight
      */
     void clearTargetAdvance();
@@ -71,7 +76,7 @@ private:
     QAction *secondaryAction;
     QAction *outputTXT;
     QAction *outputCSV;
-    std::optional<u32> targetAdvance;
+    std::vector<u32> targetAdvances;
 
     /**
      * @brief Handles when the context menu is requested. Only displays if the model isn't empty.

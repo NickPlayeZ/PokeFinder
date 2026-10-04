@@ -860,6 +860,24 @@ void Wild4::generate()
     generatorModel->addItems(states);
 }
 
+void Wild4::configureRockSmashGenerator(const Profile4 &profile, u8 location, u32 seed, u8 lead, bool rockSmashPokemon,
+                                        const std::vector<u32> &targetAdvances)
+{
+    ui->profileDisplay->setProfile(profile);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->comboBoxGeneratorEncounter->setCurrentIndex(ui->comboBoxGeneratorEncounter->findData(toInt(Encounter::RockSmash)));
+    ui->comboBoxGeneratorLocation->setCurrentIndexByData(location);
+    ui->textBoxGeneratorSeed->setText(QString::number(seed, 16).toUpper());
+    ui->textBoxGeneratorInitialAdvances->setText(QStringLiteral("0"));
+    if (!targetAdvances.empty())
+    {
+        ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(targetAdvances.back()) + 50));
+    }
+    ui->comboMenuGeneratorLead->setCheckedData({ lead });
+    ui->checkBoxGeneratorRockSmashPokemon->setChecked(rockSmashPokemon);
+    ui->tableViewGenerator->setTargetAdvances(targetAdvances);
+}
+
 void Wild4::goToGenerator()
 {
     if (!ui->tableViewSearcher->currentIndex().isValid())

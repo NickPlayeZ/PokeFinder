@@ -237,6 +237,8 @@ private slots:
      */
     void openPokeRadar();
 
+    void openRockSmashItem();
+
     /**
      * @brief Opens the Gen 4 Static window
      */

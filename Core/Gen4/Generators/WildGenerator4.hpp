@@ -33,6 +33,8 @@ class WildGeneratorState4;
 class WildGenerator4 : public WildGenerator<EncounterArea4, Profile4, WildStateFilter>
 {
 public:
+    static std::vector<u16> getRockSmashItems(u8 location, Game version);
+
     /**
      * @brief Construct a new WildGenerator4 object
      *

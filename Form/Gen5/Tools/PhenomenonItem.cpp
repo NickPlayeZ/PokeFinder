@@ -291,7 +291,7 @@ void PhenomenonItem::openPhenomenonGenerator()
     const auto &state = searcherModel->getItem(index.row());
     emit openGenerator(*currentProfile, ui->comboBoxSearcherEncounter->getEnum<Encounter>(),
                        static_cast<u8>(ui->comboBoxSearcherLocation->getCurrentUShort()), state.getInitialSeed(),
-                       state.getState().getExploringPower());
+                       state.getState().getExploringPower(), state.getState().getTargetAdvances());
 }
 
 void PhenomenonItem::searcherEncounterIndexChanged(int index)

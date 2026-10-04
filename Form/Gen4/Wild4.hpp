@@ -60,6 +60,12 @@ public:
      */
     ~Wild4() override;
 
+    /**
+     * @brief Opens and configures the Rock Smash generator for an item-search result
+     */
+    void configureRockSmashGenerator(const Profile4 &profile, u8 location, u32 seed, u8 lead, bool rockSmashPokemon,
+                                     const std::vector<u32> &targetAdvances);
+
 public slots:
     /**
      * @brief Reloads profiles

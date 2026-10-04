@@ -39,6 +39,7 @@
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
 #include <Form/Gen4/Static4.hpp>
 #include <Form/Gen4/Tools/ChainedSID.hpp>
+#include <Form/Gen4/Tools/RockSmashItem.hpp>
 #include <Form/Gen4/Tools/SeedToTime4.hpp>
 #include <Form/Gen4/Wild4.hpp>
 #include <Form/Gen5/DreamRadar.hpp>
@@ -108,6 +109,7 @@ MainWindow::MainWindow(bool profile, QWidget *parent) : QMainWindow(parent), ui(
     connect(ui->pushButtonWild4, &QPushButton::clicked, this, &MainWindow::openWild4);
     connect(ui->actionIVstoPID4, &QAction::triggered, this, &MainWindow::openIVToPID);
     connect(ui->actionProfileManager4, &QAction::triggered, this, &MainWindow::openProfileManager4);
+    connect(ui->actionRockSmashItems, &QAction::triggered, this, &MainWindow::openRockSmashItem);
     connect(ui->actionSeedToTime4, &QAction::triggered, this, &MainWindow::openSeedToTime4);
     connect(ui->actionSIDfromChainedShiny, &QAction::triggered, this, &MainWindow::openSIDFromChainedShiny);
 
@@ -419,6 +421,24 @@ void MainWindow::openSeedToTime4() const
     window->show();
 }
 
+void MainWindow::openRockSmashItem()
+{
+    auto *window = new RockSmashItem();
+    connect(window, &RockSmashItem::profilesChanged, this, &MainWindow::updateProfiles);
+    connect(this, &MainWindow::profilesChanged4, window, &RockSmashItem::updateProfiles);
+    connect(window, &RockSmashItem::openGenerator, this,
+            [this](const Profile4 &profile, u8 location, u32 seed, u8 lead, bool rockSmashPokemon,
+                   const std::vector<u32> &targetAdvances) {
+                openWild4();
+                wild4->configureRockSmashGenerator(profile, location, seed, lead, rockSmashPokemon, targetAdvances);
+            });
+    if (!window->hasProfiles())
+    {
+        QMessageBox::warning(this, tr("No profiles found"), tr("Please create a HeartGold or SoulSilver profile first"));
+    }
+    window->show();
+}
+
 void MainWindow::openSIDFromChainedShiny()
 {
     auto *window = new ChainedSID();
@@ -592,11 +612,12 @@ void MainWindow::openPhenomenonItem()
     connect(phenomenonItem, &PhenomenonItem::profilesChanged, this, &MainWindow::updateProfiles);
     connect(this, &MainWindow::profilesChanged5, phenomenonItem, &PhenomenonItem::updateProfiles);
     connect(phenomenonItem, &PhenomenonItem::openGenerator, this,
-            [this](const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower) {
+            [this](const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower,
+                   const std::vector<u32> &targetAdvances) {
                 openPhenomenon();
                 if (phenomenon && phenomenon->hasProfiles())
                 {
-                    phenomenon->configureGenerator(profile, encounter, location, seed, exploringPower);
+                    phenomenon->configureGenerator(profile, encounter, location, seed, exploringPower, targetAdvances);
                 }
             });
 

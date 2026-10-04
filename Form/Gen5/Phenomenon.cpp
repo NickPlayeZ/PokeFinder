@@ -438,7 +438,8 @@ bool Phenomenon::hasProfiles() const
     return !profiles.empty();
 }
 
-void Phenomenon::configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower)
+void Phenomenon::configureGenerator(const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower,
+                                    const std::vector<u32> &targetAdvances)
 {
     auto profileIt = std::ranges::find(profiles, profile);
     if (profileIt != profiles.end())
@@ -452,6 +453,11 @@ void Phenomenon::configureGenerator(const Profile5 &profile, Encounter encounter
     ui->textBoxGeneratorSeed->setText(QString::number(seed, 16).toUpper());
     setGeneratorPowers(ui->comboBoxGeneratorLuckyPower,
                        { exploringPower == 0 ? PassPower5::None : exploringPower << PassPower5::ExploringShift });
+    if (!targetAdvances.empty())
+    {
+        ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(targetAdvances.back()) + 50));
+    }
+    ui->tableViewGenerator->setTargetAdvances(targetAdvances);
 }
 
 void Phenomenon::updateProfiles()

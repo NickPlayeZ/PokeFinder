@@ -30,6 +30,7 @@
 #include <QSettings>
 #include <QStyledItemDelegate>
 #include <QTimer>
+#include <algorithm>
 
 namespace
 {
@@ -95,19 +96,24 @@ TableView::TableView(QWidget *parent) : QTableView(parent), primaryAction(nullpt
 
 void TableView::setTargetAdvance(u32 advance)
 {
-    targetAdvance = advance;
+    setTargetAdvances({ advance });
+}
+
+void TableView::setTargetAdvances(const std::vector<u32> &advances)
+{
+    targetAdvances = advances;
     viewport()->update();
 }
 
 void TableView::clearTargetAdvance()
 {
-    targetAdvance.reset();
+    targetAdvances.clear();
     viewport()->update();
 }
 
 bool TableView::isTargetIndex(const QModelIndex &index) const
 {
-    return targetAdvance.has_value() && index.isValid() && index.model()->index(index.row(), 0).data().toUInt() == *targetAdvance;
+    return index.isValid() && std::ranges::contains(targetAdvances, index.model()->index(index.row(), 0).data().toUInt());
 }
 
 void TableView::setPrimaryAction(QAction *action)

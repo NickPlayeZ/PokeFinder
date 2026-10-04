@@ -70,9 +70,24 @@ public:
     void setup(const QString &prefix, Game filter);
 
     /**
+     * @brief Sets the QSetting group, version filter, and fallback profile
+     *
+     * @param prefix Setting prefix
+     * @param filter Game version filter
+     * @param defaultProfileVersion Version used by the fallback profile
+     * @param defaultOnlyWhenEmpty Only add the fallback if there are no saved profiles
+     */
+    void setup(const QString &prefix, Game filter, Game defaultProfileVersion, bool defaultOnlyWhenEmpty);
+
+    /**
      * @brief Reloads profiles
      */
     void updateProfiles();
+
+    /**
+     * @brief Selects a profile, temporarily adding it when it is not saved
+     */
+    void setProfile(const Profile4 &profile);
 
 private:
     Ui::ProfileDisplay4 *ui;
@@ -80,6 +95,9 @@ private:
     QString prefix;
     std::vector<Profile4> profiles;
     Game filter;
+    bool includeDefaultProfile = true;
+    Game defaultProfileVersion;
+    bool defaultOnlyWhenEmpty = false;
 
 private slots:
     /**

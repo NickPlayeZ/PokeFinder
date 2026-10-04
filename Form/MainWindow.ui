@@ -277,6 +277,7 @@
     </property>
     <addaction name="actionIVstoPID4"/>
     <addaction name="actionProfileManager4"/>
+    <addaction name="actionRockSmashItems"/>
     <addaction name="actionSeedToTime4"/>
     <addaction name="actionSIDfromChainedShiny"/>
    </widget>
@@ -427,6 +428,11 @@
   <action name="actionPhenomenonItems">
    <property name="text">
     <string>Phenomenon Items</string>
+   </property>
+  </action>
+  <action name="actionRockSmashItems">
+   <property name="text">
+    <string>Rock Smash Items</string>
    </property>
   </action>
  </widget>

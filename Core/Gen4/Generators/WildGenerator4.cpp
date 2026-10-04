@@ -269,6 +269,29 @@ static bool isRockSmashItemLead(Lead lead)
     return increasesRockSmashItemRate(lead) || improvesRockSmashItem(lead) || lead == Lead::Intimidate;
 }
 
+std::vector<u16> WildGenerator4::getRockSmashItems(u8 location, Game version)
+{
+    RockSmashItemData data = getRockSmashItemData(location);
+    if (data.odds == 0)
+    {
+        return {};
+    }
+
+    constexpr std::array<u16, 8> defaultItems = { 39, 28, 93, 72, 73, 75, 74, 91 };
+    constexpr std::array<u16, 8> ruinsHG = { 72, 74, 101, 39, 73, 75, 103, 29 };
+    constexpr std::array<u16, 8> ruinsSS = { 73, 75, 102, 39, 72, 74, 103, 29 };
+    constexpr std::array<u16, 8> cliffHG = { 39, 88, 89, 72, 74, 100, 100, 106 };
+    constexpr std::array<u16, 8> cliffSS = { 39, 88, 89, 73, 75, 99, 99, 106 };
+
+    const std::array<u16, 8> *items = &defaultItems;
+    if (data.type == 1) items = (version & Game::HeartGold) != Game::None ? &ruinsHG : &ruinsSS;
+    if (data.type == 2) items = (version & Game::HeartGold) != Game::None ? &cliffHG : &cliffSS;
+    std::vector<u16> result(items->begin(), items->end());
+    std::ranges::sort(result);
+    result.erase(std::ranges::unique(result).begin(), result.end());
+    return result;
+}
+
 static bool isRockSmashEncounterSuppressed(Lead lead, u8 leadLevel, u8 level, PokeRNG &rng, u32 *battleAdvances)
 {
     return (lead == Lead::KeenEye || lead == Lead::Intimidate) && leadLevel > 5 && level <= leadLevel - 5

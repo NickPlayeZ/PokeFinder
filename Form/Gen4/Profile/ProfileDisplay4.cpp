@@ -25,6 +25,7 @@
 #include <Core/Util/Translator.hpp>
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
 #include <QSettings>
+#include <algorithm>
 
 static const QString settingKey = QStringLiteral("%1/profile");
 
@@ -48,12 +49,27 @@ void ProfileDisplay4::setup(const QString &prefix, Game filter)
 {
     this->prefix = prefix;
     this->filter = filter;
+    includeDefaultProfile = true;
+    defaultProfileVersion = Game::Diamond;
+    defaultOnlyWhenEmpty = false;
+}
+
+void ProfileDisplay4::setup(const QString &prefix, Game filter, Game defaultProfileVersion, bool defaultOnlyWhenEmpty)
+{
+    this->prefix = prefix;
+    this->filter = filter;
+    includeDefaultProfile = true;
+    this->defaultProfileVersion = defaultProfileVersion;
+    this->defaultOnlyWhenEmpty = defaultOnlyWhenEmpty;
 }
 
 void ProfileDisplay4::updateProfiles()
 {
     profiles = ProfileLoader4::getProfiles(filter);
-    profiles.insert(profiles.begin(), Profile4("-", Game::Diamond, 12345, 54321, false));
+    if (includeDefaultProfile && (!defaultOnlyWhenEmpty || profiles.empty()))
+    {
+        profiles.insert(profiles.begin(), Profile4("-", defaultProfileVersion, 12345, 54321, false));
+    }
 
     ui->comboBoxProfiles->clear();
     for (const auto &profile : profiles)
@@ -67,6 +83,18 @@ void ProfileDisplay4::updateProfiles()
     {
         ui->comboBoxProfiles->setCurrentIndex(val);
     }
+}
+
+void ProfileDisplay4::setProfile(const Profile4 &profile)
+{
+    auto it = std::ranges::find(profiles, profile);
+    if (it == profiles.end())
+    {
+        profiles.emplace_back(profile);
+        ui->comboBoxProfiles->addItem(QString::fromStdString(profile.getName()));
+        it = std::prev(profiles.end());
+    }
+    ui->comboBoxProfiles->setCurrentIndex(static_cast<int>(std::distance(profiles.begin(), it)));
 }
 
 void ProfileDisplay4::profileIndexChanged(int index)
