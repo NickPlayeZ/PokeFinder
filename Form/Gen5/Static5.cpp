@@ -36,6 +36,7 @@
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
+#include <Form/Gen5/ResultToGenerator.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/StaticModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
@@ -146,6 +147,11 @@ Static5::Static5(QWidget *parent) : QWidget(parent), ui(new Ui::Static5), ivCach
     auto *adjacentSeeds = ui->tableViewSearcher->addAction(tr("Adjacent Seeds"));
     ui->tableViewSearcher->setPrimaryAction(adjacentSeeds);
     connect(adjacentSeeds, &QAction::triggered, this, &Static5::openAdjacentSeeds);
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setSecondaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Static5::goToGenerator);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &Static5::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &Static5::profilesChanged);
@@ -271,6 +277,23 @@ void Static5::generate()
 
     auto states = generator.generate(seed, ivAdvances, 0);
     generatorModel->addItems(states);
+}
+
+void Static5::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &result = searcherModel->getItem(index.row());
+    const auto &state = result.getState();
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
+    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ResultToGenerator5::setPreferredLead(ui->comboMenuGeneratorLead, state.getLeadMask(), state.getNature());
+    int power = ui->comboBoxGeneratorLuckyPower->findData(state.getPassPower());
+    if (power >= 0) ui->comboBoxGeneratorLuckyPower->setCurrentIndex(power);
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
 }
 
 void Static5::generatorCategoryIndexChanged(int index)

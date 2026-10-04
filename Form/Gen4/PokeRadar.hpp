@@ -177,6 +177,7 @@ private:
 
 private slots:
     void generate();
+    void goToGenerator();
     void openAdvanceFinder();
     void profileChanged(const Profile4 &profile);
     void search();

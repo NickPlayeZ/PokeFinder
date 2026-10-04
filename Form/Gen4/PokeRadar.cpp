@@ -75,6 +75,7 @@
 #include <QVBoxLayout>
 #include <atomic>
 #include <algorithm>
+#include <bit>
 #include <iterator>
 #include <memory>
 #include <ranges>
@@ -298,6 +299,95 @@ static void setComboMenuData(ComboMenu *comboMenu, int data)
     }
 }
 
+static void collectComboMenuActions(QMenu *menu, std::vector<QAction *> &actions)
+{
+    for (QAction *action : menu->actions())
+    {
+        if (action->menu() != nullptr)
+        {
+            collectComboMenuActions(action->menu(), actions);
+        }
+        else if (action->isVisible() && action->data().isValid())
+        {
+            actions.emplace_back(action);
+        }
+    }
+}
+
+static u64 getPokeRadarMenuLeadFlag(int data)
+{
+    if (data >= 250 && data <= 252)
+    {
+        return getLeadFlag(Lead::ArenaTrap);
+    }
+    return getLeadFlag(static_cast<Lead>(data));
+}
+
+static void setPreferredLead(ComboMenu *comboMenu, u64 leadMask, u8 nature)
+{
+    std::vector<QAction *> actions;
+    collectComboMenuActions(comboMenu->menu(), actions);
+
+    auto select = [](QAction *action) {
+        action->setChecked(true);
+        action->trigger();
+    };
+    auto findData = [&actions](int data) {
+        return std::ranges::find_if(actions, [data](QAction *action) { return action->data().toInt() == data; });
+    };
+
+    if (leadMask == 0 || (leadMask & getLeadFlag(Lead::None)) != 0)
+    {
+        auto action = findData(toInt(Lead::None));
+        if (action != actions.end())
+        {
+            select(*action);
+        }
+        return;
+    }
+
+    constexpr u64 synchronize = (1ULL << 25) - 1;
+    if ((leadMask & synchronize) != 0)
+    {
+        u8 selectedNature = nature;
+        if ((leadMask & getLeadFlag(static_cast<Lead>(selectedNature))) == 0)
+        {
+            selectedNature = static_cast<u8>(std::countr_zero(leadMask & synchronize));
+        }
+        auto action = findData(selectedNature);
+        if (action != actions.end())
+        {
+            select(*action);
+        }
+        return;
+    }
+
+    for (Lead lead : { Lead::CuteCharmF, Lead::CuteCharmM })
+    {
+        if ((leadMask & getLeadFlag(lead)) != 0)
+        {
+            auto action = findData(toInt(lead));
+            if (action != actions.end())
+            {
+                select(*action);
+                return;
+            }
+        }
+    }
+
+    std::vector<QAction *> matches;
+    std::ranges::copy_if(actions, std::back_inserter(matches), [leadMask](QAction *action) {
+        return (leadMask & getPokeRadarMenuLeadFlag(action->data().toInt())) != 0;
+    });
+    std::ranges::sort(matches, [](QAction *left, QAction *right) {
+        return QString::localeAwareCompare(left->text(), right->text()) < 0;
+    });
+    if (!matches.empty())
+    {
+        select(matches.front());
+    }
+}
+
 static void transferLead(ComboMenu *target, ComboMenu *source, bool targetIsSearcher)
 {
     if (target == nullptr || source == nullptr)
@@ -493,6 +583,8 @@ PokeRadar::PokeRadar(QWidget *parent) : QWidget(parent), currentProfile(nullptr)
     auto *advanceFinder = generator.tableView->addAction(tr("Advance Finder"));
     generator.tableView->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &PokeRadar::openAdvanceFinder);
+    auto *removeTargetMark = generator.tableView->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, generator.tableView, &TableView::clearTargetAdvance);
     auto *jumpToBattleAdv = generator.tableView->addAction(tr("Jump to Battle Adv"));
     connect(jumpToBattleAdv, &QAction::triggered, this, &PokeRadar::jumpToBattleAdv);
     auto *markBattlePatches = generator.tableView->addAction(tr("Mark Battle Patches"));
@@ -523,6 +615,9 @@ PokeRadar::PokeRadar(QWidget *parent) : QWidget(parent), currentProfile(nullptr)
     searcher.tableView->setPrimaryAction(seedToTime);
     connect(seedToTime, &QAction::triggered, this, &PokeRadar::seedToTime);
     searcher.tableView->addAction(seedToTime);
+    auto *goToGenerator = searcher.tableView->addAction(tr("Go to Generator"));
+    searcher.tableView->setSecondaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &PokeRadar::goToGenerator);
     auto *markPatches = new QAction(tr("Mark Patches"), searcher.tableView);
     connect(markPatches, &QAction::triggered, this, &PokeRadar::markSearcherPatches);
     searcher.tableView->addAction(markPatches);
@@ -2306,6 +2401,55 @@ void PokeRadar::generate()
     generator.hasRun = true;
     generator.model->clearModel();
     generator.model->addItems(getStates(generator, generatorEncounters));
+}
+
+void PokeRadar::goToGenerator()
+{
+    if (currentProfile == nullptr || !searcher.tableView->currentIndex().isValid())
+    {
+        return;
+    }
+
+    QModelIndex index = searcher.proxyModel->mapToSource(searcher.tableView->currentIndex());
+    const auto &state = searcher.model->getItem(index.row());
+    if (!state.hasSearcherPokemon())
+    {
+        return;
+    }
+    const auto &pokemon = state.getSearcherPokemon();
+
+    tabRNGSelector->setCurrentIndex(0);
+    PokeRadarChainType chainType = state.hasDisplayPatchType() && state.getDisplayPatchStrong() ? PokeRadarChainType::Strong
+                                                                                               : PokeRadarChainType::Weak;
+    generator.chainType->setCurrentIndex(std::max(0, generator.chainType->findData(static_cast<int>(chainType))));
+
+    generator.time->setCurrentIndex(searcher.time->currentIndex());
+    generator.dualSlotGame->setCurrentIndex(searcher.dualSlotGame->currentIndex());
+    generator.dualSlot->setCheckState(searcher.dualSlot->checkState());
+    generator.swarm->setCheckState(searcher.swarm->checkState());
+    generator.location->setCurrentIndex(searcher.location->currentIndex());
+    generator.replacement0->setCurrentIndex(searcher.replacement0->currentIndex());
+    generator.replacement1->setCurrentIndex(searcher.replacement1->currentIndex());
+    generator.replacement->setCheckState(searcher.replacement->checkState());
+    generator.location->setCurrentIndex(searcher.location->currentIndex());
+    generator.slot->setCurrentIndex(std::max(0, generator.slot->findData(searcher.slot->currentData())));
+
+    PokeRadarResult activation = PokeRadarResult::ManualActivation;
+    const auto &activations = state.getResults();
+    if (std::ranges::contains(activations, PokeRadarResult::Defeat))
+    {
+        activation = PokeRadarResult::Defeat;
+    }
+    else if (std::ranges::contains(activations, PokeRadarResult::Capture))
+    {
+        activation = PokeRadarResult::Capture;
+    }
+    generator.result->setCurrentIndex(std::max(0, generator.result->findData(static_cast<int>(activation))));
+
+    generator.seed->setText(QString::number(pokemon.getSeed(), 16).toUpper());
+    generator.maxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 50));
+    generator.tableView->setTargetAdvance(state.getAdvances());
+    setPreferredLead(generator.lead, pokemon.getLeadMask(), pokemon.getNature());
 }
 
 void PokeRadar::openAdvanceFinder()

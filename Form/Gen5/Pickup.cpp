@@ -32,6 +32,7 @@
 #include <Form/Controls/TextBox.hpp>
 #include <Model/Gen5/PickupModel.hpp>
 #include <Model/SortFilterProxyModel.hpp>
+#include <QAction>
 #include <QCheckBox>
 #include <QMessageBox>
 #include <QPushButton>
@@ -125,6 +126,12 @@ Pickup::Pickup(QWidget *parent) : QWidget(parent), ui(new Ui::Pickup)
     searcherModel = new PickupSearcherModel5(ui->tableViewSearcher);
     proxyModel = new SortFilterProxyModel(ui->tableViewSearcher, searcherModel);
     ui->tableViewSearcher->setModel(proxyModel);
+
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setPrimaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Pickup::goToGenerator);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     ui->textBoxGeneratorSeed->setValues(InputType::Seed64Bit);
     ui->textBoxGeneratorIVAdvances->setValues(InputType::Advance32Bit);
@@ -557,6 +564,20 @@ void Pickup::search()
 
     searcher->startSearch(threads, start, end);
     timer->start(1000);
+}
+
+void Pickup::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &result = searcherModel->getItem(index.row());
+    const auto &state = result.getState();
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGeneratorIVAdvances->setText(QStringLiteral("0"));
+    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
 }
 
 void Pickup::profileChanged(const Profile5 &profile)

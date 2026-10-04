@@ -40,6 +40,7 @@
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
+#include <Form/Gen5/ResultToGenerator.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/WildModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
@@ -359,6 +360,11 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     auto *adjacentSeeds = ui->tableViewSearcher->addAction(tr("Adjacent Seeds"));
     ui->tableViewSearcher->setPrimaryAction(adjacentSeeds);
     connect(adjacentSeeds, &QAction::triggered, this, &Phenomenon::openAdjacentSeeds);
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setSecondaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Phenomenon::goToGenerator);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->comboBoxProfiles, &QComboBox::currentIndexChanged, this, &Phenomenon::profileIndexChanged);
     connect(ui->tabRNGSelector, &TabWidget::transferFilters, this, &Phenomenon::transferFilters);
@@ -612,6 +618,25 @@ void Phenomenon::generate()
         });
     }
     generatorModel->addItems(states);
+}
+
+void Phenomenon::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &result = searcherModel->getItem(index.row());
+    const auto &state = result.getState();
+
+    ui->comboBoxGeneratorEncounter->setCurrentIndex(ui->comboBoxSearcherEncounter->currentIndex());
+    ui->comboBoxGeneratorSeason->setCurrentIndex(ui->comboBoxSearcherSeason->currentIndex());
+    ui->comboBoxGeneratorLocation->setCurrentIndex(ui->comboBoxSearcherLocation->currentIndex());
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
+    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 50));
+    ResultToGenerator5::setPreferredLead(ui->comboMenuGeneratorLead, state.getLeadMask(), state.getNature());
+    setGeneratorPowers(ui->comboBoxGeneratorLuckyPower, { state.getPassPower() });
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
 }
 
 void Phenomenon::generatorEncounterIndexChanged(int index)

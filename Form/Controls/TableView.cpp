@@ -20,16 +20,61 @@
 #include "TableView.hpp"
 #include <QAction>
 #include <QApplication>
+#include <QBrush>
 #include <QClipboard>
+#include <QColor>
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QSettings>
+#include <QStyledItemDelegate>
 #include <QTimer>
+
+namespace
+{
+    class TargetMarkDelegate final : public QStyledItemDelegate
+    {
+    public:
+        TargetMarkDelegate(TableView *tableView) : QStyledItemDelegate(tableView), tableView(tableView)
+        {
+        }
+
+        void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override
+        {
+            QStyledItemDelegate::initStyleOption(option, index);
+            if (tableView->isTargetIndex(index))
+            {
+                QSettings settings;
+                bool enabled = settings.value(QStringLiteral("settings/targetMarkEnabled"), true).toBool();
+                if (enabled)
+                {
+                    QColor mark = settings.value(QStringLiteral("settings/targetMarkColor"), QColor(Qt::red)).value<QColor>();
+                    int alpha = settings.value(QStringLiteral("settings/targetMarkAlpha"), 128).toInt();
+                    bool alternate = tableView->alternatingRowColors() && index.row() % 2 != 0;
+                    QColor base = option->palette.color(alternate ? QPalette::AlternateBase : QPalette::Base);
+                    if (QVariant background = index.data(Qt::BackgroundRole); background.isValid())
+                    {
+                        base = qvariant_cast<QBrush>(background).color();
+                    }
+
+                    auto blend = [alpha](int foreground, int background) {
+                        return (foreground * alpha + background * (255 - alpha)) / 255;
+                    };
+                    option->backgroundBrush = QColor(blend(mark.red(), base.red()), blend(mark.green(), base.green()),
+                                                     blend(mark.blue(), base.blue()));
+                }
+            }
+        }
+
+    private:
+        TableView *tableView;
+    };
+}
 
 TableView::TableView(QWidget *parent) : QTableView(parent), primaryAction(nullptr), secondaryAction(nullptr)
 {
+    setItemDelegate(new TargetMarkDelegate(this));
     outputTXT = addAction(tr("Output Results to TXT"));
     outputCSV = addAction(tr("Output Results to CSV"));
 
@@ -46,6 +91,23 @@ TableView::TableView(QWidget *parent) : QTableView(parent), primaryAction(nullpt
         QSettings setting;
         horizontal->resizeSections(setting.value("settings/headerSize").value<QHeaderView::ResizeMode>());
     });
+}
+
+void TableView::setTargetAdvance(u32 advance)
+{
+    targetAdvance = advance;
+    viewport()->update();
+}
+
+void TableView::clearTargetAdvance()
+{
+    targetAdvance.reset();
+    viewport()->update();
+}
+
+bool TableView::isTargetIndex(const QModelIndex &index) const
+{
+    return targetAdvance.has_value() && index.isValid() && index.model()->index(index.row(), 0).data().toUInt() == *targetAdvance;
 }
 
 void TableView::setPrimaryAction(QAction *action)

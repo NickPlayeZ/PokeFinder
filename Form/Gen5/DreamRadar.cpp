@@ -32,6 +32,7 @@
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Model/Gen5/DreamRadarModel.hpp>
 #include <Model/SortFilterProxyModel.hpp>
+#include <QAction>
 #include <QMessageBox>
 #include <QSettings>
 #include <QTimer>
@@ -88,6 +89,12 @@ DreamRadar::DreamRadar(QWidget *parent) : QWidget(parent), ui(new Ui::DreamRadar
     searcherModel = new DreamRadarSearcherModel5(ui->tableViewSearcher);
     proxyModel = new SortFilterProxyModel(ui->tableViewSearcher, searcherModel);
     ui->tableViewSearcher->setModel(proxyModel);
+
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setPrimaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &DreamRadar::goToGenerator);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     ui->comboBoxGeneratorSpecie1->addItem(tr("None"), -1);
     ui->comboBoxGeneratorSpecie2->addItem(tr("None"), -1);
@@ -396,6 +403,19 @@ void DreamRadar::profileChanged(const Profile5 &profile)
     currentProfile = &profile;
 }
 
+void DreamRadar::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &result = searcherModel->getItem(index.row());
+    const auto &state = result.getState();
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+}
+
 void DreamRadar::transferFilters(int index)
 {
     if (index == 0)
@@ -430,12 +450,12 @@ void DreamRadar::transferSettings(int index)
     }
     else
     {
-        ui->comboBoxGeneratorSpecie1->setCurrentIndex(ui->comboBoxGeneratorSpecie1->currentIndex());
-        ui->comboBoxGeneratorSpecie2->setCurrentIndex(ui->comboBoxGeneratorSpecie2->currentIndex());
-        ui->comboBoxGeneratorSpecie3->setCurrentIndex(ui->comboBoxGeneratorSpecie3->currentIndex());
-        ui->comboBoxGeneratorSpecie4->setCurrentIndex(ui->comboBoxGeneratorSpecie4->currentIndex());
-        ui->comboBoxGeneratorSpecie5->setCurrentIndex(ui->comboBoxGeneratorSpecie5->currentIndex());
-        ui->comboBoxGeneratorSpecie6->setCurrentIndex(ui->comboBoxGeneratorSpecie6->currentIndex());
+        ui->comboBoxGeneratorSpecie1->setCurrentIndex(ui->comboBoxSearcherSpecie1->currentIndex());
+        ui->comboBoxGeneratorSpecie2->setCurrentIndex(ui->comboBoxSearcherSpecie2->currentIndex());
+        ui->comboBoxGeneratorSpecie3->setCurrentIndex(ui->comboBoxSearcherSpecie3->currentIndex());
+        ui->comboBoxGeneratorSpecie4->setCurrentIndex(ui->comboBoxSearcherSpecie4->currentIndex());
+        ui->comboBoxGeneratorSpecie5->setCurrentIndex(ui->comboBoxSearcherSpecie5->currentIndex());
+        ui->comboBoxGeneratorSpecie6->setCurrentIndex(ui->comboBoxSearcherSpecie6->currentIndex());
 
         ui->comboBoxGeneratorGender1->setCurrentIndex(ui->comboBoxSearcherGender1->currentIndex());
         ui->comboBoxGeneratorGender2->setCurrentIndex(ui->comboBoxSearcherGender2->currentIndex());

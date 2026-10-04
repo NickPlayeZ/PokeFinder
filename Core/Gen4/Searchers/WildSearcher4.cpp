@@ -379,11 +379,11 @@ static bool getBestHGSSStepEncounter(u32 seed, u32 targetAdvance, u16 encounterR
         }
         if ((stepOptions & StepBiking) != 0 && !bikeRestricted)
         {
-            addMovement(2, 1);
+            addMovement(2, 2);
         }
         if ((stepOptions & StepRunning) != 0)
         {
-            addMovement(1, 2);
+            addMovement(1, 1);
         }
         if (longGrass && (stepOptions & StepWalkingLongGrass) != 0)
         {

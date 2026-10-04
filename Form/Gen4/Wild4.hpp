@@ -116,6 +116,11 @@ private slots:
     void generate();
 
     /**
+     * @brief Opens the selected searcher result in the generator
+     */
+    void goToGenerator();
+
+    /**
      * @brief Updates the locations listed. Also toggles what controls are displayed based on relevance to the current settings.
      *
      * @param index Encounter index

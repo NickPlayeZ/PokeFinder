@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>344</width>
-    <height>162</height>
+    <width>480</width>
+    <height>250</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -142,6 +142,67 @@
    </item>
    <item row="4" column="1">
     <widget class="QComboBox" name="comboBoxThreads"/>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="labelTargetMark">
+     <property name="text">
+      <string>Target Mark</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QComboBox" name="comboBoxTargetMarkEnabled">
+     <item>
+      <property name="text">
+       <string>Enabled</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Disabled</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="labelTargetMarkTransparency">
+     <property name="text">
+      <string>Mark Transparency</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QSpinBox" name="spinBoxTargetMarkTransparency">
+     <property name="suffix">
+      <string>%</string>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="value">
+      <number>50</number>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="labelTargetMarkColor">
+     <property name="text">
+      <string>Change Mark Color</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QPushButton" name="pushButtonTargetMarkColor">
+     <property name="minimumSize">
+      <size>
+       <width>80</width>
+       <height>24</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

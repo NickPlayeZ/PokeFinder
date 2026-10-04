@@ -84,6 +84,7 @@ private slots:
      * @brief Generates egg encounters from a starting seed
      */
     void generate();
+    void goToGenerator();
 
     /**
      * @brief Opens the advance finder dialog

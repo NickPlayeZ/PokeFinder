@@ -100,6 +100,7 @@ private slots:
      * @brief Generates static encounters from a starting seed
      */
     void generate();
+    void goToGenerator();
 
     /**
      * @brief Searches static encounters from date range

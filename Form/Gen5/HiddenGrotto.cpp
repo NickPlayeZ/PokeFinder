@@ -39,6 +39,7 @@
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
+#include <Form/Gen5/ResultToGenerator.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/HiddenGrottoModel.hpp>
 #include <Model/SortFilterProxyModel.hpp>
@@ -201,14 +202,24 @@ HiddenGrotto::HiddenGrotto(QWidget *parent) :
     auto *grottoAdvanceFinder = ui->tableViewGrottoGenerator->addAction(tr("Advance Finder"));
     ui->tableViewGrottoGenerator->setPrimaryAction(grottoAdvanceFinder);
     connect(grottoAdvanceFinder, &QAction::triggered, this, &HiddenGrotto::openGrottoAdvanceFinder);
+    auto *removeGrottoTargetMark = ui->tableViewGrottoGenerator->addAction(tr("Remove target Mark"));
+    connect(removeGrottoTargetMark, &QAction::triggered, ui->tableViewGrottoGenerator, &TableView::clearTargetAdvance);
+    auto *grottoGoToGenerator = ui->tableViewGrottoSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewGrottoSearcher->setPrimaryAction(grottoGoToGenerator);
+    connect(grottoGoToGenerator, &QAction::triggered, this, &HiddenGrotto::grottoGoToGenerator);
 
     auto *pokemonAdvanceFinder = ui->tableViewPokemonGenerator->addAction(tr("Advance Finder"));
     ui->tableViewPokemonGenerator->setPrimaryAction(pokemonAdvanceFinder);
     connect(pokemonAdvanceFinder, &QAction::triggered, this, &HiddenGrotto::openPokemonAdvanceFinder);
+    auto *removePokemonTargetMark = ui->tableViewPokemonGenerator->addAction(tr("Remove target Mark"));
+    connect(removePokemonTargetMark, &QAction::triggered, ui->tableViewPokemonGenerator, &TableView::clearTargetAdvance);
 
     auto *adjacentSeeds = ui->tableViewPokemonSearcher->addAction(tr("Adjacent Seeds"));
     ui->tableViewPokemonSearcher->setPrimaryAction(adjacentSeeds);
     connect(adjacentSeeds, &QAction::triggered, this, &HiddenGrotto::openAdjacentSeeds);
+    auto *pokemonGoToGenerator = ui->tableViewPokemonSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewPokemonSearcher->setSecondaryAction(pokemonGoToGenerator);
+    connect(pokemonGoToGenerator, &QAction::triggered, this, &HiddenGrotto::pokemonGoToGenerator);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &HiddenGrotto::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &HiddenGrotto::profilesChanged);
@@ -374,6 +385,21 @@ void HiddenGrotto::grottoGenerate()
         std::erase_if(states, [](const auto &state) { return !state.isValid(); });
     }
     grottoGeneratorModel->addItems(states);
+}
+
+void HiddenGrotto::grottoGoToGenerator()
+{
+    if (!ui->tableViewGrottoSearcher->currentIndex().isValid()) return;
+    QModelIndex index = grottoProxyModel->mapToSource(ui->tableViewGrottoSearcher->currentIndex());
+    const auto &result = grottoSearcherModel->getItem(index.row());
+    const auto &state = result.getState();
+    ui->comboBoxGrottoGeneratorLocation->setCurrentIndex(ui->comboBoxGrottoSearcherLocation->currentIndex());
+    ui->tabGrottoRNGSelector->setCurrentIndex(0);
+    ui->textBoxGrottoGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGrottoGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    int power = ui->comboBoxGrottoGeneratorGrottoPower->findData(toInt(state.getPassPower()));
+    if (power >= 0) ui->comboBoxGrottoGeneratorGrottoPower->setCurrentIndex(power);
+    ui->tableViewGrottoGenerator->setTargetAdvance(state.getAdvances());
 }
 
 void HiddenGrotto::grottoGeneratorLocationIndexChanged(int index)
@@ -625,6 +651,21 @@ void HiddenGrotto::openPokemonAdvanceFinder()
 {
     auto *pokemonAdvanceFinder = new AdvanceFinder(pokemonGeneratorModel, ui->tableViewPokemonGenerator, currentProfile, this);
     pokemonAdvanceFinder->show();
+}
+
+void HiddenGrotto::pokemonGoToGenerator()
+{
+    if (!ui->tableViewPokemonSearcher->currentIndex().isValid()) return;
+    QModelIndex index = pokemonProxyModel->mapToSource(ui->tableViewPokemonSearcher->currentIndex());
+    const auto &result = pokemonSearcherModel->getItem(index.row());
+    const auto &state = result.getState();
+    transferSettingsPokemon(1);
+    ui->tabPokemonRNGSelector->setCurrentIndex(0);
+    ui->textBoxPokemonGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxPokemonGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
+    ui->textBoxPokemonGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ResultToGenerator5::setPreferredLead(ui->comboMenuPokemonGeneratorLead, state.getLeadMask(), state.getNature());
+    ui->tableViewPokemonGenerator->setTargetAdvance(state.getAdvances());
 }
 
 void HiddenGrotto::pokemonGenerate()

@@ -49,6 +49,9 @@ public:
 private:
     Ui::Settings *ui;
 
+    void updateTargetMarkButton();
+    void updateTargetMarkTables();
+
 private slots:
     /**
      * @brief Handles updating the path to the profiles file
@@ -82,6 +85,10 @@ private slots:
      * @param index Threads index
      */
     void threadsIndexChanged(int index);
+
+    void changeTargetMarkColor();
+    void targetMarkEnabledChanged(int index);
+    void targetMarkTransparencyChanged(int transparency);
 };
 
 #endif // SETTINGS_HPP

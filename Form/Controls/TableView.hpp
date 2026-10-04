@@ -20,7 +20,9 @@
 #ifndef TABLEVIEW_HPP
 #define TABLEVIEW_HPP
 
+#include <Core/Global.hpp>
 #include <QTableView>
+#include <optional>
 
 class QAction;
 
@@ -52,11 +54,24 @@ public:
 
     void setSecondaryAction(QAction *action);
 
+    /**
+     * @brief Highlights rows whose Advances value matches the target
+     */
+    void setTargetAdvance(u32 advance);
+
+    /**
+     * @brief Removes the target advance highlight
+     */
+    void clearTargetAdvance();
+
+    bool isTargetIndex(const QModelIndex &index) const;
+
 private:
     QAction *primaryAction;
     QAction *secondaryAction;
     QAction *outputTXT;
     QAction *outputCSV;
+    std::optional<u32> targetAdvance;
 
     /**
      * @brief Handles when the context menu is requested. Only displays if the model isn't empty.

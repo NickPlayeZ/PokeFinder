@@ -87,6 +87,7 @@ private:
 
 private slots:
     void generate();
+    void goToGenerator();
     void search();
     void profileChanged(const Profile5 &profile);
     void transferSettings(int index);

@@ -73,6 +73,11 @@ Eggs5::Eggs5(QWidget *parent) : QWidget(parent), ui(new Ui::Eggs5)
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
     ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Eggs5::openAdvanceFinder);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setPrimaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Eggs5::goToGenerator);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &Eggs5::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &Eggs5::profilesChanged);
@@ -158,6 +163,19 @@ void Eggs5::generate()
 
     auto states = generator.generate(seed);
     generatorModel->addItems(states);
+}
+
+void Eggs5::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &result = searcherModel->getItem(index.row());
+    const auto &state = result.getState();
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
 }
 
 void Eggs5::openAdvanceFinder()

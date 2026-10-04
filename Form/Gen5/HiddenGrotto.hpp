@@ -103,6 +103,7 @@ private slots:
      * @brief Generates grotto encounters from a starting seed
      */
     void grottoGenerate();
+    void grottoGoToGenerator();
 
     /**
      * @brief Updates the grotto listed
@@ -152,6 +153,7 @@ private slots:
      * @brief Generates grotto pokemon from a starting seed
      */
     void pokemonGenerate();
+    void pokemonGoToGenerator();
 
     /**
      * @brief Updates the grotto listed

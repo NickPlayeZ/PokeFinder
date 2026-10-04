@@ -45,11 +45,14 @@
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QListView>
+#include <QMenu>
 #include <QMessageBox>
 #include <QSettings>
 #include <QSizePolicy>
 #include <QTimer>
 #include <algorithm>
+#include <bit>
+#include <iterator>
 #include <vector>
 
 enum Gen4Movement : u8
@@ -144,6 +147,95 @@ static std::vector<Lead> getSearcherLeads(ComboMenu *comboMenu)
         leads.emplace_back(Lead::None);
     }
     return leads;
+}
+
+static void collectLeadActions(QMenu *menu, std::vector<QAction *> &actions)
+{
+    for (QAction *action : menu->actions())
+    {
+        if (action->menu() != nullptr)
+        {
+            collectLeadActions(action->menu(), actions);
+        }
+        else if (action->isVisible() && action->data().isValid())
+        {
+            actions.emplace_back(action);
+        }
+    }
+}
+
+static u64 getMenuLeadFlag(int data)
+{
+    if (data >= 250 && data <= 252)
+    {
+        return getLeadFlag(Lead::ArenaTrap);
+    }
+    return getLeadFlag(static_cast<Lead>(data));
+}
+
+static void setPreferredLead(ComboMenu *comboMenu, u64 leadMask, u8 nature)
+{
+    std::vector<QAction *> actions;
+    collectLeadActions(comboMenu->menu(), actions);
+
+    auto select = [](QAction *action) {
+        action->setChecked(true);
+        action->trigger();
+    };
+    auto findData = [&actions](int data) {
+        return std::ranges::find_if(actions, [data](QAction *action) { return action->data().toInt() == data; });
+    };
+
+    if (leadMask == 0 || (leadMask & getLeadFlag(Lead::None)) != 0)
+    {
+        auto action = findData(toInt(Lead::None));
+        if (action != actions.end())
+        {
+            select(*action);
+        }
+        return;
+    }
+
+    constexpr u64 synchronize = (1ULL << 25) - 1;
+    if ((leadMask & synchronize) != 0)
+    {
+        u8 selectedNature = nature;
+        if ((leadMask & getLeadFlag(static_cast<Lead>(selectedNature))) == 0)
+        {
+            selectedNature = static_cast<u8>(std::countr_zero(leadMask & synchronize));
+        }
+        auto action = findData(selectedNature);
+        if (action != actions.end())
+        {
+            select(*action);
+        }
+        return;
+    }
+
+    for (Lead lead : { Lead::CuteCharmF, Lead::CuteCharmM })
+    {
+        if ((leadMask & getLeadFlag(lead)) != 0)
+        {
+            auto action = findData(toInt(lead));
+            if (action != actions.end())
+            {
+                select(*action);
+                return;
+            }
+        }
+    }
+
+    std::vector<QAction *> matches;
+    std::ranges::copy_if(actions, std::back_inserter(matches), [leadMask](QAction *action) {
+        return (leadMask & getMenuLeadFlag(action->data().toInt())) != 0;
+    });
+    std::ranges::sort(matches, [](QAction *left, QAction *right) {
+        return QString::localeAwareCompare(left->text(), right->text()) < 0;
+    });
+    if (!matches.empty())
+    {
+        select(matches.front());
+    }
 }
 
 Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
@@ -280,9 +372,15 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     connect(seedToTime, &QAction::triggered, this, &Wild4::seedToTime);
     ui->tableViewSearcher->addAction(seedToTime);
 
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setSecondaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Wild4::goToGenerator);
+
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
     ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Wild4::openAdvanceFinder);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay4::profileChanged, this, &Wild4::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay4::profilesChanged, this, &Wild4::profilesChanged);
@@ -760,6 +858,47 @@ void Wild4::generate()
         std::erase_if(states, [](const auto &state) { return !state.isValid(); });
     }
     generatorModel->addItems(states);
+}
+
+void Wild4::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid())
+    {
+        return;
+    }
+
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &state = searcherModel->getItem(index.row());
+
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(state.getSeed(), 16).toUpper());
+    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 50));
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    setPreferredLead(ui->comboMenuGeneratorLead, state.getLeadMask(), state.getNature());
+
+    if (ui->checkBoxSearcherStepEncounter->isChecked())
+    {
+        ui->checkBoxGeneratorStepEncounter->setChecked(true);
+        ui->comboBoxGeneratorMovement->setCurrentIndex(
+            std::max(0, ui->comboBoxGeneratorMovement->findData(state.getMovement())));
+
+        u8 modifier = state.getStepModifier();
+        bool whiteFlute = modifier == 1 || modifier == 3 || modifier == 5 || modifier == 7 || modifier == 9 || modifier == 11;
+        bool march = modifier == 2 || modifier == 3 || modifier == 6 || modifier == 7;
+        bool lullaby = modifier == 4 || modifier == 5;
+        ui->checkBoxGeneratorWhiteFlute->setChecked(whiteFlute);
+
+        if (march || lullaby)
+        {
+            ui->checkBoxGeneratorRadio->setChecked(true);
+            ui->comboBoxGeneratorRadio->setCurrentIndex(march ? 3 : 4);
+        }
+
+        int dateModifier = modifier == 8 || modifier == 9 ? 5 : modifier == 10 || modifier == 11 ? 10 : 0;
+        ui->comboBoxGeneratorDateModifier->setCurrentIndex(
+            std::max(0, ui->comboBoxGeneratorDateModifier->findData(dateModifier)));
+    }
 }
 
 void Wild4::generatorEncounterIndexChanged(int index)
