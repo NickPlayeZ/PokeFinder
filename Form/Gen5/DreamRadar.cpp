@@ -414,6 +414,7 @@ void DreamRadar::goToGenerator()
     ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
     ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
     ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    generate();
 }
 
 void DreamRadar::transferFilters(int index)

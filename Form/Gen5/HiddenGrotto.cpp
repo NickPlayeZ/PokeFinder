@@ -396,10 +396,12 @@ void HiddenGrotto::grottoGoToGenerator()
     ui->comboBoxGrottoGeneratorLocation->setCurrentIndex(ui->comboBoxGrottoSearcherLocation->currentIndex());
     ui->tabGrottoRNGSelector->setCurrentIndex(0);
     ui->textBoxGrottoGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
-    ui->textBoxGrottoGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ui->textBoxGrottoGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 10, *currentProfile)));
     int power = ui->comboBoxGrottoGeneratorGrottoPower->findData(toInt(state.getPassPower()));
     if (power >= 0) ui->comboBoxGrottoGeneratorGrottoPower->setCurrentIndex(power);
     ui->tableViewGrottoGenerator->setTargetAdvance(state.getAdvances());
+    grottoGenerate();
 }
 
 void HiddenGrotto::grottoGeneratorLocationIndexChanged(int index)
@@ -663,9 +665,11 @@ void HiddenGrotto::pokemonGoToGenerator()
     ui->tabPokemonRNGSelector->setCurrentIndex(0);
     ui->textBoxPokemonGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
     ui->textBoxPokemonGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
-    ui->textBoxPokemonGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ui->textBoxPokemonGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 10, *currentProfile)));
     ResultToGenerator5::setPreferredLead(ui->comboMenuPokemonGeneratorLead, state.getLeadMask(), state.getNature());
     ui->tableViewPokemonGenerator->setTargetAdvance(state.getAdvances());
+    pokemonGenerate();
 }
 
 void HiddenGrotto::pokemonGenerate()

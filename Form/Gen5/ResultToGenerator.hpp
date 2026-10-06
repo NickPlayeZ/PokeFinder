@@ -2,12 +2,20 @@
 #define RESULTTOGENERATOR_HPP
 
 #include <Core/Enum/Lead.hpp>
+#include <Core/Gen5/Profile5.hpp>
 #include <Core/Parents/States/State.hpp>
+#include <Core/Util/Utilities.hpp>
 #include <Form/Controls/ComboMenu.hpp>
 #include <bit>
 
 namespace ResultToGenerator5
 {
+inline u32 getMaxAdvances(u64 seed, u32 targetAdvance, u32 padding, const Profile5 &profile)
+{
+    u32 initialAdvance = Utilities5::initialAdvances(seed, profile);
+    return (targetAdvance >= initialAdvance ? targetAdvance - initialAdvance : 0) + padding;
+}
+
 inline void setPreferredLead(ComboMenu *comboMenu, u64 leadMask, u8 nature)
 {
     if (leadMask == 0 || (leadMask & getLeadFlag(Lead::None)) != 0)

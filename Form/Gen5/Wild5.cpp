@@ -563,11 +563,13 @@ void Wild5::goToGenerator()
     ui->tabRNGSelector->setCurrentIndex(0);
     ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
     ui->textBoxGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
-    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 50));
+    ui->textBoxGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 50, *currentProfile)));
     ResultToGenerator5::setPreferredLead(ui->comboMenuGeneratorLead, state.getLeadMask(), state.getNature());
     ui->comboBoxGeneratorLuckyPower->setCheckedData(getPassPowerMenuOptions(state.getPassPower()));
     updateGeneratorPassPowerActions(ui->comboBoxGeneratorLuckyPower, (currentProfile->getVersion() & Game::BW) != Game::None);
     ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    generate();
 }
 
 void Wild5::generatorEncounterIndexChanged(int index)

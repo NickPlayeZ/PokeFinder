@@ -32,6 +32,7 @@
 #include <Core/Util/Utilities.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <Form/Gen5/ResultToGenerator.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/EventModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
@@ -214,8 +215,10 @@ void Event5::goToGenerator()
     transferSettings(1);
     ui->tabRNGSelector->setCurrentIndex(0);
     ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
-    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ui->textBoxGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 10, *currentProfile)));
     ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    generate();
 }
 
 void Event5::generatorImportEvent()

@@ -289,11 +289,13 @@ void Static5::goToGenerator()
     ui->tabRNGSelector->setCurrentIndex(0);
     ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
     ui->textBoxGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
-    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ui->textBoxGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 10, *currentProfile)));
     ResultToGenerator5::setPreferredLead(ui->comboMenuGeneratorLead, state.getLeadMask(), state.getNature());
     int power = ui->comboBoxGeneratorLuckyPower->findData(state.getPassPower());
     if (power >= 0) ui->comboBoxGeneratorLuckyPower->setCurrentIndex(power);
     ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    generate();
 }
 
 void Static5::generatorCategoryIndexChanged(int index)

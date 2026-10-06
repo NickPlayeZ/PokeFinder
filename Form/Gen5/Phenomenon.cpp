@@ -455,9 +455,11 @@ void Phenomenon::configureGenerator(const Profile5 &profile, Encounter encounter
                        { exploringPower == 0 ? PassPower5::None : exploringPower << PassPower5::ExploringShift });
     if (!targetAdvances.empty())
     {
-        ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(targetAdvances.back()) + 50));
+        ui->textBoxGeneratorMaxAdvances->setText(
+            QString::number(ResultToGenerator5::getMaxAdvances(seed, targetAdvances.back(), 50, profile)));
     }
     ui->tableViewGenerator->setTargetAdvances(targetAdvances);
+    generate();
 }
 
 void Phenomenon::updateProfiles()
@@ -639,10 +641,12 @@ void Phenomenon::goToGenerator()
     ui->tabRNGSelector->setCurrentIndex(0);
     ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
     ui->textBoxGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
-    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 50));
+    ui->textBoxGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 50, *currentProfile)));
     ResultToGenerator5::setPreferredLead(ui->comboMenuGeneratorLead, state.getLeadMask(), state.getNature());
     setGeneratorPowers(ui->comboBoxGeneratorLuckyPower, { state.getPassPower() });
     ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    generate();
 }
 
 void Phenomenon::generatorEncounterIndexChanged(int index)
