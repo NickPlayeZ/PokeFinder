@@ -33,6 +33,7 @@ class Profile5;
 class SHA1Cache;
 class SortFilterProxyModel;
 class QGroupBox;
+class QLabel;
 class QPushButton;
 class WildState5;
 class WildGeneratorModel5;
