@@ -190,6 +190,9 @@ add_library(PokeFinderCore STATIC
     Gen5/PGF.hpp
     Gen5/PhenomenonArea.cpp
     Gen5/PhenomenonArea.hpp
+      Gen5/PhenomenonMap.cpp
+      Gen5/PhenomenonMap.hpp
+      Gen5/PhenomenonMapData.hpp
     Gen5/Profile5.cpp
     Gen5/Profile5.hpp
     Gen5/Searchers/DreamRadarSearcher.hpp

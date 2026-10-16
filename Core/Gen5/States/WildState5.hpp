@@ -101,6 +101,62 @@ public:
         return phenomenonItem;
     }
 
+    bool hasPhenomenonPosition() const
+    {
+        return phenomenonX >= 0 && phenomenonZ >= 0;
+    }
+
+    bool hasPhenomenonPositionPrediction() const
+    {
+        return phenomenonRegion >= 0;
+    }
+
+    s8 getPhenomenonRegion() const
+    {
+        return phenomenonRegion;
+    }
+
+    s8 getPhenomenonX() const
+    {
+        return phenomenonX;
+    }
+
+    s8 getPhenomenonZ() const
+    {
+        return phenomenonZ;
+    }
+
+    s8 getPhenomenonRelativeX() const
+    {
+        return phenomenonRelativeX;
+    }
+
+    s8 getPhenomenonRelativeZ() const
+    {
+        return phenomenonRelativeZ;
+    }
+
+    bool isPhenomenonPositionBlocked() const
+    {
+        return phenomenonPositionBlocked;
+    }
+
+    bool isPhenomenonTypeMismatch() const
+    {
+        return phenomenonTypeMismatch;
+    }
+
+    void setPhenomenonPosition(s8 region, s8 x, s8 z, s8 playerX, s8 playerZ, bool blocked, bool typeMismatch)
+    {
+        phenomenonRegion = region;
+        phenomenonX = x;
+        phenomenonZ = z;
+        phenomenonRelativeX = x - playerX;
+        phenomenonRelativeZ = z - playerZ;
+        phenomenonPositionBlocked = blocked;
+        phenomenonTypeMismatch = typeMismatch;
+    }
+
     u8 getNeedle() const
     {
         return needle;
@@ -133,6 +189,13 @@ private:
     u8 needle;
     bool variableNature;
     bool leadRequired;
+    s8 phenomenonRegion = -1;
+    s8 phenomenonX = -1;
+    s8 phenomenonZ = -1;
+    s8 phenomenonRelativeX = 0;
+    s8 phenomenonRelativeZ = 0;
+    bool phenomenonPositionBlocked = false;
+    bool phenomenonTypeMismatch = false;
 };
 
 #endif // WILDSTATE5_HPP

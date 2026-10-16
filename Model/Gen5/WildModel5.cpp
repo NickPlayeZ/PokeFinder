@@ -23,230 +23,231 @@
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
 #include <Model/Util/LeadDisplay.hpp>
-#include <QCoreApplication>
 #include <QColor>
+#include <QCoreApplication>
 #include <QFont>
 #include <QStringList>
 #include <vector>
 
 namespace
 {
-constexpr int generatorStepsColumn = 3;
-constexpr int generatorPhenomenonColumn = 4;
-constexpr int searcherPassPowerColumn = 1;
-constexpr int searcherDataPassPowerColumn = -1;
-constexpr int searcherDataAdvancesColumn = 1;
-constexpr int searcherDataStepsColumn = 3;
-constexpr int searcherDataPhenomenonColumn = 4;
-constexpr int searcherDataIVAdvancesColumn = 5;
-constexpr int searcherDataFirstPayloadColumn = 6;
-constexpr int searcherHeaderAdvancesColumn = 2;
-constexpr int searcherHeaderStepsColumn = 4;
-constexpr int searcherHeaderPhenomenonColumn = 5;
-constexpr int searcherHeaderIVAdvancesColumn = 6;
-constexpr int searcherHeaderFirstPayloadColumn = 7;
-constexpr int searcherDataLastColumn = 25;
-constexpr int searcherHeaderLastColumn = 26;
+    constexpr int generatorStepsColumn = 3;
+    constexpr int generatorPhenomenonColumn = 4;
+    constexpr int searcherPassPowerColumn = 1;
+    constexpr int searcherDataPassPowerColumn = -1;
+    constexpr int searcherDataAdvancesColumn = 1;
+    constexpr int searcherDataStepsColumn = 3;
+    constexpr int searcherDataPhenomenonColumn = 4;
+    constexpr int searcherDataIVAdvancesColumn = 5;
+    constexpr int searcherDataFirstPayloadColumn = 6;
+    constexpr int searcherHeaderAdvancesColumn = 2;
+    constexpr int searcherHeaderStepsColumn = 4;
+    constexpr int searcherHeaderPhenomenonColumn = 5;
+    constexpr int searcherHeaderIVAdvancesColumn = 6;
+    constexpr int searcherHeaderFirstPayloadColumn = 7;
+    constexpr int searcherDataLastColumn = 25;
+    constexpr int searcherHeaderLastColumn = 26;
 
-QString getLeadName(Lead lead, u8 flags)
-{
-    if (lead == Lead::None)
+    QString getLeadName(Lead lead, u8 flags)
     {
-        return QCoreApplication::translate("WildSearcherModel5", "None");
+        if (lead == Lead::None)
+        {
+            return QCoreApplication::translate("WildSearcherModel5", "None");
+        }
+
+        if (flags != 0)
+        {
+            QStringList leads;
+            if ((flags & (1 << 0)) != 0)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Synchronize"));
+            }
+
+            bool cuteCharmM = (flags & (1 << 1)) != 0;
+            bool cuteCharmF = (flags & (1 << 2)) != 0;
+            if (cuteCharmM && cuteCharmF)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ or ♀ Lead"));
+            }
+            else if (cuteCharmM)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ Lead"));
+            }
+            else if (cuteCharmF)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♀ Lead"));
+            }
+
+            if ((flags & (1 << 3)) != 0)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Magnet Pull"));
+            }
+            if ((flags & (1 << 4)) != 0)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Static"));
+            }
+            if ((flags & (1 << 5)) != 0)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Level Modifier"));
+            }
+            if ((flags & (1 << 6)) != 0)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Compound Eyes"));
+            }
+            if ((flags & (1 << 7)) != 0)
+            {
+                leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Encounter Modifier"));
+            }
+
+            return leads.join(" / ");
+        }
+
+        if (lead <= Lead::SynchronizeEnd)
+        {
+            return QCoreApplication::translate("WildSearcherModel5", "Synchronize");
+        }
+
+        switch (lead)
+        {
+        case Lead::CompoundEyes:
+            return QCoreApplication::translate("WildSearcherModel5", "Compound Eyes");
+        case Lead::CuteCharmM:
+            return QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ Lead");
+        case Lead::CuteCharmF:
+            return QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♀ Lead");
+        case Lead::MagnetPull:
+            return QCoreApplication::translate("WildSearcherModel5", "Magnet Pull");
+        case Lead::Static:
+            return QCoreApplication::translate("WildSearcherModel5", "Static");
+        case Lead::Pressure:
+            return QCoreApplication::translate("WildSearcherModel5", "Level Modifier");
+        case Lead::SuctionCups:
+            return QCoreApplication::translate("WildSearcherModel5", "Sticky Hold / Suction Cups");
+        case Lead::ArenaTrap:
+            return QCoreApplication::translate("WildSearcherModel5", "Encounter Modifier");
+        default:
+            return QString();
+        }
     }
 
-    if (flags != 0)
+    QString getLuckyPowerText(u8 power)
     {
-        QStringList leads;
-        if ((flags & (1 << 0)) != 0)
+        QStringList powers;
+
+        switch (PassPower5::getLuckyPower(power))
         {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Synchronize"));
+        case PassPower5::Lucky1:
+            powers.append(WildSearcherModel5::tr("Lucky Power ↑"));
+            break;
+        case PassPower5::Lucky2:
+            powers.append(WildSearcherModel5::tr("Lucky Power ↑↑"));
+            break;
+        case PassPower5::Lucky3:
+            powers.append(WildSearcherModel5::tr("Lucky Power ↑↑↑/S"));
+            break;
+        default:
+            break;
         }
 
-        bool cuteCharmM = (flags & (1 << 1)) != 0;
-        bool cuteCharmF = (flags & (1 << 2)) != 0;
-        if (cuteCharmM && cuteCharmF)
+        switch (PassPower5::getEncounterPower(power))
         {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ or ♀ Lead"));
-        }
-        else if (cuteCharmM)
-        {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ Lead"));
-        }
-        else if (cuteCharmF)
-        {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♀ Lead"));
-        }
-
-        if ((flags & (1 << 3)) != 0)
-        {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Magnet Pull"));
-        }
-        if ((flags & (1 << 4)) != 0)
-        {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Static"));
-        }
-        if ((flags & (1 << 5)) != 0)
-        {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Level Modifier"));
-        }
-        if ((flags & (1 << 6)) != 0)
-        {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Compound Eyes"));
-        }
-        if ((flags & (1 << 7)) != 0)
-        {
-            leads.emplace_back(QCoreApplication::translate("WildSearcherModel5", "Encounter Modifier"));
+        case 1:
+            powers.append(WildSearcherModel5::tr("Encounter Power ↑"));
+            break;
+        case 2:
+            powers.append(WildSearcherModel5::tr("Encounter Power ↑↑"));
+            break;
+        case 3:
+            powers.append(WildSearcherModel5::tr("Encounter Power ↑↑↑"));
+            break;
+        default:
+            break;
         }
 
-        return leads.join(" / ");
+        if (powers.empty())
+        {
+            return WildSearcherModel5::tr("None");
+        }
+
+        return powers.join(QStringLiteral(" & "));
     }
 
-    if (lead <= Lead::SynchronizeEnd)
+    int mapGeneratorColumn(int column, bool showMovingTrigger, bool showPhenomenon)
     {
-        return QCoreApplication::translate("WildSearcherModel5", "Synchronize");
+        if (!showMovingTrigger && column >= generatorStepsColumn)
+        {
+            column++;
+        }
+
+        if (!showPhenomenon && column >= generatorPhenomenonColumn)
+        {
+            column += 2;
+        }
+
+        return column;
     }
 
-    switch (lead)
+    std::vector<int> getSearcherColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
     {
-    case Lead::CompoundEyes:
-        return QCoreApplication::translate("WildSearcherModel5", "Compound Eyes");
-    case Lead::CuteCharmM:
-        return QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♂ Lead");
-    case Lead::CuteCharmF:
-        return QCoreApplication::translate("WildSearcherModel5", "Cute Charm: ♀ Lead");
-    case Lead::MagnetPull:
-        return QCoreApplication::translate("WildSearcherModel5", "Magnet Pull");
-    case Lead::Static:
-        return QCoreApplication::translate("WildSearcherModel5", "Static");
-    case Lead::Pressure:
-        return QCoreApplication::translate("WildSearcherModel5", "Level Modifier");
-    case Lead::SuctionCups:
-        return QCoreApplication::translate("WildSearcherModel5", "Sticky Hold / Suction Cups");
-    case Lead::ArenaTrap:
-        return QCoreApplication::translate("WildSearcherModel5", "Encounter Modifier");
-    default:
-        return QString();
+        std::vector<int> columns { 0 };
+        if (showPassPower)
+        {
+            columns.emplace_back(searcherDataPassPowerColumn);
+        }
+        columns.emplace_back(searcherDataAdvancesColumn);
+        columns.emplace_back(searcherDataIVAdvancesColumn);
+        if (showMovingTrigger)
+        {
+            columns.emplace_back(searcherDataStepsColumn);
+        }
+        if (showPhenomenon)
+        {
+            columns.emplace_back(searcherDataPhenomenonColumn);
+        }
+
+        for (int column = searcherDataFirstPayloadColumn; column <= searcherDataLastColumn; column++)
+        {
+            columns.emplace_back(column);
+        }
+
+        return columns;
+    }
+
+    std::vector<int> getSearcherHeaderColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
+    {
+        std::vector<int> columns { 0 };
+        if (showPassPower)
+        {
+            columns.emplace_back(searcherPassPowerColumn);
+        }
+        columns.emplace_back(searcherHeaderAdvancesColumn);
+        columns.emplace_back(searcherHeaderIVAdvancesColumn);
+        if (showMovingTrigger)
+        {
+            columns.emplace_back(searcherHeaderStepsColumn);
+        }
+        if (showPhenomenon)
+        {
+            columns.emplace_back(searcherHeaderPhenomenonColumn);
+        }
+
+        for (int column = searcherHeaderFirstPayloadColumn; column <= searcherHeaderLastColumn; column++)
+        {
+            columns.emplace_back(column);
+        }
+
+        return columns;
     }
 }
 
-QString getLuckyPowerText(u8 power)
-{
-    QStringList powers;
-
-    switch (PassPower5::getLuckyPower(power))
-    {
-    case PassPower5::Lucky1:
-        powers.append(WildSearcherModel5::tr("Lucky Power ↑"));
-        break;
-    case PassPower5::Lucky2:
-        powers.append(WildSearcherModel5::tr("Lucky Power ↑↑"));
-        break;
-    case PassPower5::Lucky3:
-        powers.append(WildSearcherModel5::tr("Lucky Power ↑↑↑/S"));
-        break;
-    default:
-        break;
-    }
-
-    switch (PassPower5::getEncounterPower(power))
-    {
-    case 1:
-        powers.append(WildSearcherModel5::tr("Encounter Power ↑"));
-        break;
-    case 2:
-        powers.append(WildSearcherModel5::tr("Encounter Power ↑↑"));
-        break;
-    case 3:
-        powers.append(WildSearcherModel5::tr("Encounter Power ↑↑↑"));
-        break;
-    default:
-        break;
-    }
-
-    if (powers.empty())
-    {
-        return WildSearcherModel5::tr("None");
-    }
-
-    return powers.join(QStringLiteral(" & "));
-}
-
-int mapGeneratorColumn(int column, bool showMovingTrigger, bool showPhenomenon)
-{
-    if (!showMovingTrigger && column >= generatorStepsColumn)
-    {
-        column++;
-    }
-
-    if (!showPhenomenon && column >= generatorPhenomenonColumn)
-    {
-        column++;
-    }
-
-    return column;
-}
-
-std::vector<int> getSearcherColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
-{
-    std::vector<int> columns { 0 };
-    if (showPassPower)
-    {
-        columns.emplace_back(searcherDataPassPowerColumn);
-    }
-    columns.emplace_back(searcherDataAdvancesColumn);
-    columns.emplace_back(searcherDataIVAdvancesColumn);
-    if (showMovingTrigger)
-    {
-        columns.emplace_back(searcherDataStepsColumn);
-    }
-    if (showPhenomenon)
-    {
-        columns.emplace_back(searcherDataPhenomenonColumn);
-    }
-
-    for (int column = searcherDataFirstPayloadColumn; column <= searcherDataLastColumn; column++)
-    {
-        columns.emplace_back(column);
-    }
-
-    return columns;
-}
-
-std::vector<int> getSearcherHeaderColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
-{
-    std::vector<int> columns { 0 };
-    if (showPassPower)
-    {
-        columns.emplace_back(searcherPassPowerColumn);
-    }
-    columns.emplace_back(searcherHeaderAdvancesColumn);
-    columns.emplace_back(searcherHeaderIVAdvancesColumn);
-    if (showMovingTrigger)
-    {
-        columns.emplace_back(searcherHeaderStepsColumn);
-    }
-    if (showPhenomenon)
-    {
-        columns.emplace_back(searcherHeaderPhenomenonColumn);
-    }
-
-    for (int column = searcherHeaderFirstPayloadColumn; column <= searcherHeaderLastColumn; column++)
-    {
-        columns.emplace_back(column);
-    }
-
-    return columns;
-}
-}
-
-WildGeneratorModel5::WildGeneratorModel5(QObject *parent) : TableModel(parent), showStats(false), showMovingTrigger(false), showPhenomenon(false)
+WildGeneratorModel5::WildGeneratorModel5(QObject *parent) :
+    TableModel(parent), showStats(false), showMovingTrigger(false), showPhenomenon(false)
 {
 }
 
 int WildGeneratorModel5::columnCount(const QModelIndex &parent) const
 {
-    return header.size() - (showMovingTrigger ? 0 : 1) - (showPhenomenon ? 0 : 1);
+    return header.size() - (showMovingTrigger ? 0 : 1) - (showPhenomenon ? 0 : 2);
 }
 
 QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
@@ -291,10 +292,24 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             }
             return state.getMovingSteps();
         case 4:
-            return state.getPhenomenon() ? tr("Yes") : tr("No");
+            if (!state.getPhenomenon())
+            {
+                return tr("No");
+            }
+            if (state.hasPhenomenonPositionPrediction() && !state.hasPhenomenonPosition())
+            {
+                return tr("No !");
+            }
+            return state.isPhenomenonPositionBlocked() || state.isPhenomenonTypeMismatch() ? tr("Yes !") : tr("Yes");
         case 5:
-            return QString::fromStdString(Translator::getItem(state.getItem()));
+            if (!state.hasPhenomenonPosition())
+            {
+                return "-";
+            }
+            return QString("%1%2").arg(QChar('A' + state.getPhenomenonRelativeX() + 5)).arg(state.getPhenomenonRelativeZ() + 5);
         case 6:
+            return QString::fromStdString(Translator::getItem(state.getItem()));
+        case 7:
             if (item)
             {
                 return "-";
@@ -302,19 +317,19 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             return QString("%1: %2")
                 .arg(state.getEncounterSlot() == 12 ? tr("S") : QString::number(state.getEncounterSlot()))
                 .arg(QString::fromStdString(Translator::getSpecie(state.getSpecie(), state.getForm())));
-        case 7:
-            if (item)
-            {
-                return "-";
-            }
-            return state.getLevel();
         case 8:
             if (item)
             {
                 return "-";
             }
-            return QString::number(state.getPID(), 16).toUpper().rightJustified(8, '0');
+            return state.getLevel();
         case 9:
+            if (item)
+            {
+                return "-";
+            }
+            return QString::number(state.getPID(), 16).toUpper().rightJustified(8, '0');
+        case 10:
         {
             if (item)
             {
@@ -323,13 +338,13 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             u8 shiny = state.getShiny();
             return shiny == 2 ? tr("Square") : shiny == 1 ? tr("Star") : tr("No");
         }
-        case 10:
+        case 11:
             if (item)
             {
                 return "-";
             }
             return QString::fromStdString(Translator::getNature(state.getNature()));
-        case 11:
+        case 12:
             if (item)
             {
                 return "-";
@@ -344,36 +359,36 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             {
                 return QString("H (%2)").arg(QString::fromStdString(Translator::getAbility(state.getAbilityIndex())));
             }
-        case 12:
         case 13:
         case 14:
         case 15:
         case 16:
         case 17:
-            if (item)
-            {
-                return "-";
-            }
-            return showStats ? state.getStat(column - 12) : state.getIV(column - 12);
         case 18:
             if (item)
             {
                 return "-";
             }
-            return QString::fromStdString(Translator::getHiddenPower(state.getHiddenPower()));
+            return showStats ? state.getStat(column - 13) : state.getIV(column - 13);
         case 19:
             if (item)
             {
                 return "-";
             }
-            return state.getHiddenPowerStrength();
+            return QString::fromStdString(Translator::getHiddenPower(state.getHiddenPower()));
         case 20:
             if (item)
             {
                 return "-";
             }
-            return QString::fromStdString(Translator::getGender(state.getGender()));
+            return state.getHiddenPowerStrength();
         case 21:
+            if (item)
+            {
+                return "-";
+            }
+            return QString::fromStdString(Translator::getGender(state.getGender()));
+        case 22:
             if (item)
             {
                 return "-";

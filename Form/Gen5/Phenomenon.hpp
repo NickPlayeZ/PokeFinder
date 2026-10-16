@@ -21,15 +21,19 @@
 #define PHENOMENON_HPP
 
 #include <Core/Global.hpp>
+#include <Core/Gen5/PhenomenonMap.hpp>
 #include <QWidget>
+#include <array>
+#include <vector>
 
 class EncounterArea5;
 class CheckList;
 class IVCache;
-class QLabel;
 class Profile5;
 class SHA1Cache;
 class SortFilterProxyModel;
+class QGroupBox;
+class QPushButton;
 class WildState5;
 class WildGeneratorModel5;
 class WildSearcherModel5;
@@ -99,6 +103,19 @@ private:
     std::vector<Profile5> profiles;
     WildGeneratorModel5 *generatorModel;
     WildSearcherModel5 *searcherModel;
+    std::array<QPushButton *, 121> phenomenonTiles {};
+    std::vector<PhenomenonChunk> phenomenonChunks;
+    QGroupBox *phenomenonPositionGroup = nullptr;
+    QPushButton *choosePhenomenonPosition = nullptr;
+    int phenomenonChunk = 0;
+    int phenomenonPlayerX = 16;
+    int phenomenonPlayerZ = 16;
+    bool phenomenonGeneratorHasRun = false;
+    int generatedPhenomenonChunk = -1;
+    int markedPhenomenonChunk = -1;
+    int markedPhenomenonX = -1;
+    int markedPhenomenonZ = -1;
+    bool markedPhenomenonBlocked = false;
 
     /**
      * @brief Determines if the IV seed cache can be used for fast IV search
@@ -135,6 +152,11 @@ private:
      * @param area Area to use for item availability
      */
     void updateItemFilter(QWidget *itemLabel, CheckList *itemFilter, EncounterArea5 &area);
+    void setupPhenomenonField();
+    void clearPhenomenonMarking();
+    void updatePhenomenonField();
+    void updatePhenomenonMap();
+    bool isPhenomenonPlayerPositionValid(int chunk, int x, int z) const;
 
 private slots:
     /**
@@ -142,6 +164,9 @@ private slots:
      */
     void generate();
     void goToGenerator();
+    void choosePhenomenonMapPosition();
+    void markPhenomenon();
+    void resetPhenomenonPosition();
 
     /**
      * @brief Updates the locations listed. Also toggles what controls are displayed based on relevance to the current settings.

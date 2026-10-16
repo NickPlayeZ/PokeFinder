@@ -28,6 +28,7 @@
 #include <Core/Gen5/Generators/WildGenerator5.hpp>
 #include <Core/Gen5/IVCache.hpp>
 #include <Core/Gen5/PhenomenonArea.hpp>
+#include <Core/Gen5/PhenomenonMap.hpp>
 #include <Core/Gen5/Profile5.hpp>
 #include <Core/Gen5/SHA1Cache.hpp>
 #include <Core/Gen5/Searchers/IVSearcher5.hpp>
@@ -39,21 +40,33 @@
 #include <Form/Controls/ComboMenu.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
-#include <Form/Gen5/Tools/AdjacentSeeds.hpp>
 #include <Form/Gen5/ResultToGenerator.hpp>
+#include <Form/Gen5/Tools/AdjacentSeeds.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/WildModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
 #include <QAction>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QGridLayout>
+#include <QGroupBox>
+#include <QGuiApplication>
+#include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
+#include <QMenu>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPixmap>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QSettings>
 #include <QSignalBlocker>
 #include <QSizePolicy>
+#include <QStyleHints>
 #include <QTimer>
+#include <QVBoxLayout>
 #include <algorithm>
 #include <utility>
 
@@ -64,6 +77,41 @@ namespace
     bool supportsEncounterModifier(Encounter encounter)
     {
         return encounter == Encounter::DustCloud || encounter == Encounter::FlyingShadow;
+    }
+
+    PhenomenonTileType getPhenomenonEncounterType(Encounter encounter)
+    {
+        switch (encounter)
+        {
+        case Encounter::GrassRustling:
+            return PhenomenonTileType::Grass;
+        case Encounter::DustCloud:
+            return PhenomenonTileType::Cave;
+        case Encounter::SurfingRippling:
+        case Encounter::SuperRodRippling:
+            return PhenomenonTileType::Water;
+        case Encounter::FlyingShadow:
+            return PhenomenonTileType::Bridge;
+        default:
+            return PhenomenonTileType::None;
+        }
+    }
+
+    QString getPhenomenonTileColor(PhenomenonTileType type, bool strong)
+    {
+        switch (type)
+        {
+        case PhenomenonTileType::Grass:
+            return strong ? QStringLiteral("#1f5f2f") : QStringLiteral("#7fbd73");
+        case PhenomenonTileType::Cave:
+            return strong ? QStringLiteral("#4f4b3d") : QStringLiteral("#afa981");
+        case PhenomenonTileType::Water:
+            return strong ? QStringLiteral("#0022ab") : QStringLiteral("#2980ef");
+        case PhenomenonTileType::Bridge:
+            return strong ? QStringLiteral("#215bab") : QStringLiteral("#81b9ef");
+        default:
+            return QString();
+        }
     }
 
     std::vector<u8> getCheckedUChars(const ComboMenu *comboMenu)
@@ -110,8 +158,7 @@ namespace
 
     bool isExploringPower(int power)
     {
-        return power >= PassPower5::Exploring1 && power <= PassPower5::Exploring3
-            && PassPower5::getLuckyPower(power) == PassPower5::None;
+        return power >= PassPower5::Exploring1 && power <= PassPower5::Exploring3 && PassPower5::getLuckyPower(power) == PassPower5::None;
     }
 
     std::vector<int> normalizeGeneratorPowers(const std::vector<int> &powers, const std::vector<int> &previous)
@@ -208,7 +255,7 @@ namespace
 
     WildStateFilter getUnfilteredWildStateFilter()
     {
-        std::array<u8, 6> ivMin {};
+        std::array<u8, 6> ivMin { };
         std::array<u8, 6> ivMax;
         ivMax.fill(31);
 
@@ -237,6 +284,7 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
 
     ui->tableViewGenerator->setModel(generatorModel);
     ui->tableViewSearcher->setModel(proxyModel);
+    setupPhenomenonField();
 
     ui->textBoxGeneratorSeed->setValues(InputType::Seed64Bit);
     ui->textBoxGeneratorIVAdvances->setValues(InputType::Advance32Bit);
@@ -365,6 +413,8 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     connect(goToGenerator, &QAction::triggered, this, &Phenomenon::goToGenerator);
     auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
     connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
+    auto *markPhenomenon = ui->tableViewGenerator->addAction(tr("Mark Phenomenon"));
+    connect(markPhenomenon, &QAction::triggered, this, &Phenomenon::markPhenomenon);
 
     connect(ui->comboBoxProfiles, &QComboBox::currentIndexChanged, this, &Phenomenon::profileIndexChanged);
     connect(ui->tabRNGSelector, &TabWidget::transferFilters, this, &Phenomenon::transferFilters);
@@ -392,7 +442,6 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     connect(ui->filterSearcher, &Filter::ivsChanged, this, &Phenomenon::searcherFastSearchChanged);
     connect(ui->textBoxSearcherInitialIVAdvances, &TextBox::textChanged, this, &Phenomenon::searcherFastSearchChanged);
     connect(ui->textBoxSearcherMaxIVAdvances, &TextBox::textChanged, this, &Phenomenon::searcherFastSearchChanged);
-
     updateProfiles();
     if (hasProfiles())
     {
@@ -560,7 +609,7 @@ void Phenomenon::updateItemFilter(QWidget *itemLabel, CheckList *itemFilter, Enc
     {
         itemEntries.emplace_back(QString::fromStdString(names[i]), items[i]);
     }
-    std::ranges::sort(itemEntries, {}, &std::pair<QString, u16>::first);
+    std::ranges::sort(itemEntries, { }, &std::pair<QString, u16>::first);
 
     itemFilter->addItem(tr("None"), noItem);
     for (const auto &[name, item] : itemEntries)
@@ -573,6 +622,441 @@ void Phenomenon::updateItemFilter(QWidget *itemLabel, CheckList *itemFilter, Enc
     itemFilter->setVisible(true);
 }
 
+void Phenomenon::setupPhenomenonField()
+{
+    auto *tabLayout = qobject_cast<QGridLayout *>(ui->tabGenerator->layout());
+    phenomenonPositionGroup = new QGroupBox(tr("Phenomenon Tiles"), ui->tabGenerator);
+    auto *outerLayout = new QVBoxLayout(phenomenonPositionGroup);
+    auto *tileWidget = new QWidget(phenomenonPositionGroup);
+    auto *layout = new QGridLayout(tileWidget);
+    layout->setContentsMargins(4, 4, 4, 4);
+    layout->setHorizontalSpacing(1);
+    layout->setVerticalSpacing(1);
+
+    for (int x = 0; x < 11; x++)
+    {
+        auto *label = new QLabel(QString(QChar('A' + x)), tileWidget);
+        label->setFixedWidth(18);
+        label->setAlignment(Qt::AlignCenter);
+        layout->addWidget(label, 0, x + 1);
+    }
+    for (int z = 0; z < 11; z++)
+    {
+        auto *label = new QLabel(QString::number(z), tileWidget);
+        label->setFixedWidth(20);
+        label->setAlignment(Qt::AlignCenter);
+        layout->addWidget(label, z + 1, 0);
+        for (int x = 0; x < 11; x++)
+        {
+            auto *tile = new QPushButton(tileWidget);
+            tile->setFixedSize(18, 18);
+            tile->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(tile, &QPushButton::customContextMenuRequested, this, [this, tile, x, z](const QPoint &position) {
+                if (phenomenonChunks.empty())
+                {
+                    return;
+                }
+
+                int chunkX = phenomenonPlayerX + x - 5;
+                int chunkZ = phenomenonPlayerZ + z - 5;
+                if (chunkX < 0 || chunkX >= 32 || chunkZ < 0 || chunkZ >= 32)
+                {
+                    return;
+                }
+                if (!isPhenomenonPlayerPositionValid(phenomenonChunk, chunkX, chunkZ))
+                {
+                    return;
+                }
+
+                QMenu menu(tile);
+                QString coordinate = QString("%1%2").arg(QChar('A' + x)).arg(z);
+                QAction *action = menu.addAction(tr("Mark %1 as new Position").arg(coordinate));
+                if (menu.exec(tile->mapToGlobal(position)) == action)
+                {
+                    phenomenonPlayerX = chunkX;
+                    phenomenonPlayerZ = chunkZ;
+                    clearPhenomenonMarking();
+                    if (phenomenonGeneratorHasRun)
+                    {
+                        generate();
+                    }
+                }
+            });
+            layout->addWidget(tile, z + 1, x + 1);
+            phenomenonTiles[z * 11 + x] = tile;
+        }
+    }
+    tileWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    outerLayout->addWidget(tileWidget, 0, Qt::AlignHCenter | Qt::AlignTop);
+
+    choosePhenomenonPosition = new QPushButton(tr("Choose Position"), phenomenonPositionGroup);
+    auto *removeMarking = new QPushButton(tr("Remove marking"), phenomenonPositionGroup);
+    auto *reset = new QPushButton(tr("Reset"), phenomenonPositionGroup);
+    choosePhenomenonPosition->setEnabled(false);
+    auto *buttonLayout = new QHBoxLayout;
+    buttonLayout->addWidget(choosePhenomenonPosition);
+    buttonLayout->addWidget(removeMarking);
+    outerLayout->addLayout(buttonLayout);
+    outerLayout->addWidget(reset);
+    outerLayout->addStretch(1);
+    connect(choosePhenomenonPosition, &QPushButton::clicked, this, &Phenomenon::choosePhenomenonMapPosition);
+    connect(removeMarking, &QPushButton::clicked, this, &Phenomenon::clearPhenomenonMarking);
+    connect(reset, &QPushButton::clicked, this, &Phenomenon::resetPhenomenonPosition);
+
+    tabLayout->removeWidget(ui->groupBoxGeneratorFilters);
+    tabLayout->removeWidget(ui->tableViewGenerator);
+    tabLayout->addWidget(phenomenonPositionGroup, 0, 2);
+    tabLayout->addWidget(ui->groupBoxGeneratorFilters, 0, 3);
+    tabLayout->addWidget(ui->tableViewGenerator, 1, 0, 1, 4);
+    ui->groupBoxGeneratorRNGInfo->setMaximumWidth(260);
+    tabLayout->setColumnStretch(0, 0);
+    tabLayout->setColumnStretch(1, 1);
+    tabLayout->setColumnStretch(2, 0);
+    tabLayout->setColumnStretch(3, 1);
+    phenomenonPositionGroup->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    updatePhenomenonField();
+}
+
+void Phenomenon::updatePhenomenonMap()
+{
+    Encounter encounter = ui->comboBoxGeneratorEncounter->getEnum<Encounter>();
+    u16 location = ui->comboBoxGeneratorLocation->getCurrentUShort();
+    phenomenonChunks = currentProfile != nullptr ? getPhenomenonChunks(location, currentProfile->getVersion(), encounter)
+                                                 : std::vector<PhenomenonChunk> { };
+    phenomenonChunk = 0;
+    generatedPhenomenonChunk = -1;
+    clearPhenomenonMarking();
+    if (!phenomenonChunks.empty())
+    {
+        auto iterator
+            = std::find_if(phenomenonChunks.begin(), phenomenonChunks.end(), [](const auto &chunk) { return chunk.defaultChunk; });
+        phenomenonChunk = iterator == phenomenonChunks.end() ? 0 : static_cast<int>(std::distance(phenomenonChunks.begin(), iterator));
+        phenomenonPlayerX = phenomenonChunks[phenomenonChunk].startX;
+        phenomenonPlayerZ = phenomenonChunks[phenomenonChunk].startZ;
+    }
+    choosePhenomenonPosition->setEnabled(!phenomenonChunks.empty());
+    updatePhenomenonField();
+}
+
+bool Phenomenon::isPhenomenonPlayerPositionValid(int chunk, int x, int z) const
+{
+    if (chunk < 0 || chunk >= static_cast<int>(phenomenonChunks.size()) || x < 0 || x >= 32 || z < 0 || z >= 32)
+    {
+        return false;
+    }
+
+    const PhenomenonChunk &map = phenomenonChunks[chunk];
+    int index = z * 32 + x;
+    if (map.npcTiles[index] && !map.movingNpcTiles[index])
+    {
+        return false;
+    }
+
+    return map.tiles[index] || map.playerTiles[index] || map.movingNpcTiles[index];
+}
+
+void Phenomenon::clearPhenomenonMarking()
+{
+    markedPhenomenonChunk = -1;
+    markedPhenomenonX = -1;
+    markedPhenomenonZ = -1;
+    markedPhenomenonBlocked = false;
+    updatePhenomenonField();
+}
+
+void Phenomenon::updatePhenomenonField()
+{
+    if (phenomenonChunks.empty())
+    {
+        Qt::ColorScheme colorScheme = QGuiApplication::styleHints()->colorScheme();
+        bool lightMode = colorScheme == Qt::ColorScheme::Light
+            || (colorScheme == Qt::ColorScheme::Unknown && palette().color(QPalette::Window).lightness() >= 128);
+        QString emptyColor = lightMode ? QStringLiteral("#a6a6a6") : QStringLiteral("#303030");
+        for (QPushButton *tile : phenomenonTiles)
+        {
+            tile->setEnabled(false);
+            tile->setText(QString());
+            tile->setStyleSheet(QStringLiteral("QPushButton { background-color: %1; border: 1px solid black; }").arg(emptyColor));
+        }
+        return;
+    }
+
+    Qt::ColorScheme colorScheme = QGuiApplication::styleHints()->colorScheme();
+    bool lightMode = colorScheme == Qt::ColorScheme::Light
+        || (colorScheme == Qt::ColorScheme::Unknown && palette().color(QPalette::Window).lightness() >= 128);
+    QString walkableColor = lightMode ? QStringLiteral("#f5f5f5") : QStringLiteral("#5a5a5a");
+    QString invalidColor = lightMode ? QStringLiteral("#a6a6a6") : QStringLiteral("#303030");
+    PhenomenonTileType selectedType = getPhenomenonEncounterType(ui->comboBoxGeneratorEncounter->getEnum<Encounter>());
+
+    for (QPushButton *tile : phenomenonTiles)
+    {
+        tile->setEnabled(true);
+    }
+
+    for (int z = 0; z < 11; z++)
+    {
+        for (int x = 0; x < 11; x++)
+        {
+            int chunkX = phenomenonPlayerX + x - 5;
+            int chunkZ = phenomenonPlayerZ + z - 5;
+            bool inChunk = chunkX >= 0 && chunkX < 32 && chunkZ >= 0 && chunkZ < 32;
+            bool valid = inChunk && phenomenonChunks[phenomenonChunk].tiles[chunkZ * 32 + chunkX];
+            int index = chunkZ * 32 + chunkX;
+            QString color = valid ? getPhenomenonTileColor(phenomenonChunks[phenomenonChunk].tileTypes[index], false)
+                                  : (inChunk && phenomenonChunks[phenomenonChunk].playerTiles[index] ? walkableColor : invalidColor);
+            if (inChunk && phenomenonChunks[phenomenonChunk].npcTiles[chunkZ * 32 + chunkX])
+            {
+                color = phenomenonChunks[phenomenonChunk].movingNpcTiles[index] ? QStringLiteral("#d9c63f") : QStringLiteral("#d98b3f");
+            }
+            if (chunkX == phenomenonPlayerX && chunkZ == phenomenonPlayerZ)
+            {
+                color = QStringLiteral("#c04040");
+            }
+            if (phenomenonChunk == markedPhenomenonChunk && chunkX == markedPhenomenonX && chunkZ == markedPhenomenonZ)
+            {
+                if (!markedPhenomenonBlocked)
+                {
+                    color = getPhenomenonTileColor(phenomenonChunks[phenomenonChunk].tileTypes[index], true);
+                }
+            }
+            bool player = inChunk && chunkX == phenomenonPlayerX && chunkZ == phenomenonPlayerZ;
+            bool actor = inChunk && (phenomenonChunks[phenomenonChunk].npcTiles[index] || player);
+            bool marked = phenomenonChunk == markedPhenomenonChunk && chunkX == markedPhenomenonX && chunkZ == markedPhenomenonZ;
+            bool matchingBlockedTile
+                = valid && actor && phenomenonChunks[phenomenonChunk].tileTypes[index] == selectedType;
+            bool playerBlockedTile = matchingBlockedTile && player;
+            bool showPhenomenon = !matchingBlockedTile && marked;
+            phenomenonTiles[z * 11 + x]->setText(matchingBlockedTile ? QStringLiteral("B")
+                                                                      : (showPhenomenon ? QStringLiteral("P") : QString()));
+            phenomenonTiles[z * 11 + x]->setStyleSheet(
+                QStringLiteral("QPushButton { background-color: %1; border: 1px solid black;%2 }")
+                    .arg(color, lightMode && (showPhenomenon || playerBlockedTile) ? QStringLiteral(" color: white;") : QString()));
+        }
+    }
+}
+
+void Phenomenon::markPhenomenon()
+{
+    QModelIndex index = ui->tableViewGenerator->currentIndex();
+    if (!index.isValid())
+    {
+        return;
+    }
+
+    const WildState5 &state = generatorModel->getItem(index.row());
+    if (!state.hasPhenomenonPosition())
+    {
+        return;
+    }
+
+    if (generatedPhenomenonChunk < 0)
+    {
+        return;
+    }
+
+    markedPhenomenonChunk = generatedPhenomenonChunk;
+    markedPhenomenonX = state.getPhenomenonX();
+    markedPhenomenonZ = state.getPhenomenonZ();
+    markedPhenomenonBlocked = state.isPhenomenonPositionBlocked();
+    updatePhenomenonField();
+}
+
+void Phenomenon::resetPhenomenonPosition()
+{
+    if (phenomenonChunks.empty())
+    {
+        return;
+    }
+
+    phenomenonPlayerX = phenomenonChunks[phenomenonChunk].startX;
+    phenomenonPlayerZ = phenomenonChunks[phenomenonChunk].startZ;
+    clearPhenomenonMarking();
+}
+
+void Phenomenon::choosePhenomenonMapPosition()
+{
+    if (phenomenonChunks.empty())
+    {
+        return;
+    }
+
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Choose Position"));
+    auto *outer = new QVBoxLayout(&dialog);
+    auto *content = new QHBoxLayout();
+    outer->addLayout(content);
+
+    auto *mapWidget = new QWidget(&dialog);
+    auto *mapLayout = new QGridLayout(mapWidget);
+    mapLayout->setContentsMargins(6, 6, 6, 6);
+    mapLayout->setHorizontalSpacing(1);
+    mapLayout->setVerticalSpacing(1);
+    std::array<QPushButton *, 1024> buttons { };
+    for (int z = 0; z < 32; z++)
+    {
+        for (int x = 0; x < 32; x++)
+        {
+            auto *button = new QPushButton(mapWidget);
+            button->setFixedSize(20, 20);
+            button->setContextMenuPolicy(Qt::CustomContextMenu);
+            buttons[z * 32 + x] = button;
+            mapLayout->addWidget(button, z, x);
+        }
+    }
+    content->addWidget(mapWidget);
+
+    int selectedChunk = phenomenonChunk;
+    int selectedX = phenomenonPlayerX;
+    int selectedZ = phenomenonPlayerZ;
+    std::vector<QPushButton *> previewButtons;
+    previewButtons.reserve(phenomenonChunks.size());
+    Qt::ColorScheme colorScheme = QGuiApplication::styleHints()->colorScheme();
+    bool lightMode = colorScheme == Qt::ColorScheme::Light
+        || (colorScheme == Qt::ColorScheme::Unknown && palette().color(QPalette::Window).lightness() >= 128);
+    QString walkableColor = lightMode ? QStringLiteral("#f5f5f5") : QStringLiteral("#5a5a5a");
+    QString invalidColor = lightMode ? QStringLiteral("#a6a6a6") : QStringLiteral("#303030");
+    PhenomenonTileType selectedType = getPhenomenonEncounterType(ui->comboBoxGeneratorEncounter->getEnum<Encounter>());
+    auto refreshMap = [&] {
+        for (int z = 0; z < 32; z++)
+        {
+            for (int x = 0; x < 32; x++)
+            {
+                bool valid = phenomenonChunks[selectedChunk].tiles[z * 32 + x];
+                int index = z * 32 + x;
+                QString color = valid ? getPhenomenonTileColor(phenomenonChunks[selectedChunk].tileTypes[index], false)
+                                      : (phenomenonChunks[selectedChunk].playerTiles[index] ? walkableColor : invalidColor);
+                if (phenomenonChunks[selectedChunk].npcTiles[z * 32 + x])
+                {
+                    color = phenomenonChunks[selectedChunk].movingNpcTiles[index] ? QStringLiteral("#d9c63f")
+                                                                                  : QStringLiteral("#d98b3f");
+                }
+                if (x == selectedX && z == selectedZ)
+                {
+                    color = QStringLiteral("#c04040");
+                }
+                if (selectedChunk == markedPhenomenonChunk && x == markedPhenomenonX && z == markedPhenomenonZ)
+                {
+                    if (!markedPhenomenonBlocked)
+                    {
+                        color = getPhenomenonTileColor(phenomenonChunks[selectedChunk].tileTypes[index], true);
+                    }
+                }
+                bool player = x == selectedX && z == selectedZ;
+                bool actor = phenomenonChunks[selectedChunk].npcTiles[index] || player;
+                bool marked = selectedChunk == markedPhenomenonChunk && x == markedPhenomenonX && z == markedPhenomenonZ;
+                bool matchingBlockedTile = valid && actor && phenomenonChunks[selectedChunk].tileTypes[index] == selectedType;
+                bool playerBlockedTile = matchingBlockedTile && player;
+                bool showPhenomenon = !matchingBlockedTile && marked;
+                buttons[z * 32 + x]->setText(matchingBlockedTile ? QStringLiteral("B")
+                                                                  : (showPhenomenon ? QStringLiteral("P") : QString()));
+                buttons[z * 32 + x]->setStyleSheet(
+                    QStringLiteral("QPushButton { background-color: %1; border: 1px solid black;%2 }")
+                        .arg(color, lightMode && (showPhenomenon || playerBlockedTile) ? QStringLiteral(" color: white;") : QString()));
+            }
+        }
+        for (size_t i = 0; i < previewButtons.size(); i++)
+        {
+            previewButtons[i]->setStyleSheet(
+                i == static_cast<size_t>(selectedChunk) ? QStringLiteral("QPushButton { border: 3px solid #3f8fd9; }") : QString());
+        }
+    };
+    for (int z = 0; z < 32; z++)
+    {
+        for (int x = 0; x < 32; x++)
+        {
+            QPushButton *button = buttons[z * 32 + x];
+            connect(button, &QPushButton::clicked, &dialog, [&, x, z] {
+                if (isPhenomenonPlayerPositionValid(selectedChunk, x, z))
+                {
+                    selectedX = x;
+                    selectedZ = z;
+                    refreshMap();
+                }
+            });
+            connect(button, &QPushButton::customContextMenuRequested, &dialog, [&, button, x, z](const QPoint &position) {
+                if (!isPhenomenonPlayerPositionValid(selectedChunk, x, z))
+                {
+                    return;
+                }
+                QMenu menu(button);
+                QAction *action = menu.addAction(tr("Mark (%1, %2) as new Position").arg(x).arg(z));
+                if (menu.exec(button->mapToGlobal(position)) == action)
+                {
+                    selectedX = x;
+                    selectedZ = z;
+                    refreshMap();
+                }
+            });
+        }
+    }
+
+    auto *scroll = new QScrollArea(&dialog);
+    auto *previews = new QWidget(scroll);
+    auto *previewLayout = new QGridLayout(previews);
+    previewLayout->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+    constexpr int maxPreviewRows = 7;
+    int previewColumns = phenomenonChunks.size() > maxPreviewRows ? 2 : 1;
+    int previewRows = previewColumns == 2 ? static_cast<int>((phenomenonChunks.size() + 1) / 2)
+                                          : static_cast<int>(phenomenonChunks.size());
+    for (size_t i = 0; i < phenomenonChunks.size(); i++)
+    {
+        QPixmap image(64, 64);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        for (int z = 0; z < 32; z++)
+        {
+            for (int x = 0; x < 32; x++)
+            {
+                int index = z * 32 + x;
+                QColor color = phenomenonChunks[i].tiles[index]
+                    ? QColor(getPhenomenonTileColor(phenomenonChunks[i].tileTypes[index], false))
+                    : (phenomenonChunks[i].playerTiles[index] ? QColor(walkableColor) : QColor(invalidColor));
+                if (phenomenonChunks[i].npcTiles[z * 32 + x])
+                {
+                    color = phenomenonChunks[i].movingNpcTiles[index] ? QColor("#d9c63f") : QColor("#d98b3f");
+                }
+                painter.fillRect(x * 2, z * 2, 2, 2, color);
+            }
+        }
+        auto *button = new QPushButton(previews);
+        button->setIcon(QIcon(image));
+        button->setIconSize(QSize(64, 64));
+        button->setFixedSize(80, 80);
+        int previewRow = static_cast<int>(i) % previewRows;
+        int previewColumn = static_cast<int>(i) / previewRows;
+        previewLayout->addWidget(button, previewRow, previewColumn, Qt::AlignHCenter);
+        previewButtons.emplace_back(button);
+        connect(button, &QPushButton::clicked, &dialog, [&, i] {
+            selectedChunk = static_cast<int>(i);
+            selectedX = phenomenonChunks[i].startX;
+            selectedZ = phenomenonChunks[i].startZ;
+            refreshMap();
+        });
+    }
+    scroll->setWidget(previews);
+    scroll->setWidgetResizable(true);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scroll->setMinimumWidth(previewColumns == 2 ? 195 : 105);
+    content->addWidget(scroll);
+
+    refreshMap();
+    auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
+    outer->addWidget(buttonBox);
+    connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        phenomenonChunk = selectedChunk;
+        phenomenonPlayerX = selectedX;
+        phenomenonPlayerZ = selectedZ;
+        clearPhenomenonMarking();
+        if (phenomenonGeneratorHasRun)
+        {
+            generate();
+        }
+    }
+}
+
 void Phenomenon::generate()
 {
     if (!ui->filterGenerator->isValid(ui->spinBoxGeneratorLevelMin->value(), ui->spinBoxGeneratorLevelMax->value()))
@@ -580,7 +1064,10 @@ void Phenomenon::generate()
         return;
     }
 
+    phenomenonGeneratorHasRun = true;
     generatorModel->clearModel();
+    clearPhenomenonMarking();
+    generatedPhenomenonChunk = phenomenonChunks.empty() ? -1 : phenomenonChunk;
 
     u64 seed = ui->textBoxGeneratorSeed->getULong();
     u32 ivAdvances = ui->textBoxGeneratorIVAdvances->getUInt();
@@ -588,14 +1075,19 @@ void Phenomenon::generate()
     u32 maxAdvances = ui->textBoxGeneratorMaxAdvances->getUInt();
     u32 offset = ui->textBoxGeneratorOffset->getUInt();
     auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
-    u8 passPower
-        = (currentProfile->getVersion() & Game::BW2) != Game::None ? getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower) : PassPower5::None;
+    u8 passPower = (currentProfile->getVersion() & Game::BW2) != Game::None ? getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower)
+                                                                            : PassPower5::None;
     u8 luckyPower = PassPower5::getLuckyPower(passPower);
     u8 exploringPower = PassPower5::getExploringPower(passPower);
 
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
     WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, exploringPower,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
+    if (!phenomenonChunks.empty())
+    {
+        generator.setPhenomenonPosition(phenomenonChunks[phenomenonChunk].tiles, phenomenonChunks[phenomenonChunk].npcTiles,
+                                        phenomenonChunks[phenomenonChunk].tileTypes, phenomenonPlayerX, phenomenonPlayerZ);
+    }
 
     bool itemFilterVisible = checkListGeneratorItem->isVisible();
     auto itemCheckState = itemFilterVisible ? checkListGeneratorItem->getCheckState() : Qt::Unchecked;
@@ -615,22 +1107,26 @@ void Phenomenon::generate()
         WildGenerator5 itemGenerator(initialAdvances, maxAdvances, offset, Method::None, lead, luckyPower, exploringPower,
                                      encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile,
                                      getUnfilteredWildStateFilter());
+        if (!phenomenonChunks.empty())
+        {
+            itemGenerator.setPhenomenonPosition(phenomenonChunks[phenomenonChunk].tiles, phenomenonChunks[phenomenonChunk].npcTiles,
+                                                phenomenonChunks[phenomenonChunk].tileTypes, phenomenonPlayerX, phenomenonPlayerZ);
+        }
         auto itemStates = itemGenerator.generate(seed, ivAdvances, 0);
-        std::erase_if(itemStates, [=, this](const WildState5 &state) {
-            return !state.getPhenomenonItem() || removeByGeneratorFilters(state);
-        });
+        std::erase_if(itemStates,
+                      [=, this](const WildState5 &state) { return !state.getPhenomenonItem() || removeByGeneratorFilters(state); });
 
         states.insert(states.end(), itemStates.begin(), itemStates.end());
-        std::stable_sort(states.begin(), states.end(), [](const WildState5 &left, const WildState5 &right) {
-            return left.getAdvances() < right.getAdvances();
-        });
+        std::stable_sort(states.begin(), states.end(),
+                         [](const WildState5 &left, const WildState5 &right) { return left.getAdvances() < right.getAdvances(); });
     }
     generatorModel->addItems(states);
 }
 
 void Phenomenon::goToGenerator()
 {
-    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    if (!ui->tableViewSearcher->currentIndex().isValid())
+        return;
     QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
     const auto &result = searcherModel->getItem(index.row());
     const auto &state = result.getState();
@@ -689,6 +1185,7 @@ void Phenomenon::generatorLocationIndexChanged(int index)
         }
 
         updateItemFilter(labelGeneratorItem, checkListGeneratorItem, area);
+        updatePhenomenonMap();
     }
 }
 
@@ -987,7 +1484,6 @@ void Phenomenon::searcherLocationIndexChanged(int index)
         {
             ui->comboBoxSearcherPokemon->addItem(QString::fromStdString(names[i]), species[i]);
         }
-
     }
 }
 
@@ -1053,7 +1549,6 @@ void Phenomenon::transferSettings(int index)
         auto luckyPowers = (currentProfile->getVersion() & Game::BW2) != Game::None
             ? getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), (currentProfile->getVersion() & Game::BW) != Game::None)
             : std::vector<u8> { PassPower5::None };
-        setGeneratorPowers(ui->comboBoxGeneratorLuckyPower,
-                           { luckyPowers.empty() ? PassPower5::None : luckyPowers.front() });
+        setGeneratorPowers(ui->comboBoxGeneratorLuckyPower, { luckyPowers.empty() ? PassPower5::None : luckyPowers.front() });
     }
 }

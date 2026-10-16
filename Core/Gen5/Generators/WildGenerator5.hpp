@@ -22,9 +22,11 @@
 
 #include <Core/Enum/Lead.hpp>
 #include <Core/Gen5/EncounterArea5.hpp>
+#include <Core/Gen5/PhenomenonMap.hpp>
 #include <Core/Gen5/Profile5.hpp>
 #include <Core/Parents/Filters/StateFilter.hpp>
 #include <Core/Parents/Generators/WildGenerator.hpp>
+#include <array>
 #include <vector>
 
 class WildState5;
@@ -142,6 +144,12 @@ public:
      */
     std::vector<WildState5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const;
 
+    /**
+     * Enables phenomenon position prediction for a 32x32 map chunk.
+     */
+    void setPhenomenonPosition(const std::array<bool, 1024> &tiles, const std::array<bool, 1024> &npcTiles,
+                               const std::array<PhenomenonTileType, 1024> &tileTypes, u8 playerX, u8 playerZ);
+
 private:
     std::vector<u8> passPowers;
     std::vector<Lead> leads;
@@ -150,6 +158,12 @@ private:
     bool requirePassPowerIVAdvance;
     bool filterNonRequiredLeads;
     bool useExploringPower;
+    bool predictPhenomenonPosition = false;
+    std::array<bool, 1024> phenomenonTiles { };
+    std::array<bool, 1024> phenomenonNpcTiles { };
+    std::array<PhenomenonTileType, 1024> phenomenonTileTypes { };
+    u8 phenomenonPlayerX = 0;
+    u8 phenomenonPlayerZ = 0;
 
     std::vector<WildState5> generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs, u8 passPower) const;
 };

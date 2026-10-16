@@ -23,8 +23,8 @@
 #include <Core/Enum/Lead.hpp>
 #include <Core/Enum/PassPower.hpp>
 #include <Core/Enum/Shiny.hpp>
-#include <Core/Gen5/StepEncounter.hpp>
 #include <Core/Gen5/States/WildState5.hpp>
+#include <Core/Gen5/StepEncounter.hpp>
 #include <Core/RNG/LCRNG64.hpp>
 #include <Core/RNG/MT.hpp>
 #include <Core/RNG/RNGList.hpp>
@@ -35,6 +35,17 @@
 #include <iterator>
 #include <unordered_map>
 #include <variant>
+
+void WildGenerator5::setPhenomenonPosition(const std::array<bool, 1024> &tiles, const std::array<bool, 1024> &npcTiles,
+                                           const std::array<PhenomenonTileType, 1024> &tileTypes, u8 playerX, u8 playerZ)
+{
+    phenomenonTiles = tiles;
+    phenomenonNpcTiles = npcTiles;
+    phenomenonTileTypes = tileTypes;
+    phenomenonPlayerX = std::min<u8>(playerX, 31);
+    phenomenonPlayerZ = std::min<u8>(playerZ, 31);
+    predictPhenomenonPosition = true;
+}
 
 struct WildTargetKey
 {
@@ -60,9 +71,7 @@ struct WildTargetKeyHash
     size_t operator()(const WildTargetKey &key) const
     {
         size_t hash = 0;
-        auto combine = [&hash](auto value) {
-            hash ^= static_cast<size_t>(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-        };
+        auto combine = [&hash](auto value) { hash ^= static_cast<size_t>(value) + 0x9e3779b9 + (hash << 6) + (hash >> 2); };
 
         for (u8 iv : key.ivs)
         {
@@ -111,8 +120,7 @@ static bool matches(const WildState5 &left, const WildState5 &right)
         && left.getLevel() == right.getLevel() && sameNature && left.getShiny() == right.getShiny() && left.getItem() == right.getItem()
         && left.getSpecie() == right.getSpecie() && left.getForm() == right.getForm() && left.getEncounterSlot() == right.getEncounterSlot()
         && left.getPhenomenon() == right.getPhenomenon() && left.getPhenomenonItem() == right.getPhenomenonItem()
-        && left.isValid() == right.isValid() && left.getVariableNature() == right.getVariableNature()
-        && left.getIVs() == right.getIVs();
+        && left.isValid() == right.isValid() && left.getVariableNature() == right.getVariableNature() && left.getIVs() == right.getIVs();
 }
 
 static void addState(std::vector<WildState5> &states, const WildState5 &state, Lead lead)
@@ -357,10 +365,10 @@ static bool usesNsPokemonReleasedOffset(Encounter encounter)
 }
 
 WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, u8 passPower,
-                               bool searchMovingTrigger, bool requireMovingTrigger,
-                               const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter) :
-    WildGenerator5(initialAdvances, maxAdvances, offset, method, lead, std::vector<u8> { passPower }, searchMovingTrigger, requireMovingTrigger,
-                   area, profile, filter)
+                               bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area, const Profile5 &profile,
+                               const WildStateFilter &filter) :
+    WildGenerator5(initialAdvances, maxAdvances, offset, method, lead, std::vector<u8> { passPower }, searchMovingTrigger,
+                   requireMovingTrigger, area, profile, filter)
 {
 }
 
@@ -372,16 +380,17 @@ WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset,
 {
 }
 
-WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, const std::vector<u8> &passPowers,
-                               bool searchMovingTrigger, bool requireMovingTrigger, const EncounterArea5 &area, const Profile5 &profile,
-                               const WildStateFilter &filter, bool requirePassPowerIVAdvance) :
-    WildGenerator5(initialAdvances, maxAdvances, offset, method, std::vector<Lead> { lead }, passPowers, searchMovingTrigger, requireMovingTrigger,
-                   area, profile, filter, requirePassPowerIVAdvance, false)
+WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead,
+                               const std::vector<u8> &passPowers, bool searchMovingTrigger, bool requireMovingTrigger,
+                               const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter,
+                               bool requirePassPowerIVAdvance) :
+    WildGenerator5(initialAdvances, maxAdvances, offset, method, std::vector<Lead> { lead }, passPowers, searchMovingTrigger,
+                   requireMovingTrigger, area, profile, filter, requirePassPowerIVAdvance, false)
 {
 }
 
-WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads, u8 luckyPower,
-                               const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter) :
+WildGenerator5::WildGenerator5(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, const std::vector<Lead> &leads,
+                               u8 luckyPower, const EncounterArea5 &area, const Profile5 &profile, const WildStateFilter &filter) :
     WildGenerator5(initialAdvances, maxAdvances, offset, method, leads, std::vector<u8> { luckyPower }, false, false, area, profile, filter)
 {
 }
@@ -442,17 +451,19 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, 
     }();
 
     std::vector<std::pair<u32, std::array<u8, 6>>> ivs;
-    std::visit([&](auto &rng) {
-        for (u32 cnt = 0; cnt <= maxAdvances; cnt++, rng.advanceState())
-        {
-            std::array<u8, 6> iv;
-            std::ranges::generate(iv, [&rng] { return rng.next(); });
-            if (area.getEncounter() == Encounter::SuperRod || (filter.compareIV(iv) && filter.compareHiddenPower(iv)))
+    std::visit(
+        [&](auto &rng) {
+            for (u32 cnt = 0; cnt <= maxAdvances; cnt++, rng.advanceState())
             {
-                ivs.emplace_back(initialAdvances + cnt, iv);
+                std::array<u8, 6> iv;
+                std::ranges::generate(iv, [&rng] { return rng.next(); });
+                if (area.getEncounter() == Encounter::SuperRod || (filter.compareIV(iv) && filter.compareHiddenPower(iv)))
+                {
+                    ivs.emplace_back(initialAdvances + cnt, iv);
+                }
             }
-        }
-    }, rngList);
+        },
+        rngList);
 
     if (ivs.empty())
     {
@@ -586,262 +597,326 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             payloadRng = BWRNG(seed, start + cnt - 1);
         }
         else if (!searchMovingTrigger && area.getEncounter() != Encounter::SuperRodRippling && canTriggerPhenomenon(area.getEncounter())
-            && !canYieldPhenomenonItem(area.getEncounter()))
+                 && !canYieldPhenomenonItem(area.getEncounter()))
         {
             payloadRng.next();
         }
 
         auto evaluateLead = [&](Lead currentLead) {
-        BWRNG go(payloadRng, jump);
-        u32 triggerOffset = 0;
-        if (searchMovingTrigger)
-        {
-            if (bw2)
+            BWRNG go(payloadRng, jump);
+            u32 triggerOffset = 0;
+            if (searchMovingTrigger)
             {
-                triggerOffset = isStepModifier(currentLead) ? 0 : 1;
-            }
-            else if (bw && (currentLead == Lead::None || currentLead <= Lead::SynchronizeEnd))
-            {
-                triggerOffset = 1;
-            }
-        }
-        BWRNG triggerGo(seed, start + cnt + triggerOffset);
-        triggerGo.jump(jump);
-        auto modifiedSlots = area.getSlots(currentLead);
-        u8 rate = area.getRate();
-        if (area.getEncounter() == Encounter::SuperRod && currentLead == Lead::SuctionCups)
-        {
-            rate *= 2;
-        }
-        bool valid = true;
-
-        bool cuteCharm = false;
-        bool magnetStatic = false;
-        bool phenomenonItem = false;
-        bool pressure = false;
-        bool sync = false;
-
-        if (area.getEncounter() == Encounter::FlyingShadow)
-        {
-            phenomenonItem = !checkFlyingShadowBattle(go);
-        }
-        else if (canYieldPhenomenonItem(area.getEncounter()))
-        {
-            u8 battleRate = area.getEncounter() == Encounter::DustCloud ? 40 : 20;
-            phenomenonItem = getPercentRand(go, bw) >= battleRate;
-        }
-
-        if (searchMovingTrigger && bw
-            && (currentLead == Lead::None || currentLead <= Lead::SynchronizeEnd || isStepModifier(currentLead)
-                || currentLead == Lead::CompoundEyes || currentLead == Lead::SuctionCups))
-        {
-            getPercentRand(go, bw);
-        }
-
-        if (!phenomenonItem && area.getEncounter() == Encounter::FlyingShadow && !skipsLeadCheck(area.getEncounter(), currentLead))
-        {
-            if (currentLead == Lead::CuteCharmM || currentLead == Lead::CuteCharmF)
-            {
-                cuteCharm = checkFlyingShadowLead(go, currentLead);
-                if (!cuteCharm)
+                if (bw2)
                 {
-                    go.advance(1);
+                    triggerOffset = isStepModifier(currentLead) ? 0 : 1;
+                }
+                else if (bw && (currentLead == Lead::None || currentLead <= Lead::SynchronizeEnd))
+                {
+                    triggerOffset = 1;
                 }
             }
-            else
+            BWRNG triggerGo(seed, start + cnt + triggerOffset);
+            triggerGo.jump(jump);
+            auto modifiedSlots = area.getSlots(currentLead);
+            u8 rate = area.getRate();
+            if (area.getEncounter() == Encounter::SuperRod && currentLead == Lead::SuctionCups)
             {
-                bool flag = checkFlyingShadowLead(go, currentLead);
-                if (currentLead == Lead::MagnetPull || currentLead == Lead::Static)
+                rate *= 2;
+            }
+            bool valid = true;
+
+            bool cuteCharm = false;
+            bool magnetStatic = false;
+            bool phenomenonItem = false;
+            bool pressure = false;
+            bool sync = false;
+
+            if (area.getEncounter() == Encounter::FlyingShadow)
+            {
+                phenomenonItem = !checkFlyingShadowBattle(go);
+            }
+            else if (canYieldPhenomenonItem(area.getEncounter()))
+            {
+                u8 battleRate = area.getEncounter() == Encounter::DustCloud ? 40 : 20;
+                phenomenonItem = getPercentRand(go, bw) >= battleRate;
+            }
+
+            if (searchMovingTrigger && bw
+                && (currentLead == Lead::None || currentLead <= Lead::SynchronizeEnd || isStepModifier(currentLead)
+                    || currentLead == Lead::CompoundEyes || currentLead == Lead::SuctionCups))
+            {
+                getPercentRand(go, bw);
+            }
+
+            if (!phenomenonItem && area.getEncounter() == Encounter::FlyingShadow && !skipsLeadCheck(area.getEncounter(), currentLead))
+            {
+                if (currentLead == Lead::CuteCharmM || currentLead == Lead::CuteCharmF)
                 {
-                    magnetStatic = flag;
+                    cuteCharm = checkFlyingShadowLead(go, currentLead);
+                    if (!cuteCharm)
+                    {
+                        go.advance(1);
+                    }
                 }
-                else if (currentLead == Lead::Pressure)
+                else
                 {
-                    pressure = flag;
-                }
-                else if (currentLead <= Lead::SynchronizeEnd)
-                {
-                    sync = flag;
+                    bool flag = checkFlyingShadowLead(go, currentLead);
+                    if (currentLead == Lead::MagnetPull || currentLead == Lead::Static)
+                    {
+                        magnetStatic = flag;
+                    }
+                    else if (currentLead == Lead::Pressure)
+                    {
+                        pressure = flag;
+                    }
+                    else if (currentLead <= Lead::SynchronizeEnd)
+                    {
+                        sync = flag;
+                    }
                 }
             }
-        }
-        else if (!phenomenonItem && !skipsLeadCheck(area.getEncounter(), currentLead)
-                 && (!searchMovingTrigger || !isStepModifier(currentLead)))
-        {
-            // Failed cute charm continues to check for other leads
-            if ((currentLead == Lead::CuteCharmM || currentLead == Lead::CuteCharmF) && getPercentRand(go, bw) < 67)
+            else if (!phenomenonItem && !skipsLeadCheck(area.getEncounter(), currentLead)
+                     && (!searchMovingTrigger || !isStepModifier(currentLead)))
             {
-                cuteCharm = true;
+                // Failed cute charm continues to check for other leads
+                if ((currentLead == Lead::CuteCharmM || currentLead == Lead::CuteCharmF) && getPercentRand(go, bw) < 67)
+                {
+                    cuteCharm = true;
+                }
+                else
+                {
+                    bool flag;
+                    flag = getPercentRand(go, bw) >= 50;
+
+                    if (currentLead == Lead::MagnetPull || currentLead == Lead::Static)
+                    {
+                        magnetStatic = flag;
+                    }
+                    else if (currentLead == Lead::Pressure)
+                    {
+                        pressure = flag;
+                    }
+                    else if (currentLead <= Lead::SynchronizeEnd)
+                    {
+                        sync = flag;
+                    }
+                }
             }
-            else
-            {
-                bool flag;
-                flag = getPercentRand(go, bw) >= 50;
 
-                if (currentLead == Lead::MagnetPull || currentLead == Lead::Static)
-                {
-                    magnetStatic = flag;
-                }
-                else if (currentLead == Lead::Pressure)
-                {
-                    pressure = flag;
-                }
-                else if (currentLead <= Lead::SynchronizeEnd)
-                {
-                    sync = flag;
-                }
+            bool doubleBattle = false;
+            if (!phenomenonItem && area.getEncounter() == Encounter::GrassDark && getPercentRand(go, bw) < 40)
+            {
+                doubleBattle = true;
             }
-        }
 
-        bool doubleBattle = false;
-        if (!phenomenonItem && area.getEncounter() == Encounter::GrassDark && getPercentRand(go, bw) < 40)
-        {
-            doubleBattle = true;
-        }
-
-        if (!phenomenonItem && area.getEncounter() == Encounter::SuperRod && getPercentRand(go, bw) > rate)
-        {
-            valid = false;
-        }
-
-        u8 movingTrigger = searchMovingTrigger
-            ? (bw2 ? getMovingTrigger(go) : getMovingTrigger(triggerGo, bw, currentLead, area.getEncounter()))
-                                               : StepEncounter5::impossible;
-        u8 movingSteps = searchMovingTrigger
-            ? StepEncounter5::getSteps(profile.getVersion(), area.getEncounter(), area.getRate(), movingTrigger,
-                                       getStepEncounterModifier(currentLead, passPower))
-            : StepEncounter5::impossible;
-        valid &= !searchMovingTrigger || movingSteps != StepEncounter5::impossible;
-        if (searchMovingTrigger && !bw2)
-        {
-            getMovingTrigger(go);
-        }
-
-        if (nsPokemonReleasedOffset)
-        {
-            go.advance(1);
-        }
-
-        u8 encounterSlot = 0;
-        u8 level = 0;
-        u16 item = 0;
-
-        if (phenomenonItem)
-        {
-            item = getPhenomenonItem(go, area.getEncounter(), profile.getVersion(), area.getLocation());
-            go.advance(1);
-        }
-        else
-        {
-            if (area.getPokemon(12).getSpecie() != 0 && getPercentRand(go, bw) < 40)
+            if (!phenomenonItem && area.getEncounter() == Encounter::SuperRod && getPercentRand(go, bw) > rate)
             {
-                encounterSlot = 12;
+                valid = false;
+            }
+
+            u8 movingTrigger = searchMovingTrigger
+                ? (bw2 ? getMovingTrigger(go) : getMovingTrigger(triggerGo, bw, currentLead, area.getEncounter()))
+                : StepEncounter5::impossible;
+            u8 movingSteps = searchMovingTrigger ? StepEncounter5::getSteps(profile.getVersion(), area.getEncounter(), area.getRate(),
+                                                                            movingTrigger, getStepEncounterModifier(currentLead, passPower))
+                                                 : StepEncounter5::impossible;
+            valid &= !searchMovingTrigger || movingSteps != StepEncounter5::impossible;
+            if (searchMovingTrigger && !bw2)
+            {
+                getMovingTrigger(go);
+            }
+
+            if (nsPokemonReleasedOffset)
+            {
                 go.advance(1);
             }
-            else if (magnetStatic && !modifiedSlots.empty())
+
+            u8 encounterSlot = 0;
+            u8 level = 0;
+            u16 item = 0;
+
+            if (phenomenonItem)
             {
-                encounterSlot = modifiedSlots[getEncounterRand(go, modifiedSlots.count, bw)];
+                item = getPhenomenonItem(go, area.getEncounter(), profile.getVersion(), area.getLocation());
+                go.advance(1);
             }
             else
             {
-                encounterSlot = EncounterSlot::bwSlot(getPercentRand(go, bw), area.getEncounter(), static_cast<PassPower>(luckyPower));
+                if (area.getPokemon(12).getSpecie() != 0 && getPercentRand(go, bw) < 40)
+                {
+                    encounterSlot = 12;
+                    go.advance(1);
+                }
+                else if (magnetStatic && !modifiedSlots.empty())
+                {
+                    encounterSlot = modifiedSlots[getEncounterRand(go, modifiedSlots.count, bw)];
+                }
+                else
+                {
+                    encounterSlot = EncounterSlot::bwSlot(getPercentRand(go, bw), area.getEncounter(), static_cast<PassPower>(luckyPower));
+                }
+
+                level = area.calculateLevel(encounterSlot, getPercentRand(go, bw), pressure);
+
+                // RNG calls for left encounter slot and level
+                if (doubleBattle)
+                {
+                    go.advance(2);
+                }
             }
 
-            level = area.calculateLevel(encounterSlot, getPercentRand(go, bw), pressure);
+            const Slot &slot = area.getPokemon(encounterSlot);
+            const PersonalInfo *info = slot.getInfo();
 
-            // RNG calls for left encounter slot and level
-            if (doubleBattle)
+            u32 pid = 0;
+            for (u8 i = 0; i < shinyRolls; i++)
             {
-                go.advance(2);
+                // Only allow cute charm if the target isn't fixed gender
+                u8 gender = cuteCharm && !info->getFixedGender() ? (currentLead == Lead::CuteCharmF ? 0 : 1) : 255;
+
+                pid = Utilities5::createPID(tsv, 2, gender, Shiny::Random, true, info->getGender(), go);
+                if (Utilities::isShiny<true>(pid, tsv))
+                {
+                    break;
+                }
             }
-        }
 
-        const Slot &slot = area.getPokemon(encounterSlot);
-        const PersonalInfo *info = slot.getInfo();
+            u8 ability = (pid >> 16) & 1;
+            u8 gender = Utilities::getGender(pid, info);
+            u8 shiny = Utilities::getShiny<true>(pid, tsv);
 
-        u32 pid = 0;
-        for (u8 i = 0; i < shinyRolls; i++)
-        {
-            // Only allow cute charm if the target isn't fixed gender
-            u8 gender = cuteCharm && !info->getFixedGender() ? (currentLead == Lead::CuteCharmF ? 0 : 1) : 255;
-
-            pid = Utilities5::createPID(tsv, 2, gender, Shiny::Random, true, info->getGender(), go);
-            if (Utilities::isShiny<true>(pid, tsv))
+            u8 nature = go.nextUInt(25);
+            bool variableNature = sync;
+            if (sync)
             {
-                break;
+                nature = toInt(currentLead);
             }
-        }
 
-        u8 ability = (pid >> 16) & 1;
-        u8 gender = Utilities::getGender(pid, info);
-        u8 shiny = Utilities::getShiny<true>(pid, tsv);
+            bool leadRequired = currentLead == Lead::None || currentLead == Lead::CuteCharmF || currentLead == Lead::CuteCharmM
+                || magnetStatic || pressure || sync || currentLead == Lead::CompoundEyes
+                || (currentLead == Lead::SuctionCups && area.getEncounter() == Encounter::SuperRod)
+                || (currentLead == Lead::ArenaTrap && searchMovingTrigger);
 
-        u8 nature = go.nextUInt(25);
-        bool variableNature = sync;
-        if (sync)
-        {
-            nature = toInt(currentLead);
-        }
+            if (!phenomenonItem)
+            {
+                item = getItem(go, bw, currentLead, area.getEncounter(), info);
+            }
 
-        bool leadRequired = currentLead == Lead::None || currentLead == Lead::CuteCharmF || currentLead == Lead::CuteCharmM || magnetStatic
-            || pressure || sync || currentLead == Lead::CompoundEyes
-            || (currentLead == Lead::SuctionCups && area.getEncounter() == Encounter::SuperRod)
-            || (currentLead == Lead::ArenaTrap && searchMovingTrigger);
+            BWRNG resultRng(rng);
+            if (requireMovingTrigger && !valid)
+            {
+                resultRng.nextUInt(0x1fff);
+            }
+            bool phenomenon = canTriggerPhenomenon(area.getEncounter())
+                && BWRNG(resultRng).nextUInt(1000)
+                    < getPhenomenonRate(area.getEncounter(), useExploringPower ? PassPower5::getExploringPower(passPower) : 0);
+            u32 prng = resultRng.nextUInt();
 
-        if (!phenomenonItem)
-        {
-            item = getItem(go, bw, currentLead, area.getEncounter(), info);
-        }
+            s8 phenomenonRegion = -1;
+            s8 phenomenonX = -1;
+            s8 phenomenonZ = -1;
+            bool phenomenonTypeMismatch = false;
+            if (phenomenon && predictPhenomenonPosition)
+            {
+                static constexpr s8 bounds[4][4] = {
+                    { 0, 5, -5, 5 },
+                    { -5, 0, -5, 5 },
+                    { -5, 5, -5, 0 },
+                    { -5, 5, 0, 5 },
+                };
 
-        BWRNG resultRng(rng);
-        if (requireMovingTrigger && !valid)
-        {
-            resultRng.nextUInt(0x1fff);
-        }
-        bool phenomenon
-            = canTriggerPhenomenon(area.getEncounter())
-            && BWRNG(resultRng).nextUInt(1000)
-                < getPhenomenonRate(area.getEncounter(), useExploringPower ? PassPower5::getExploringPower(passPower) : 0);
-        u32 prng = resultRng.nextUInt();
+                // Bridge phenomena (flying shadows) search the full 11x11 area and
+                // do not consume the quadrant rand(4). Every other phenomenon
+                // method uses one of the four overlapping half-regions.
+                bool bridge = area.getEncounter() == Encounter::FlyingShadow;
+                phenomenonRegion = bridge ? 4 : static_cast<s8>(resultRng.nextUInt(4));
+                int startX = std::max<int>(0, phenomenonPlayerX + (bridge ? -5 : bounds[phenomenonRegion][0]));
+                int endX = std::min<int>(31, phenomenonPlayerX + (bridge ? 5 : bounds[phenomenonRegion][1]));
+                int startZ = std::max<int>(0, phenomenonPlayerZ + (bridge ? -5 : bounds[phenomenonRegion][2]));
+                int endZ = std::min<int>(31, phenomenonPlayerZ + (bridge ? 5 : bounds[phenomenonRegion][3]));
 
-        u64 resultLeadMask = getLeadFlag(currentLead);
-        if (currentLead <= Lead::SynchronizeEnd)
-        {
-            resultLeadMask = sync ? filteredSynchronizeMask : synchronizeLeadMask;
-            if (resultLeadMask == 0)
+                std::vector<std::pair<s8, s8>> candidates;
+                for (int z = startZ; z <= endZ; z++)
+                {
+                    for (int x = startX; x <= endX; x++)
+                    {
+                        if (phenomenonTiles[z * 32 + x])
+                        {
+                            candidates.emplace_back(x, z);
+                        }
+                    }
+                }
+
+                if (!candidates.empty())
+                {
+                    const auto &[x, z] = candidates[resultRng.nextUInt(static_cast<u32>(candidates.size()))];
+                    phenomenonX = x;
+                    phenomenonZ = z;
+                    PhenomenonTileType expected = area.getEncounter() == Encounter::GrassRustling ? PhenomenonTileType::Grass
+                        : area.getEncounter() == Encounter::DustCloud                             ? PhenomenonTileType::Cave
+                        : area.getEncounter() == Encounter::FlyingShadow                          ? PhenomenonTileType::Bridge
+                                                                                                  : PhenomenonTileType::Water;
+                    phenomenonTypeMismatch = phenomenonTileTypes[z * 32 + x] != expected;
+                }
+            }
+
+            u64 resultLeadMask = getLeadFlag(currentLead);
+            if (currentLead <= Lead::SynchronizeEnd)
+            {
+                resultLeadMask = sync ? filteredSynchronizeMask : synchronizeLeadMask;
+                if (resultLeadMask == 0)
+                {
+                    return;
+                }
+            }
+
+            if (valid && !phenomenonItem && !filter.compare(ability, encounterSlot, gender, level, nature, shiny))
             {
                 return;
             }
-        }
 
-        if (valid && !phenomenonItem && !filter.compare(ability, encounterSlot, gender, level, nature, shiny))
-        {
-            return;
-        }
-
-        for (const auto &iv : ivs)
-        {
-            WildState5 state(prng, movingTrigger, movingSteps, phenomenon, phenomenonItem, advances + initialAdvances + cnt, iv.first, pid,
-                             iv.second, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(), slot.getForm(), info, valid,
-                             passPower, currentLead, variableNature, leadRequired);
-            state.setLeadMask(resultLeadMask);
-            if (!valid || phenomenonItem || filter.compareState(static_cast<const WildState &>(state)))
+            for (const auto &iv : ivs)
             {
-                addState(states, state, currentLead);
+                WildState5 state(prng, movingTrigger, movingSteps, phenomenon, phenomenonItem, advances + initialAdvances + cnt, iv.first,
+                                 pid, iv.second, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(),
+                                 slot.getForm(), info, valid, passPower, currentLead, variableNature, leadRequired);
+                if (phenomenonRegion >= 0)
+                {
+                    state.setPhenomenonPosition(
+                        phenomenonRegion, phenomenonX, phenomenonZ, phenomenonPlayerX, phenomenonPlayerZ,
+                        (phenomenonX == phenomenonPlayerX && phenomenonZ == phenomenonPlayerZ)
+                            || (phenomenonX >= 0 && phenomenonZ >= 0 && phenomenonNpcTiles[phenomenonZ * 32 + phenomenonX]),
+                        phenomenonTypeMismatch);
+                }
+                state.setLeadMask(resultLeadMask);
+                if (!valid || phenomenonItem || filter.compareState(static_cast<const WildState &>(state)))
+                {
+                    addState(states, state, currentLead);
+                }
             }
-        }
         };
 
-        if (hasLead(Lead::None)) evaluateLead(Lead::None);
-        if (hasLead(Lead::CuteCharmF)) evaluateLead(Lead::CuteCharmF);
-        if (hasLead(Lead::CuteCharmM)) evaluateLead(Lead::CuteCharmM);
-        if (synchronizeLeadMask != 0) evaluateLead(synchronizeLead);
-        if (hasLead(Lead::MagnetPull)) evaluateLead(Lead::MagnetPull);
-        if (hasLead(Lead::Static)) evaluateLead(Lead::Static);
-        if (hasLead(Lead::Pressure)) evaluateLead(Lead::Pressure);
-        if (hasLead(Lead::CompoundEyes)) evaluateLead(Lead::CompoundEyes);
-        if (hasLead(Lead::SuctionCups)) evaluateLead(Lead::SuctionCups);
-        if (hasLead(Lead::ArenaTrap)) evaluateLead(Lead::ArenaTrap);
+        if (hasLead(Lead::None))
+            evaluateLead(Lead::None);
+        if (hasLead(Lead::CuteCharmF))
+            evaluateLead(Lead::CuteCharmF);
+        if (hasLead(Lead::CuteCharmM))
+            evaluateLead(Lead::CuteCharmM);
+        if (synchronizeLeadMask != 0)
+            evaluateLead(synchronizeLead);
+        if (hasLead(Lead::MagnetPull))
+            evaluateLead(Lead::MagnetPull);
+        if (hasLead(Lead::Static))
+            evaluateLead(Lead::Static);
+        if (hasLead(Lead::Pressure))
+            evaluateLead(Lead::Pressure);
+        if (hasLead(Lead::CompoundEyes))
+            evaluateLead(Lead::CompoundEyes);
+        if (hasLead(Lead::SuctionCups))
+            evaluateLead(Lead::SuctionCups);
+        if (hasLead(Lead::ArenaTrap))
+            evaluateLead(Lead::ArenaTrap);
         rng.next();
     }
 
