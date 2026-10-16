@@ -21,8 +21,8 @@ Gen 4
 - added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)
 - added HGSS Rock Smash item searcher tool
 - added items to HGSS Rock Smash generator
--added multi lead search, so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once
--added right click menu entry "Go to Generator" for most gen 4 and 5 searcher tabs that auto fills out all relevant fields such as the seed, location, lead etc. and marks the target advance red (color can be adjusted or turned off in the settings)
+- added multi lead search, so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once
+- added right click menu entry "Go to Generator" for most gen 4 and 5 searcher tabs that auto fills out all relevant fields such as the seed, location, lead etc. and marks the target advance red (color can be adjusted or turned off in the settings)
 
 Gen 5
 - added Pickup RNG support
@@ -32,7 +32,7 @@ Gen 5
 - Hidden Grotto item searcher now lets you search for multiple items within the selected Advance range; very useful for PP Max farming
 - added multi lead search, so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once
 - added multi pass power search, so user don’t have to search using at most 1 pass power / level at a time, but can now select any number of pass powers / levels of the same pass power to search with at once
--added right click menu entry "Go to Generator" for most gen 4 and 5 searcher tabs that auto fills out all relevant fields such as the seed, location, lead etc. and marks the target advance red (color can be adjusted or turned off in the settings)
+- added right click menu entry "Go to Generator" for most gen 4 and 5 searcher tabs that auto fills out all relevant fields such as the seed, location, lead etc. and marks the target advance red (color can be adjusted or turned off in the settings)
 
 
 Most of these will eventually be brought into the main PokeFinder, though that will take some time and not all of these features may make it, so for the time being I will try to keep this fork updated with any new changes AdmiralFish makes to the main PokeFinder. I will keep a list of all that’s been brought over right below.
@@ -51,7 +51,7 @@ Features that have already been brought over to the main PokeFinder:
 - PokeFinder now shows all Advances advance number, Chatot Pitch and Call Letter, even those that do not yield an encounter for things like Fishing, Hidden Grotto or Rock Smash RNG, so that users can easier track what Advance they're on at all times
 - fixed a bug where Grotto Power did not work correctly
 - added “N’s Pokémon released” checkbox to BW2 profiles with memory link, as releasing them impacts the generation of Wild encounters
--added gen 5 egg spawning prediction
+- added gen 5 egg spawning prediction
 
 
 # PokéFinder
