@@ -78,9 +78,11 @@ struct WildEncounter5
 {
     u8 location;
     u8 seasonCount;
+    u8 phenomenon;
+    u8 padding;
     WildEncounter5Season seasons[0];
 };
-static_assert(sizeof(WildEncounter5) == 2);
+static_assert(sizeof(WildEncounter5) == 4);
 
 struct WildEncounterGrotto
 {
