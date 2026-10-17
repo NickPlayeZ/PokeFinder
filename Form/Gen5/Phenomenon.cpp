@@ -725,7 +725,10 @@ void Phenomenon::updatePhenomenonMap()
                                                  : std::vector<PhenomenonChunk> { };
     phenomenonChunk = 0;
     generatedPhenomenonChunk = -1;
-    clearPhenomenonMarking();
+    markedPhenomenonChunk = -1;
+    markedPhenomenonX = -1;
+    markedPhenomenonZ = -1;
+    markedPhenomenonBlocked = false;
     if (!phenomenonChunks.empty())
     {
         auto iterator
@@ -1161,9 +1164,13 @@ void Phenomenon::generatorEncounterIndexChanged(int index)
         std::vector<u16> locs;
         std::ranges::transform(encounterGenerator, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });
 
-        ui->comboBoxGeneratorLocation->clear();
-        ui->comboBoxGeneratorLocation->addItems(Translator::getLocations(locs, currentProfile->getVersion()), locs);
-        ui->comboBoxGeneratorLocation->setCurrentIndexByData(currentLocation);
+        {
+            QSignalBlocker blocker(ui->comboBoxGeneratorLocation);
+            ui->comboBoxGeneratorLocation->clear();
+            ui->comboBoxGeneratorLocation->addItems(Translator::getLocations(locs, currentProfile->getVersion()), locs);
+            ui->comboBoxGeneratorLocation->setCurrentIndexByData(currentLocation);
+        }
+        generatorLocationIndexChanged(ui->comboBoxGeneratorLocation->currentIndex());
     }
 }
 
@@ -1177,12 +1184,16 @@ void Phenomenon::generatorLocationIndexChanged(int index)
 
         ui->filterGenerator->setEncounterSlots(area.getCount());
 
-        ui->comboBoxGeneratorPokemon->clear();
-        ui->comboBoxGeneratorPokemon->addItem("-");
-        for (size_t i = 0; i < species.size(); i++)
         {
-            ui->comboBoxGeneratorPokemon->addItem(QString::fromStdString(names[i]), species[i]);
+            QSignalBlocker blocker(ui->comboBoxGeneratorPokemon);
+            ui->comboBoxGeneratorPokemon->clear();
+            ui->comboBoxGeneratorPokemon->addItem("-");
+            for (size_t i = 0; i < species.size(); i++)
+            {
+                ui->comboBoxGeneratorPokemon->addItem(QString::fromStdString(names[i]), species[i]);
+            }
         }
+        generatorPokemonIndexChanged(ui->comboBoxGeneratorPokemon->currentIndex());
 
         updateItemFilter(labelGeneratorItem, checkListGeneratorItem, area);
         updatePhenomenonMap();
@@ -1431,9 +1442,13 @@ void Phenomenon::searcherEncounterIndexChanged(int index)
         std::vector<u16> locs;
         std::ranges::transform(encounterSearcher, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });
 
-        ui->comboBoxSearcherLocation->clear();
-        ui->comboBoxSearcherLocation->addItems(Translator::getLocations(locs, currentProfile->getVersion()), locs);
-        ui->comboBoxSearcherLocation->setCurrentIndexByData(currentLocation);
+        {
+            QSignalBlocker blocker(ui->comboBoxSearcherLocation);
+            ui->comboBoxSearcherLocation->clear();
+            ui->comboBoxSearcherLocation->addItems(Translator::getLocations(locs, currentProfile->getVersion()), locs);
+            ui->comboBoxSearcherLocation->setCurrentIndexByData(currentLocation);
+        }
+        searcherLocationIndexChanged(ui->comboBoxSearcherLocation->currentIndex());
     }
 }
 
@@ -1478,12 +1493,16 @@ void Phenomenon::searcherLocationIndexChanged(int index)
 
         ui->filterSearcher->setEncounterSlots(area.getCount());
 
-        ui->comboBoxSearcherPokemon->clear();
-        ui->comboBoxSearcherPokemon->addItem("-");
-        for (size_t i = 0; i < species.size(); i++)
         {
-            ui->comboBoxSearcherPokemon->addItem(QString::fromStdString(names[i]), species[i]);
+            QSignalBlocker blocker(ui->comboBoxSearcherPokemon);
+            ui->comboBoxSearcherPokemon->clear();
+            ui->comboBoxSearcherPokemon->addItem("-");
+            for (size_t i = 0; i < species.size(); i++)
+            {
+                ui->comboBoxSearcherPokemon->addItem(QString::fromStdString(names[i]), species[i]);
+            }
         }
+        searcherPokemonIndexChanged(ui->comboBoxSearcherPokemon->currentIndex());
     }
 }
 

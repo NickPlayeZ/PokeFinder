@@ -11,7 +11,10 @@
 #include "PhenomenonMap.hpp"
 #include <algorithm>
 #include <array>
+#include <map>
 #include <string_view>
+#include <tuple>
+#include <utility>
 
 namespace
 {
@@ -120,6 +123,14 @@ std::vector<PhenomenonChunk> getPhenomenonChunks(u16 location, Game version, Enc
         return { };
     }
 
+    using CacheKey = std::tuple<u16, Game, Encounter>;
+    static std::map<CacheKey, std::vector<PhenomenonChunk>> cache;
+    CacheKey key { location, version, encounter };
+    if (auto iterator = cache.find(key); iterator != cache.end())
+    {
+        return iterator->second;
+    }
+
     bool hasSpecific = std::any_of(bw2PhenomenonChunks.begin(), bw2PhenomenonChunks.end(), [=](const auto &raw) {
         return raw.location == location && raw.version == version && (raw.typeMask & phenomenonTypeMask(selectedType)) != 0;
     });
@@ -139,5 +150,6 @@ std::vector<PhenomenonChunk> getPhenomenonChunks(u16 location, Game version, Enc
         chunks.emplace_back(decodeChunk(raw, selectedType));
     }
     std::sort(chunks.begin(), chunks.end(), [](const auto &left, const auto &right) { return left.z < right.z; });
-    return chunks;
+    auto iterator = cache.emplace(key, std::move(chunks)).first;
+    return iterator->second;
 }
