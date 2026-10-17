@@ -125,8 +125,6 @@ private:
     TabWidget *tabRNGSelector;
     PokeRadarControls generator;
     PokeRadarControls searcher;
-    bool paintingGrass = false;
-    bool grassPaintValue = false;
 
     const Profile4 *currentProfile;
     std::vector<EncounterArea4> generatorEncounters;
@@ -158,8 +156,6 @@ private:
     void setupGrassField(PokeRadarControls &controls, int width, int height, u16 location = 0xffff, int locationOccurrence = -1);
     void setupGrassGrid(PokeRadarControls &controls, QGridLayout *layout);
     void storeGrassTile(PokeRadarControls &controls, int x, int y, bool grass);
-    void toggleGrassColumn(PokeRadarControls &controls, int column);
-    void toggleGrassRow(PokeRadarControls &controls, int row);
     void updateGrassFromField(PokeRadarControls &controls);
     std::vector<WildGeneratorState4> getPokemonStates(PokeRadarControls &controls, const std::vector<EncounterArea4> &encounters,
                                                        PokeRadarChainType chainType, bool useChainSlot, bool ignoreFilters = false,

@@ -47,7 +47,6 @@
 #include <Model/SortFilterProxyModel.hpp>
 #include <QAction>
 #include <QAbstractItemModel>
-#include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialog>
@@ -715,17 +714,6 @@ bool PokeRadar::eventFilter(QObject *object, QEvent *event)
         if (event->type() == QEvent::MouseButtonPress)
         {
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
-            if (mouseEvent->button() == Qt::LeftButton)
-            {
-                bool searcherTile = tile->property("radarSearcher").toBool();
-                int x = tile->property("radarColumn").toInt();
-                int y = tile->property("radarRow").toInt();
-                grassPaintValue = !tile->hasGrass();
-                paintingGrass = true;
-                tile->setGrass(grassPaintValue);
-                storeGrassTile(searcherTile ? searcher : generator, x, y, grassPaintValue);
-                return true;
-            }
             if (mouseEvent->button() == Qt::RightButton && !tile->property("radarSearcher").toBool() && generator.currentPosition
                 && !(tile->property("radarColumn").toInt() == 4 && tile->property("radarRow").toInt() == 4)
                 && (tile->hasGrass() || tile->hasMark()))
@@ -742,73 +730,7 @@ bool PokeRadar::eventFilter(QObject *object, QEvent *event)
                 return true;
             }
         }
-        else if (event->type() == QEvent::Enter && paintingGrass)
-        {
-            if (QApplication::mouseButtons() & Qt::LeftButton)
-            {
-                tile->setGrass(grassPaintValue);
-                storeGrassTile(tile->property("radarSearcher").toBool() ? searcher : generator, tile->property("radarColumn").toInt(),
-                               tile->property("radarRow").toInt(), grassPaintValue);
-            }
-            else
-            {
-                paintingGrass = false;
-            }
-            return true;
-        }
-        else if (event->type() == QEvent::MouseMove && paintingGrass)
-        {
-            auto *mouseEvent = static_cast<QMouseEvent *>(event);
-            if (mouseEvent->buttons() & Qt::LeftButton)
-            {
-                if (auto *hoveredTile = qobject_cast<PokeRadarTile *>(QApplication::widgetAt(mouseEvent->globalPosition().toPoint())))
-                {
-                    hoveredTile->setGrass(grassPaintValue);
-                    storeGrassTile(hoveredTile->property("radarSearcher").toBool() ? searcher : generator,
-                                   hoveredTile->property("radarColumn").toInt(), hoveredTile->property("radarRow").toInt(), grassPaintValue);
-                }
-                return true;
-            }
-
-            paintingGrass = false;
-        }
-        else if (event->type() == QEvent::MouseButtonRelease)
-        {
-            paintingGrass = false;
-        }
     }
-    else if (auto *label = qobject_cast<QLabel *>(object); event->type() == QEvent::MouseButtonPress && label != nullptr)
-    {
-        auto *mouseEvent = static_cast<QMouseEvent *>(event);
-        if (mouseEvent->button() == Qt::LeftButton)
-        {
-            if (label->property("radarColumn").isValid())
-            {
-                if (label->property("radarSearcher").toBool())
-                {
-                    toggleGrassColumn(searcher, label->property("radarColumn").toInt());
-                }
-                else
-                {
-                    toggleGrassColumn(generator, label->property("radarColumn").toInt());
-                }
-                return true;
-            }
-            if (label->property("radarRow").isValid())
-            {
-                if (label->property("radarSearcher").toBool())
-                {
-                    toggleGrassRow(searcher, label->property("radarRow").toInt());
-                }
-                else
-                {
-                    toggleGrassRow(generator, label->property("radarRow").toInt());
-                }
-                return true;
-            }
-        }
-    }
-
     return QWidget::eventFilter(object, event);
 }
 
@@ -1714,6 +1636,11 @@ void PokeRadar::choosePosition()
         if (selectedPosition)
         {
             setGeneratorPosition(*selectedPosition, true);
+            clearGrassMarks();
+            if (generator.hasRun)
+            {
+                generate();
+            }
             dialog.accept();
         }
     });
@@ -1870,24 +1797,16 @@ void PokeRadar::setupGrassGrid(PokeRadarControls &controls, QGridLayout *layout)
     for (int x = 0; x < 9; x++)
     {
         auto *label = new QLabel(QString(QChar('A' + x)), this);
-        label->setCursor(Qt::PointingHandCursor);
         label->setFixedWidth(22);
         label->setAlignment(Qt::AlignCenter);
-        label->setProperty("radarColumn", x);
-        label->setProperty("radarSearcher", searcherTab);
-        label->installEventFilter(this);
         layout->addWidget(label, 0, x + 1, Qt::AlignCenter);
     }
 
     for (int y = 0; y < 9; y++)
     {
         auto *label = new QLabel(QString::number(y), this);
-        label->setCursor(Qt::PointingHandCursor);
         label->setFixedWidth(14);
         label->setAlignment(Qt::AlignCenter);
-        label->setProperty("radarRow", y);
-        label->setProperty("radarSearcher", searcherTab);
-        label->installEventFilter(this);
         layout->addWidget(label, y + 1, 0, Qt::AlignCenter);
         for (int x = 0; x < 9; x++)
         {
@@ -1913,46 +1832,6 @@ void PokeRadar::storeGrassTile(PokeRadarControls &controls, int x, int y, bool g
     if (isValidGrassFieldPosition(controls, position))
     {
         controls.fieldGrass[getGrassFieldIndex(controls, position)] = grass;
-    }
-}
-
-void PokeRadar::toggleGrassColumn(PokeRadarControls &controls, int column)
-{
-    bool allSelected = true;
-    for (int y = 0; y < 9; y++)
-    {
-        if (column == 4 && y == 4)
-        {
-            continue;
-        }
-
-        allSelected &= controls.grass[y * 9 + column]->hasGrass();
-    }
-
-    for (int y = 0; y < 9; y++)
-    {
-        controls.grass[y * 9 + column]->setGrass(!allSelected);
-        storeGrassTile(controls, column, y, !allSelected);
-    }
-}
-
-void PokeRadar::toggleGrassRow(PokeRadarControls &controls, int row)
-{
-    bool allSelected = true;
-    for (int x = 0; x < 9; x++)
-    {
-        if (x == 4 && row == 4)
-        {
-            continue;
-        }
-
-        allSelected &= controls.grass[row * 9 + x]->hasGrass();
-    }
-
-    for (int x = 0; x < 9; x++)
-    {
-        controls.grass[row * 9 + x]->setGrass(!allSelected);
-        storeGrassTile(controls, x, row, !allSelected);
     }
 }
 

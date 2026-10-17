@@ -53,7 +53,6 @@ private:
     PokeRadarTileMark mark;
     PokeRadarTileMark rightMark;
 
-    void mousePressEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void updateColor();
 };

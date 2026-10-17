@@ -21,7 +21,6 @@
 
 #include <QColor>
 #include <QGuiApplication>
-#include <QMouseEvent>
 #include <QPainter>
 #include <QPalette>
 #include <QStyleHints>
@@ -137,18 +136,6 @@ void PokeRadarTile::setGrass(bool grass)
         }
         updateColor();
     }
-}
-
-void PokeRadarTile::mousePressEvent(QMouseEvent *event)
-{
-    if (!center && event->button() == Qt::LeftButton)
-    {
-        setGrass(!grass);
-        event->accept();
-        return;
-    }
-
-    QFrame::mousePressEvent(event);
 }
 
 void PokeRadarTile::paintEvent(QPaintEvent *event)
