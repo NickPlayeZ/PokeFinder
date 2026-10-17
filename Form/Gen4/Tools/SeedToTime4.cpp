@@ -258,7 +258,8 @@ void SeedToTime4::searchCalls()
         return;
     }
 
-    std::unique_ptr<SearchCalls> search(new SearchCalls(hgssCalibrateModel));
+    std::unique_ptr<SearchCalls> search(new SearchCalls(hgssCalibrateModel, this));
+    search->setWindowModality(Qt::WindowModal);
     if (search->exec() == QDialog::Accepted)
     {
         ui->tableViewHGSSCalibrate->clearSelection();
@@ -282,7 +283,8 @@ void SeedToTime4::searchFlips()
         return;
     }
 
-    std::unique_ptr<SearchCoinFlips> search(new SearchCoinFlips(dpptCalibrateModel));
+    std::unique_ptr<SearchCoinFlips> search(new SearchCoinFlips(dpptCalibrateModel, this));
+    search->setWindowModality(Qt::WindowModal);
     if (search->exec() == QDialog::Accepted)
     {
         ui->tableViewDPPtCalibrate->clearSelection();

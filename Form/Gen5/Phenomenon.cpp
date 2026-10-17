@@ -884,6 +884,7 @@ void Phenomenon::choosePhenomenonMapPosition()
     }
 
     QDialog dialog(this);
+    dialog.setWindowModality(Qt::WindowModal);
     dialog.setWindowTitle(tr("Choose Position"));
     auto *outer = new QVBoxLayout(&dialog);
     auto *content = new QHBoxLayout();

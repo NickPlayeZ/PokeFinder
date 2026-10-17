@@ -1472,6 +1472,7 @@ void PokeRadar::markPatches(const PokeRadarState &state, bool battle, bool showC
 void PokeRadar::choosePosition()
 {
     QDialog dialog(this);
+    dialog.setWindowModality(Qt::WindowModal);
     dialog.setWindowTitle(tr("Choose Position"));
 
     auto *layout = new QVBoxLayout(&dialog);
