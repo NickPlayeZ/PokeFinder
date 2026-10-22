@@ -118,7 +118,7 @@ namespace
 std::vector<PhenomenonChunk> getPhenomenonChunks(u16 location, Game version, Encounter encounter)
 {
     PhenomenonTileType selectedType = getEncounterType(encounter);
-    if (selectedType == PhenomenonTileType::None || (version & Game::BW2) == Game::None)
+    if (selectedType == PhenomenonTileType::None || (version & Game::Gen5) == Game::None)
     {
         return { };
     }
@@ -131,24 +131,30 @@ std::vector<PhenomenonChunk> getPhenomenonChunks(u16 location, Game version, Enc
         return iterator->second;
     }
 
-    bool hasSpecific = std::any_of(bw2PhenomenonChunks.begin(), bw2PhenomenonChunks.end(), [=](const auto &raw) {
-        return raw.location == location && raw.version == version && (raw.typeMask & phenomenonTypeMask(selectedType)) != 0;
-    });
-    std::vector<PhenomenonChunk> chunks;
-    for (const auto &raw : bw2PhenomenonChunks)
+    auto loadChunks = [=](const auto &rawChunks)
     {
-        if (raw.location != location || (raw.typeMask & phenomenonTypeMask(selectedType)) == 0 || !versionMatches(raw.version, version)
-            || (hasSpecific && raw.version != version))
+        bool hasSpecific = std::any_of(rawChunks.begin(), rawChunks.end(), [=](const auto &raw) {
+            return raw.location == location && raw.version == version && (raw.typeMask & phenomenonTypeMask(selectedType)) != 0;
+        });
+        std::vector<PhenomenonChunk> chunks;
+        for (const auto &raw : rawChunks)
         {
-            continue;
+            if (raw.location != location || (raw.typeMask & phenomenonTypeMask(selectedType)) == 0 || !versionMatches(raw.version, version)
+                || (hasSpecific && raw.version != version))
+            {
+                continue;
+            }
+            u16 start = selectedType == PhenomenonTileType::Water && raw.waterStart != 0xffff ? raw.waterStart : raw.start;
+            if (start == 0xffff)
+            {
+                continue;
+            }
+            chunks.emplace_back(decodeChunk(raw, selectedType));
         }
-        u16 start = selectedType == PhenomenonTileType::Water && raw.waterStart != 0xffff ? raw.waterStart : raw.start;
-        if (start == 0xffff)
-        {
-            continue;
-        }
-        chunks.emplace_back(decodeChunk(raw, selectedType));
-    }
+        return chunks;
+    };
+
+    std::vector<PhenomenonChunk> chunks = (version & Game::BW) != Game::None ? loadChunks(bw1PhenomenonChunks) : loadChunks(bw2PhenomenonChunks);
     std::sort(chunks.begin(), chunks.end(), [](const auto &left, const auto &right) { return left.z < right.z; });
     auto iterator = cache.emplace(key, std::move(chunks)).first;
     return iterator->second;

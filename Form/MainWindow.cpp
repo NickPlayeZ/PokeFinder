@@ -189,6 +189,7 @@ MainWindow::~MainWindow()
     delete hiddenGrotto;
     delete ids5;
     delete pickup;
+    delete phenomenon;
     delete static5;
     delete wild5;
 
