@@ -138,7 +138,8 @@ static std::vector<int> getPassPowerMenuOptions(u8 passPower)
 static std::vector<u8> getPassPowers(const std::vector<u8> &powerOptions, bool searchMovingTrigger, bool bw)
 {
     std::vector<u8> activeLuckyPowers;
-    std::vector<u8> activeEncounterPowers = { PassPower5::None };
+    std::vector<u8> activeEncounterPowers;
+    bool includeNone = std::ranges::contains(powerOptions, PassPower5::None);
     for (u8 powerOption : powerOptions)
     {
         if (powerOption == PassPower5::None)
@@ -162,6 +163,11 @@ static std::vector<u8> getPassPowers(const std::vector<u8> &powerOptions, bool s
     else if (bw)
     {
         activeLuckyPowers.emplace_back(PassPower5::None);
+    }
+
+    if (activeEncounterPowers.empty() || includeNone)
+    {
+        activeEncounterPowers.emplace_back(PassPower5::None);
     }
 
     std::ranges::sort(activeLuckyPowers);
@@ -745,11 +751,6 @@ void Wild5::search()
         return;
     }
 
-    searcherModel->clearModel();
-
-    ui->pushButtonSearch->setEnabled(false);
-    ui->pushButtonCancel->setEnabled(true);
-
     u32 initialIVAdvances = ui->textBoxSearcherInitialIVAdvances->getUInt();
     u32 maxIVAdvances = ui->textBoxSearcherMaxIVAdvances->getUInt();
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
@@ -762,6 +763,17 @@ void Wild5::search()
                         (currentProfile->getVersion() & Game::BW) != Game::None)
         : std::vector<u8> { PassPower5::None };
     bool showPassPower = hasPassPower(passPowers);
+    if (showPassPower && static_cast<u64>(initialIVAdvances) + maxIVAdvances < 2)
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("Invalid IV advance range"),
+                        tr("An IV Advance of 2 or higher must be searched for to use Pass Powers"));
+        msg.exec();
+        return;
+    }
+
+    searcherModel->clearModel();
+    ui->pushButtonSearch->setEnabled(false);
+    ui->pushButtonCancel->setEnabled(true);
     searcherModel->setShowPassPower(showPassPower);
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();

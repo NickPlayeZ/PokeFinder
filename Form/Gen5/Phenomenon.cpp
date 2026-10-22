@@ -1336,11 +1336,6 @@ void Phenomenon::search()
         return;
     }
 
-    searcherModel->clearModel();
-
-    ui->pushButtonSearch->setEnabled(false);
-    ui->pushButtonCancel->setEnabled(true);
-
     u32 initialIVAdvances = ui->textBoxSearcherInitialIVAdvances->getUInt();
     u32 maxIVAdvances = ui->textBoxSearcherMaxIVAdvances->getUInt();
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
@@ -1350,6 +1345,17 @@ void Phenomenon::search()
         ? getLuckyPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), (currentProfile->getVersion() & Game::BW) != Game::None)
         : std::vector<u8> { PassPower5::None };
     bool showPassPower = hasPassPower(luckyPowers);
+    if (showPassPower && static_cast<u64>(initialIVAdvances) + maxIVAdvances < 2)
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("Invalid IV advance range"),
+                        tr("An IV Advance of 2 or higher must be searched for to use Pass Powers"));
+        msg.exec();
+        return;
+    }
+
+    searcherModel->clearModel();
+    ui->pushButtonSearch->setEnabled(false);
+    ui->pushButtonCancel->setEnabled(true);
     searcherModel->setShowPassPower(showPassPower);
 
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();

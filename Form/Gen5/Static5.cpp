@@ -444,11 +444,6 @@ void Static5::search()
         return;
     }
 
-    searcherModel->clearModel();
-
-    ui->pushButtonSearch->setEnabled(false);
-    ui->pushButtonCancel->setEnabled(true);
-
     u32 initialIVAdvances = ui->textBoxSearcherInitialIVAdvances->getUInt();
     u32 maxIVAdvances = ui->textBoxSearcherMaxIVAdvances->getUInt();
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
@@ -456,6 +451,17 @@ void Static5::search()
     auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
     auto luckyPowers = (currentProfile->getVersion() & Game::BW2) != Game::None ? getCheckedUChars(ui->comboBoxSearcherLuckyPower) : std::vector<u8> { 0 };
     bool showPassPower = (currentProfile->getVersion() & Game::BW2) != Game::None && hasPassPower(luckyPowers);
+    if (showPassPower && static_cast<u64>(initialIVAdvances) + maxIVAdvances < 2)
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("Invalid IV advance range"),
+                        tr("An IV Advance of 2 or higher must be searched for to use Pass Powers"));
+        msg.exec();
+        return;
+    }
+
+    searcherModel->clearModel();
+    ui->pushButtonSearch->setEnabled(false);
+    ui->pushButtonCancel->setEnabled(true);
     searcherModel->setShowPassPower(showPassPower);
 
     const StaticTemplate5 *staticTemplate
