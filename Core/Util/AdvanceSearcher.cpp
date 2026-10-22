@@ -82,6 +82,12 @@ namespace AdvanceSearcher
             case ChatotToken::MidLowLow:
                 sequence.emplace_back(0, 40);
                 break;
+            case ChatotToken::HighMidHighMid:
+                sequence.emplace_back(40, 100);
+                break;
+            case ChatotToken::MidMidLowLow:
+                sequence.emplace_back(0, 60);
+                break;
             }
         }
 

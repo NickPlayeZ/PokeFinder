@@ -153,7 +153,21 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="4">
+       <item row="2" column="0" colspan="2">
+        <widget class="QPushButton" name="pushButtonHighMidHighMid">
+         <property name="text">
+          <string>High / Mid-High / Mid</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2" colspan="2">
+        <widget class="QPushButton" name="pushButtonMidMidLowLow">
+         <property name="text">
+          <string>Mid / Mid-Low / Low</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="4">
         <widget class="QPushButton" name="pushButtonChatotAny">
          <property name="text">
           <string>Any</string>
@@ -238,9 +252,6 @@
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLineEdit" name="lineEditSequence">
-       <property name="readOnly">
-        <bool>true</bool>
-       </property>
       </widget>
      </item>
      <item>
@@ -313,6 +324,9 @@
   <tabstop>pushButtonMidHighMid</tabstop>
   <tabstop>pushButtonMidMidLow</tabstop>
   <tabstop>pushButtonMidLowLow</tabstop>
+  <tabstop>pushButtonHighMidHighMid</tabstop>
+  <tabstop>pushButtonMidMidLowLow</tabstop>
+  <tabstop>pushButtonChatotAny</tabstop>
   <tabstop>pushButtonNeedle7</tabstop>
   <tabstop>pushButtonNeedle0</tabstop>
   <tabstop>pushButtonNeedle1</tabstop>

@@ -28,6 +28,39 @@
 #include <Model/IndexFilterProxyModel.hpp>
 #include <array>
 
+static QString getChatotTokenText(AdvanceSearcher::ChatotToken token)
+{
+    using ChatotToken = AdvanceSearcher::ChatotToken;
+    switch (token)
+    {
+    case ChatotToken::High:
+        return QStringLiteral("H");
+    case ChatotToken::MidHigh:
+        return QStringLiteral("MH");
+    case ChatotToken::Mid:
+        return QStringLiteral("M");
+    case ChatotToken::MidLow:
+        return QStringLiteral("ML");
+    case ChatotToken::Low:
+        return QStringLiteral("L");
+    case ChatotToken::HighMidHigh:
+        return QStringLiteral("H/MH");
+    case ChatotToken::MidHighMid:
+        return QStringLiteral("MH/M");
+    case ChatotToken::MidMidLow:
+        return QStringLiteral("M/ML");
+    case ChatotToken::MidLowLow:
+        return QStringLiteral("ML/L");
+    case ChatotToken::HighMidHighMid:
+        return QStringLiteral("H/MH/M");
+    case ChatotToken::MidMidLowLow:
+        return QStringLiteral("M/ML/L");
+    case ChatotToken::Any:
+        return QStringLiteral("A");
+    }
+    return { };
+}
+
 AdvanceFinder::AdvanceFinder(QAbstractItemModel *sourceModel, QTableView *sourceTableView, const Profile *profile, QWidget *parent) :
     QDialog(parent), ui(new Ui::AdvanceFinder), sourceTableView(sourceTableView)
 {
@@ -57,19 +90,22 @@ AdvanceFinder::AdvanceFinder(QAbstractItemModel *sourceModel, QTableView *source
     }
 
     using ChatotToken = AdvanceSearcher::ChatotToken;
-    const std::array<std::pair<QPushButton *, ChatotToken>, 10> chatotButtons = { { { ui->pushButtonHigh, ChatotToken::High },
-                                                                                    { ui->pushButtonMidHigh, ChatotToken::MidHigh },
-                                                                                    { ui->pushButtonMid, ChatotToken::Mid },
-                                                                                    { ui->pushButtonMidLow, ChatotToken::MidLow },
-                                                                                    { ui->pushButtonLow, ChatotToken::Low },
-                                                                                    { ui->pushButtonHighMidHigh, ChatotToken::HighMidHigh },
-                                                                                    { ui->pushButtonMidHighMid, ChatotToken::MidHighMid },
-                                                                                    { ui->pushButtonMidMidLow, ChatotToken::MidMidLow },
-                                                                                    { ui->pushButtonMidLowLow, ChatotToken::MidLowLow },
-                                                                                    { ui->pushButtonChatotAny, ChatotToken::Any } } };
+    const std::array<std::pair<QPushButton *, ChatotToken>, 12> chatotButtons
+        = { { { ui->pushButtonHigh, ChatotToken::High },
+              { ui->pushButtonMidHigh, ChatotToken::MidHigh },
+              { ui->pushButtonMid, ChatotToken::Mid },
+              { ui->pushButtonMidLow, ChatotToken::MidLow },
+              { ui->pushButtonLow, ChatotToken::Low },
+              { ui->pushButtonHighMidHigh, ChatotToken::HighMidHigh },
+              { ui->pushButtonMidHighMid, ChatotToken::MidHighMid },
+              { ui->pushButtonMidMidLow, ChatotToken::MidMidLow },
+              { ui->pushButtonMidLowLow, ChatotToken::MidLowLow },
+              { ui->pushButtonHighMidHighMid, ChatotToken::HighMidHighMid },
+              { ui->pushButtonMidMidLowLow, ChatotToken::MidMidLowLow },
+              { ui->pushButtonChatotAny, ChatotToken::Any } } };
     for (const auto &[button, token] : chatotButtons)
     {
-        connect(button, &QPushButton::clicked, this, [this, button, token] { appendToken(button, static_cast<u8>(token)); });
+        connect(button, &QPushButton::clicked, this, [this, token] { appendToken(getChatotTokenText(token), static_cast<u8>(token)); });
     }
 
     using NeedleToken = AdvanceSearcher::NeedleToken;
@@ -84,13 +120,16 @@ AdvanceFinder::AdvanceFinder(QAbstractItemModel *sourceModel, QTableView *source
                                                                                    { ui->pushButtonNeedleAny, NeedleToken::Any } } };
     for (const auto &[button, token] : needleButtons)
     {
-        connect(button, &QPushButton::clicked, this, [this, button, token] { appendToken(button, static_cast<u8>(token)); });
+        connect(button, &QPushButton::clicked, this, [this, button, token] { appendToken(button->text(), static_cast<u8>(token)); });
     }
 
     using CallToken = AdvanceSearcher::CallToken;
-    connect(ui->pushButtonCallE, &QPushButton::clicked, this, [this] { appendToken(ui->pushButtonCallE, static_cast<u8>(CallToken::E)); });
-    connect(ui->pushButtonCallK, &QPushButton::clicked, this, [this] { appendToken(ui->pushButtonCallK, static_cast<u8>(CallToken::K)); });
-    connect(ui->pushButtonCallP, &QPushButton::clicked, this, [this] { appendToken(ui->pushButtonCallP, static_cast<u8>(CallToken::P)); });
+    connect(ui->pushButtonCallE, &QPushButton::clicked, this,
+            [this] { appendToken(ui->pushButtonCallE->text(), static_cast<u8>(CallToken::E)); });
+    connect(ui->pushButtonCallK, &QPushButton::clicked, this,
+            [this] { appendToken(ui->pushButtonCallK->text(), static_cast<u8>(CallToken::K)); });
+    connect(ui->pushButtonCallP, &QPushButton::clicked, this,
+            [this] { appendToken(ui->pushButtonCallP->text(), static_cast<u8>(CallToken::P)); });
     connect(ui->radioButtonElm, &QRadioButton::clicked, this, &AdvanceFinder::elm);
     connect(ui->radioButtonIrwin, &QRadioButton::clicked, this, &AdvanceFinder::irwin);
     irwin();
@@ -109,12 +148,12 @@ AdvanceFinder::~AdvanceFinder()
     delete ui;
 }
 
-void AdvanceFinder::appendToken(const QPushButton *button, u8 token)
+void AdvanceFinder::appendToken(const QString &tokenText, u8 token)
 {
     tokens.emplace_back(token);
 
     QString text = ui->lineEditSequence->text();
-    text += text.isEmpty() ? button->text() : ", " + button->text();
+    text += text.isEmpty() ? tokenText : ", " + tokenText;
     ui->lineEditSequence->setText(text);
 }
 
@@ -135,6 +174,92 @@ void AdvanceFinder::removeToken()
         token = token.trimmed();
     }
     ui->lineEditSequence->setText(text.join(", "));
+}
+
+bool AdvanceFinder::parseTokens(const QString &text)
+{
+    tokens.clear();
+    if (text.trimmed().isEmpty())
+    {
+        return true;
+    }
+
+    const QStringList inputTokens = text.split(',', Qt::KeepEmptyParts);
+    for (const QString &input : inputTokens)
+    {
+        const QString value = input.trimmed();
+        if (value.isEmpty())
+        {
+            tokens.clear();
+            return false;
+        }
+
+        bool found = false;
+        if (ui->tabWidget->currentWidget() == ui->tabCalls)
+        {
+            using CallToken = AdvanceSearcher::CallToken;
+            const std::array<std::pair<const QPushButton *, CallToken>, 3> callButtons = {
+                { { ui->pushButtonCallE, CallToken::E }, { ui->pushButtonCallK, CallToken::K }, { ui->pushButtonCallP, CallToken::P } }
+            };
+            for (const auto &[button, token] : callButtons)
+            {
+                if (value.compare(button->text(), Qt::CaseInsensitive) == 0)
+                {
+                    tokens.emplace_back(static_cast<u8>(token));
+                    found = true;
+                    break;
+                }
+            }
+        }
+        else if (ui->tabWidget->currentWidget() == ui->tabChatot)
+        {
+            using ChatotToken = AdvanceSearcher::ChatotToken;
+            constexpr std::array<ChatotToken, 12> chatotTokens
+                = { ChatotToken::High,      ChatotToken::MidHigh,        ChatotToken::Mid,          ChatotToken::MidLow,
+                    ChatotToken::Low,       ChatotToken::HighMidHigh,    ChatotToken::MidHighMid,   ChatotToken::MidMidLow,
+                    ChatotToken::MidLowLow, ChatotToken::HighMidHighMid, ChatotToken::MidMidLowLow, ChatotToken::Any };
+            for (ChatotToken token : chatotTokens)
+            {
+                if (value.compare(getChatotTokenText(token), Qt::CaseInsensitive) == 0)
+                {
+                    tokens.emplace_back(static_cast<u8>(token));
+                    found = true;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            using NeedleToken = AdvanceSearcher::NeedleToken;
+            const std::array<std::pair<const QPushButton *, NeedleToken>, 9> needleButtons
+                = { { { ui->pushButtonNeedle0, NeedleToken::Needle0 },
+                      { ui->pushButtonNeedle1, NeedleToken::Needle1 },
+                      { ui->pushButtonNeedle2, NeedleToken::Needle2 },
+                      { ui->pushButtonNeedle3, NeedleToken::Needle3 },
+                      { ui->pushButtonNeedle4, NeedleToken::Needle4 },
+                      { ui->pushButtonNeedle5, NeedleToken::Needle5 },
+                      { ui->pushButtonNeedle6, NeedleToken::Needle6 },
+                      { ui->pushButtonNeedle7, NeedleToken::Needle7 },
+                      { ui->pushButtonNeedleAny, NeedleToken::Any } } };
+            for (const auto &[button, token] : needleButtons)
+            {
+                if (value.compare(button->text(), Qt::CaseInsensitive) == 0)
+                {
+                    tokens.emplace_back(static_cast<u8>(token));
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found)
+        {
+            tokens.clear();
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void AdvanceFinder::clearTokens()
@@ -164,11 +289,19 @@ void AdvanceFinder::irwin()
 
 void AdvanceFinder::sequenceTextChanged(const QString &text)
 {
+    sequenceValid = parseTokens(text);
     search();
 }
 
 void AdvanceFinder::search()
 {
+    if (!sequenceValid)
+    {
+        model->setFilteredIndexes(QModelIndexList());
+        ui->labelPossibleResults->setText(tr("Possible Results: 0"));
+        return;
+    }
+
     AdvanceSearcher::Sequence sequence;
     std::function<u8(int)> getter;
     if (ui->tabWidget->currentWidget() == ui->tabCalls)
@@ -227,6 +360,7 @@ void AdvanceFinder::jumpToAdvance()
 void AdvanceFinder::onModeChanged()
 {
     tokens.clear();
+    sequenceValid = true;
     ui->lineEditSequence->clear();
     search();
 }

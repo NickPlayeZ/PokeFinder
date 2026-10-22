@@ -42,7 +42,9 @@ namespace AdvanceSearcher
         HighMidHigh,
         MidHighMid,
         MidMidLow,
-        MidLowLow
+        MidLowLow,
+        HighMidHighMid,
+        MidMidLowLow
     };
 
     enum class NeedleToken : u8

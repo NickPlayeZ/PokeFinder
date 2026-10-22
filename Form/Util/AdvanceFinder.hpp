@@ -66,6 +66,7 @@ private:
     IRNGProvider5 *chatotNeedle;
     QTableView *sourceTableView;
     std::vector<u8> tokens;
+    bool sequenceValid = true;
 
     /**
      * @brief Adds a token to the search sequence
@@ -73,7 +74,7 @@ private:
      * @param text Token text to append
      * @param token Token value to append
      */
-    void appendToken(const QPushButton *button, u8 token);
+    void appendToken(const QString &text, u8 token);
 
     /**
      * @brief Clears the search sequence
@@ -94,6 +95,16 @@ private:
      * @brief Removes the last token from the search sequence
      */
     void removeToken();
+
+    /**
+     * @brief Parses the editable sequence text for the active mode
+     *
+     * @param text Sequence text to parse
+     *
+     *
+     * @return Whether every token uses the expected format
+     */
+    bool parseTokens(const QString &text);
 
     /**
      * @brief Stores current sequence text for the active mode
