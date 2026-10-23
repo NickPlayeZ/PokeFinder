@@ -380,6 +380,7 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Wild4::openAdvanceFinder);
     auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewGenerator->setRemoveTargetAction(removeTargetMark);
     connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay4::profileChanged, this, &Wild4::profileChanged);

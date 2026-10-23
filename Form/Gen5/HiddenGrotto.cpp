@@ -203,6 +203,7 @@ HiddenGrotto::HiddenGrotto(QWidget *parent) :
     ui->tableViewGrottoGenerator->setPrimaryAction(grottoAdvanceFinder);
     connect(grottoAdvanceFinder, &QAction::triggered, this, &HiddenGrotto::openGrottoAdvanceFinder);
     auto *removeGrottoTargetMark = ui->tableViewGrottoGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewGrottoGenerator->setRemoveTargetAction(removeGrottoTargetMark);
     connect(removeGrottoTargetMark, &QAction::triggered, ui->tableViewGrottoGenerator, &TableView::clearTargetAdvance);
     auto *grottoGoToGenerator = ui->tableViewGrottoSearcher->addAction(tr("Go to Generator"));
     ui->tableViewGrottoSearcher->setPrimaryAction(grottoGoToGenerator);
@@ -212,6 +213,7 @@ HiddenGrotto::HiddenGrotto(QWidget *parent) :
     ui->tableViewPokemonGenerator->setPrimaryAction(pokemonAdvanceFinder);
     connect(pokemonAdvanceFinder, &QAction::triggered, this, &HiddenGrotto::openPokemonAdvanceFinder);
     auto *removePokemonTargetMark = ui->tableViewPokemonGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewPokemonGenerator->setRemoveTargetAction(removePokemonTargetMark);
     connect(removePokemonTargetMark, &QAction::triggered, ui->tableViewPokemonGenerator, &TableView::clearTargetAdvance);
 
     auto *adjacentSeeds = ui->tableViewPokemonSearcher->addAction(tr("Adjacent Seeds"));

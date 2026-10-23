@@ -75,6 +75,7 @@ Eggs5::Eggs5(QWidget *parent) : QWidget(parent), ui(new Ui::Eggs5)
     ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Eggs5::openAdvanceFinder);
     auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewGenerator->setRemoveTargetAction(removeTargetMark);
     connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
     auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
     ui->tableViewSearcher->setPrimaryAction(goToGenerator);

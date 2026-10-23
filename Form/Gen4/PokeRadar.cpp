@@ -583,6 +583,7 @@ PokeRadar::PokeRadar(QWidget *parent) : QWidget(parent), currentProfile(nullptr)
     generator.tableView->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &PokeRadar::openAdvanceFinder);
     auto *removeTargetMark = generator.tableView->addAction(tr("Remove target Mark"));
+    generator.tableView->setRemoveTargetAction(removeTargetMark);
     connect(removeTargetMark, &QAction::triggered, generator.tableView, &TableView::clearTargetAdvance);
     auto *jumpToBattleAdv = generator.tableView->addAction(tr("Jump to Battle Adv"));
     connect(jumpToBattleAdv, &QAction::triggered, this, &PokeRadar::jumpToBattleAdv);

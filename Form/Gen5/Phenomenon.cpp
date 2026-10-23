@@ -412,6 +412,7 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
     ui->tableViewSearcher->setSecondaryAction(goToGenerator);
     connect(goToGenerator, &QAction::triggered, this, &Phenomenon::goToGenerator);
     auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewGenerator->setRemoveTargetAction(removeTargetMark);
     connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
     auto *markPhenomenon = ui->tableViewGenerator->addAction(tr("Mark Phenomenon"));
     connect(markPhenomenon, &QAction::triggered, this, &Phenomenon::markPhenomenon);
@@ -1347,7 +1348,7 @@ void Phenomenon::search()
     bool showPassPower = hasPassPower(luckyPowers);
     if (showPassPower && static_cast<u64>(initialIVAdvances) + maxIVAdvances < 2)
     {
-        QMessageBox msg(QMessageBox::Warning, tr("Invalid IV advance range"),
+        QMessageBox msg(QMessageBox::Warning, tr("Invalid IV Advance range"),
                         tr("An IV Advance of 2 or higher must be searched for to use Pass Powers"));
         msg.exec();
         return;

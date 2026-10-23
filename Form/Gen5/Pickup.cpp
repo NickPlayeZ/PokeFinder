@@ -132,6 +132,7 @@ Pickup::Pickup(QWidget *parent) : QWidget(parent), ui(new Ui::Pickup)
     ui->tableViewSearcher->setPrimaryAction(goToGenerator);
     connect(goToGenerator, &QAction::triggered, this, &Pickup::goToGenerator);
     auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewGenerator->setRemoveTargetAction(removeTargetMark);
     connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     ui->textBoxGeneratorSeed->setValues(InputType::Seed64Bit);

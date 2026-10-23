@@ -54,6 +54,8 @@ public:
 
     void setSecondaryAction(QAction *action);
 
+    void setRemoveTargetAction(QAction *action);
+
     /**
      * @brief Highlights rows whose Advances value matches the target
      */
@@ -74,6 +76,7 @@ public:
 private:
     QAction *primaryAction;
     QAction *secondaryAction;
+    QAction *removeTargetAction;
     QAction *outputTXT;
     QAction *outputCSV;
     std::vector<u32> targetAdvances;

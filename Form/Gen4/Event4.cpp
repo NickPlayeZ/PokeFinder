@@ -92,6 +92,7 @@ Event4::Event4(QWidget *parent) : QWidget(parent), ui(new Ui::Event4)
     ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Event4::openAdvanceFinder);
     auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewGenerator->setRemoveTargetAction(removeTargetMark);
     connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay4::profileChanged, this, &Event4::profileChanged);

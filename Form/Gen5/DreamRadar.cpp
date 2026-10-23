@@ -94,6 +94,7 @@ DreamRadar::DreamRadar(QWidget *parent) : QWidget(parent), ui(new Ui::DreamRadar
     ui->tableViewSearcher->setPrimaryAction(goToGenerator);
     connect(goToGenerator, &QAction::triggered, this, &DreamRadar::goToGenerator);
     auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewGenerator->setRemoveTargetAction(removeTargetMark);
     connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     ui->comboBoxGeneratorSpecie1->addItem(tr("None"), -1);

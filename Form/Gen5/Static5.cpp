@@ -151,6 +151,7 @@ Static5::Static5(QWidget *parent) : QWidget(parent), ui(new Ui::Static5), ivCach
     ui->tableViewSearcher->setSecondaryAction(goToGenerator);
     connect(goToGenerator, &QAction::triggered, this, &Static5::goToGenerator);
     auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    ui->tableViewGenerator->setRemoveTargetAction(removeTargetMark);
     connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &Static5::profileChanged);
@@ -453,7 +454,7 @@ void Static5::search()
     bool showPassPower = (currentProfile->getVersion() & Game::BW2) != Game::None && hasPassPower(luckyPowers);
     if (showPassPower && static_cast<u64>(initialIVAdvances) + maxIVAdvances < 2)
     {
-        QMessageBox msg(QMessageBox::Warning, tr("Invalid IV advance range"),
+        QMessageBox msg(QMessageBox::Warning, tr("Invalid IV Advance range"),
                         tr("An IV Advance of 2 or higher must be searched for to use Pass Powers"));
         msg.exec();
         return;

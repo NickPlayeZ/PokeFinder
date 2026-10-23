@@ -73,7 +73,8 @@ namespace
     };
 }
 
-TableView::TableView(QWidget *parent) : QTableView(parent), primaryAction(nullptr), secondaryAction(nullptr)
+TableView::TableView(QWidget *parent) :
+    QTableView(parent), primaryAction(nullptr), secondaryAction(nullptr), removeTargetAction(nullptr)
 {
     setItemDelegate(new TargetMarkDelegate(this));
     outputTXT = addAction(tr("Output Results to TXT"));
@@ -126,6 +127,11 @@ void TableView::setSecondaryAction(QAction *action)
     secondaryAction = action;
 }
 
+void TableView::setRemoveTargetAction(QAction *action)
+{
+    removeTargetAction = action;
+}
+
 void TableView::setModel(QAbstractItemModel *model)
 {
     QTableView::setModel(model);
@@ -146,6 +152,10 @@ void TableView::contextMenuEvent(QContextMenuEvent *event)
             setCurrentIndex(index);
         }
         auto menuActions = actions();
+        if (removeTargetAction != nullptr && !isTargetIndex(index))
+        {
+            menuActions.removeAll(removeTargetAction);
+        }
         if (primaryAction != nullptr)
         {
             menuActions.removeAll(primaryAction);
