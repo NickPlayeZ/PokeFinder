@@ -167,12 +167,48 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="4">
+       <item row="1" column="4" rowspan="3">
         <widget class="QPushButton" name="pushButtonChatotAny">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Any</string>
          </property>
         </widget>
+       </item>
+       <item row="3" column="0" colspan="2">
+        <widget class="QPushButton" name="pushButtonHigherThanLast">
+         <property name="text">
+          <string>Higher than last</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="2" colspan="2">
+        <widget class="QPushButton" name="pushButtonLowerThanLast">
+         <property name="text">
+          <string>Lower than last</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="5">
+        <spacer name="verticalSpacerChatot">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Expanding</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>
@@ -327,6 +363,8 @@
   <tabstop>pushButtonHighMidHighMid</tabstop>
   <tabstop>pushButtonMidMidLowLow</tabstop>
   <tabstop>pushButtonChatotAny</tabstop>
+  <tabstop>pushButtonHigherThanLast</tabstop>
+  <tabstop>pushButtonLowerThanLast</tabstop>
   <tabstop>pushButtonNeedle7</tabstop>
   <tabstop>pushButtonNeedle0</tabstop>
   <tabstop>pushButtonNeedle1</tabstop>

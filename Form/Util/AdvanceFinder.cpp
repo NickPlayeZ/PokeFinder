@@ -55,6 +55,10 @@ static QString getChatotTokenText(AdvanceSearcher::ChatotToken token)
         return QStringLiteral("H/MH/M");
     case ChatotToken::MidMidLowLow:
         return QStringLiteral("M/ML/L");
+    case ChatotToken::HigherThanLast:
+        return QStringLiteral("H+");
+    case ChatotToken::LowerThanLast:
+        return QStringLiteral("L-");
     case ChatotToken::Any:
         return QStringLiteral("A");
     }
@@ -90,7 +94,7 @@ AdvanceFinder::AdvanceFinder(QAbstractItemModel *sourceModel, QTableView *source
     }
 
     using ChatotToken = AdvanceSearcher::ChatotToken;
-    const std::array<std::pair<QPushButton *, ChatotToken>, 12> chatotButtons
+    const std::array<std::pair<QPushButton *, ChatotToken>, 14> chatotButtons
         = { { { ui->pushButtonHigh, ChatotToken::High },
               { ui->pushButtonMidHigh, ChatotToken::MidHigh },
               { ui->pushButtonMid, ChatotToken::Mid },
@@ -102,6 +106,8 @@ AdvanceFinder::AdvanceFinder(QAbstractItemModel *sourceModel, QTableView *source
               { ui->pushButtonMidLowLow, ChatotToken::MidLowLow },
               { ui->pushButtonHighMidHighMid, ChatotToken::HighMidHighMid },
               { ui->pushButtonMidMidLowLow, ChatotToken::MidMidLowLow },
+              { ui->pushButtonHigherThanLast, ChatotToken::HigherThanLast },
+              { ui->pushButtonLowerThanLast, ChatotToken::LowerThanLast },
               { ui->pushButtonChatotAny, ChatotToken::Any } } };
     for (const auto &[button, token] : chatotButtons)
     {
@@ -214,10 +220,12 @@ bool AdvanceFinder::parseTokens(const QString &text)
         else if (ui->tabWidget->currentWidget() == ui->tabChatot)
         {
             using ChatotToken = AdvanceSearcher::ChatotToken;
-            constexpr std::array<ChatotToken, 12> chatotTokens
-                = { ChatotToken::High,      ChatotToken::MidHigh,        ChatotToken::Mid,          ChatotToken::MidLow,
-                    ChatotToken::Low,       ChatotToken::HighMidHigh,    ChatotToken::MidHighMid,   ChatotToken::MidMidLow,
-                    ChatotToken::MidLowLow, ChatotToken::HighMidHighMid, ChatotToken::MidMidLowLow, ChatotToken::Any };
+            constexpr std::array<ChatotToken, 14> chatotTokens
+                = { ChatotToken::High,           ChatotToken::MidHigh,      ChatotToken::Mid,
+                    ChatotToken::MidLow,         ChatotToken::Low,          ChatotToken::HighMidHigh,
+                    ChatotToken::MidHighMid,     ChatotToken::MidMidLow,    ChatotToken::MidLowLow,
+                    ChatotToken::HighMidHighMid, ChatotToken::MidMidLowLow, ChatotToken::HigherThanLast,
+                    ChatotToken::LowerThanLast,  ChatotToken::Any };
             for (ChatotToken token : chatotTokens)
             {
                 if (value.compare(getChatotTokenText(token), Qt::CaseInsensitive) == 0)
@@ -302,16 +310,9 @@ void AdvanceFinder::search()
         return;
     }
 
-    AdvanceSearcher::Sequence sequence;
-    std::function<u8(int)> getter;
-    if (ui->tabWidget->currentWidget() == ui->tabCalls)
+    if (ui->tabWidget->currentWidget() == ui->tabChatot)
     {
-        sequence = AdvanceSearcher::getCallSequence(tokens);
-        getter = [this](int row) { return callChatot->getCall(row); };
-    }
-    else if (ui->tabWidget->currentWidget() == ui->tabChatot)
-    {
-        sequence = AdvanceSearcher::getChatotSequence(tokens);
+        std::function<u8(int)> getter;
         if (callChatot)
         {
             getter = [this](int row) { return callChatot->getChatot(row); };
@@ -320,6 +321,26 @@ void AdvanceFinder::search()
         {
             getter = [this](int row) { return chatotNeedle->getChatot(row); };
         }
+
+        if (tokens.empty())
+        {
+            model->setFilteredIndexes(QModelIndexList());
+            ui->labelPossibleResults->setText(tr("Possible Results: %1").arg(model->sourceModel()->rowCount()));
+            return;
+        }
+
+        std::vector<int> matches = AdvanceSearcher::findChatotMatches(model->sourceModel()->rowCount(), tokens, getter);
+        model->setFilteredIndexes(matches.size() <= 5 ? matches : std::vector<int>());
+        ui->labelPossibleResults->setText(tr("Possible Results: %1").arg(matches.size()));
+        return;
+    }
+
+    AdvanceSearcher::Sequence sequence;
+    std::function<u8(int)> getter;
+    if (ui->tabWidget->currentWidget() == ui->tabCalls)
+    {
+        sequence = AdvanceSearcher::getCallSequence(tokens);
+        getter = [this](int row) { return callChatot->getCall(row); };
     }
     else
     {
