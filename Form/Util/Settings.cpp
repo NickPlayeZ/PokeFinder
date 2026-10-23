@@ -114,6 +114,7 @@ Settings::Settings(QWidget *parent) : QWidget(parent), ui(new Ui::Settings)
     connect(ui->pushButtonTargetMarkColor, &QPushButton::clicked, this, &Settings::changeTargetMarkColor);
     connect(ui->comboBoxTargetMarkEnabled, &QComboBox::currentIndexChanged, this, &Settings::targetMarkEnabledChanged);
     connect(ui->spinBoxTargetMarkTransparency, &QSpinBox::valueChanged, this, &Settings::targetMarkTransparencyChanged);
+    connect(ui->pushButtonRestoreWindowSizes, &QPushButton::clicked, this, &Settings::restoreWindowSizes);
 
     if (setting.contains("settingsForm/geometry"))
     {
@@ -168,6 +169,21 @@ void Settings::targetMarkTransparencyChanged(int transparency)
     QSettings setting;
     setting.setValue("settings/targetMarkAlpha", qRound((100 - transparency) * 255.0 / 100.0));
     updateTargetMarkTables();
+}
+
+void Settings::restoreWindowSizes()
+{
+    constexpr int resetGeometryRestartCode = 1001;
+
+    QSettings setting;
+    setting.setValue("settings/resetWindowGeometry", true);
+
+    QMessageBox msg(QMessageBox::Question, tr("Window sizes reset"), tr("Restart for changes to take effect. Restart now?"),
+                    QMessageBox::Yes | QMessageBox::No);
+    if (msg.exec() == QMessageBox::Yes)
+    {
+        QApplication::exit(resetGeometryRestartCode);
+    }
 }
 
 Settings::~Settings()

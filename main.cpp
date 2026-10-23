@@ -23,7 +23,9 @@
 #include <QApplication>
 #include <QFile>
 #include <QHeaderView>
+#include <QProcess>
 #include <QSettings>
+#include <QStringList>
 #include <QStandardPaths>
 #include <QStyleHints>
 #include <QThread>
@@ -87,6 +89,18 @@ int main(int argc, char *argv[])
     Q_INIT_RESOURCE(resources);
 
     QSettings setting;
+    if (setting.value("settings/resetWindowGeometry", false).toBool())
+    {
+        const QStringList keys = setting.allKeys();
+        for (const QString &key : keys)
+        {
+            if (key == "geometry" || key.endsWith("/geometry"))
+            {
+                setting.remove(key);
+            }
+        }
+        setting.remove("settings/resetWindowGeometry");
+    }
     setting.beginGroup("settings");
     validateSettings(setting);
 
@@ -114,8 +128,19 @@ int main(int argc, char *argv[])
         QApplication::installTranslator(&translator);
     }
 
-    MainWindow w(profile);
-    w.show();
+    constexpr int resetGeometryRestartCode = 1001;
+    int exitCode;
+    {
+        MainWindow w(profile);
+        w.show();
+        exitCode = a.exec();
+    }
 
-    return a.exec();
+    if (exitCode == resetGeometryRestartCode)
+    {
+        QProcess::startDetached(QApplication::applicationFilePath());
+        return 0;
+    }
+
+    return exitCode;
 }

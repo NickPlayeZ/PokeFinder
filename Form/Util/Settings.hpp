@@ -89,6 +89,7 @@ private slots:
     void changeTargetMarkColor();
     void targetMarkEnabledChanged(int index);
     void targetMarkTransparencyChanged(int transparency);
+    void restoreWindowSizes();
 };
 
 #endif // SETTINGS_HPP

@@ -69,6 +69,8 @@ SeedToTime4::SeedToTime4(QWidget *parent) : QWidget(parent), ui(new Ui::SeedToTi
     connect(ui->pushButtonHGSSCalibrate, &QPushButton::clicked, this, &SeedToTime4::hgssCalibrate);
     connect(ui->pushButtonDPPtSearchFlips, &QPushButton::clicked, this, &SeedToTime4::searchFlips);
     connect(ui->pushButtonHGSSSearchCalls, &QPushButton::clicked, this, &SeedToTime4::searchCalls);
+    connect(ui->radioButtonDPPtShowChatot, &QRadioButton::toggled, dpptCalibrateModel, &SeedToTimeCalibrateModel4::setShowChatot);
+    connect(ui->radioButtonHGSSShowChatot, &QRadioButton::toggled, hgssCalibrateModel, &SeedToTimeCalibrateModel4::setShowChatot);
     connect(ui->checkBoxHGSSEntei, &QCheckBox::clicked, ui->textBoxHGSSEntei, &QLineEdit::setEnabled);
     connect(ui->checkBoxHGSSLati, &QCheckBox::clicked, ui->textBoxHGSSLati, &QLineEdit::setEnabled);
     connect(ui->checkBoxHGSSRaikou, &QCheckBox::clicked, ui->textBoxHGSSRaikou, &QLineEdit::setEnabled);
