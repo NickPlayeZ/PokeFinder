@@ -123,6 +123,11 @@ private:
      */
     void search();
 
+    /**
+     * @brief Fits the tab area to the currently selected page
+     */
+    void updateTabHeight();
+
 private slots:
     /**
      * @brief Handles search mode toggle

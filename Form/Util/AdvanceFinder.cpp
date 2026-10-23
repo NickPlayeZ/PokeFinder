@@ -26,6 +26,8 @@
 #include <Model/Gen4/IRNGProvider4.hpp>
 #include <Model/Gen5/IRNGProvider5.hpp>
 #include <Model/IndexFilterProxyModel.hpp>
+#include <QStyle>
+#include <QTabBar>
 #include <array>
 
 static QString getChatotTokenText(AdvanceSearcher::ChatotToken token)
@@ -146,6 +148,7 @@ AdvanceFinder::AdvanceFinder(QAbstractItemModel *sourceModel, QTableView *source
     connect(ui->pushButtonRemove, &QPushButton::clicked, this, &AdvanceFinder::removeToken);
     connect(ui->pushButtonClear, &QPushButton::clicked, this, &AdvanceFinder::clearTokens);
 
+    updateTabHeight();
     search();
 }
 
@@ -380,8 +383,21 @@ void AdvanceFinder::jumpToAdvance()
 
 void AdvanceFinder::onModeChanged()
 {
+    updateTabHeight();
     tokens.clear();
     sequenceValid = true;
     ui->lineEditSequence->clear();
     search();
+}
+
+void AdvanceFinder::updateTabHeight()
+{
+    QWidget *page = ui->tabWidget->currentWidget();
+    QTabBar *tabBar = ui->tabWidget->findChild<QTabBar *>();
+    if (page != nullptr && tabBar != nullptr)
+    {
+        const int frame = ui->tabWidget->style()->pixelMetric(QStyle::PM_DefaultFrameWidth, nullptr, ui->tabWidget);
+        ui->tabWidget->setMaximumHeight(page->sizeHint().height() + tabBar->sizeHint().height() + 2 * frame);
+        ui->tabWidget->updateGeometry();
+    }
 }
