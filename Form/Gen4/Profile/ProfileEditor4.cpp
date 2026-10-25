@@ -24,6 +24,14 @@
 #include <QMessageBox>
 #include <QSettings>
 
+namespace
+{
+constexpr std::array<const char *, 16> plateNames = { "Flame Plate", "Splash Plate", "Zap Plate", "Meadow Plate", "Icicle Plate",
+                                                      "Fist Plate",  "Toxic Plate",  "Earth Plate", "Sky Plate",    "Mind Plate",
+                                                      "Insect Plate", "Stone Plate", "Spooky Plate", "Draco Plate", "Dread Plate",
+                                                      "Iron Plate" };
+}
+
 ProfileEditor4::ProfileEditor4(QWidget *parent) : QDialog(parent), ui(new Ui::ProfileEditor4)
 {
     ui->setupUi(this);
@@ -34,6 +42,15 @@ ProfileEditor4::ProfileEditor4(QWidget *parent) : QDialog(parent), ui(new Ui::Pr
 
     ui->comboBoxVersion->setup(
         { toInt(Game::Diamond), toInt(Game::Pearl), toInt(Game::Platinum), toInt(Game::HeartGold), toInt(Game::SoulSilver) });
+
+    ui->comboMenuPlates->setMultiSelect(true);
+    for (int i = 0; i < 16; i++) ui->comboMenuPlates->addAction(tr(plateNames[i]), i);
+    connect(ui->comboMenuPlates, &ComboMenu::checkedDataChanged, this, [this] {
+        const size_t checked = ui->comboMenuPlates->getRawCheckedData().size();
+        if (checked == 0) ui->comboMenuPlates->setText(tr("None"));
+        else if (checked == plateNames.size()) ui->comboMenuPlates->setText(tr("All"));
+    });
+    ui->comboMenuPlates->setCheckedData({});
 
     for (char letter = 'A'; letter <= 'Z'; letter++)
     {
@@ -60,8 +77,14 @@ ProfileEditor4::ProfileEditor4(const Profile4 &profile, QWidget *parent) : Profi
     ui->textBoxTID->setText(QString::number(profile.getTID()));
     ui->textBoxSID->setText(QString::number(profile.getSID()));
     ui->checkBoxNationalDex->setChecked(profile.getNationalDex());
+    ui->checkBoxUndergroundOrb->setChecked(profile.getUndergroundOrb());
     ui->checkListUnownPuzzles->setChecks(profile.getUnownPuzzle());
     ui->checkListUnownDiscovered->setChecks(profile.getUnownDiscovered());
+    std::vector<int> plates;
+    const auto minedPlates = profile.getMinedPlates();
+    for (int i = 0; i < static_cast<int>(minedPlates.size()); i++)
+        if (minedPlates[i]) plates.push_back(i);
+    ui->comboMenuPlates->setCheckedData(plates);
 }
 
 ProfileEditor4::~ProfileEditor4()
@@ -76,7 +99,11 @@ Profile4 ProfileEditor4::getProfile()
 {
     return Profile4(ui->lineEditProfile->text().toStdString(), ui->comboBoxVersion->getEnum<Game>(), ui->textBoxTID->getUShort(),
                     ui->textBoxSID->getUShort(), ui->checkBoxNationalDex->isChecked(), ui->checkListUnownDiscovered->getCheckedArray<26>(),
-                    ui->checkListUnownPuzzles->getCheckedArray<4>());
+                    ui->checkListUnownPuzzles->getCheckedArray<4>(), [&] {
+                        std::array<bool, 16> plates = {};
+                        for (int plate : ui->comboMenuPlates->getRawCheckedData()) plates[plate] = true;
+                        return plates;
+                    }(), ui->checkBoxUndergroundOrb->isChecked());
 }
 
 void ProfileEditor4::okay()
@@ -96,7 +123,13 @@ void ProfileEditor4::versionIndexChanged(int index)
 {
     if (index >= 0)
     {
-        bool flag = (ui->comboBoxVersion->getEnum<Game>() & Game::HGSS) != Game::None;
+        const Game version = ui->comboBoxVersion->getEnum<Game>();
+        bool flag = (version & Game::HGSS) != Game::None;
+        ui->labelPlates->setVisible(!flag);
+        ui->comboMenuPlates->setVisible(!flag);
+        const bool diamondPearl = version == Game::Diamond || version == Game::Pearl;
+        ui->checkBoxUndergroundOrb->setVisible(diamondPearl);
+        ui->checkBoxUndergroundOrb->setText(version == Game::Pearl ? tr("Picked up Lustrous Orb") : tr("Picked up Adamant Orb"));
         ui->labelUnownPuzzles->setVisible(flag);
         ui->checkListUnownPuzzles->setVisible(flag);
         ui->labelUnownDiscovered->setVisible(flag);

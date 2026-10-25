@@ -280,6 +280,7 @@
     <addaction name="actionRockSmashItems"/>
     <addaction name="actionSeedToTime4"/>
     <addaction name="actionSIDfromChainedShiny"/>
+    <addaction name="actionUnderground"/>
    </widget>
    <widget class="QMenu" name="menuGen5Tools">
     <property name="title">
@@ -433,6 +434,11 @@
   <action name="actionRockSmashItems">
    <property name="text">
     <string>Rock Smash Items</string>
+   </property>
+  </action>
+  <action name="actionUnderground">
+   <property name="text">
+    <string>Underground</string>
    </property>
   </action>
  </widget>

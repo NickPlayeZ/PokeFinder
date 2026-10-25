@@ -25,6 +25,7 @@
 #include <Core/Util/Translator.hpp>
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
 #include <QSettings>
+#include <QLabel>
 #include <algorithm>
 
 static const QString settingKey = QStringLiteral("%1/profile");
@@ -96,6 +97,15 @@ void ProfileDisplay4::setProfile(const Profile4 &profile)
     }
     ui->comboBoxProfiles->setCurrentIndex(static_cast<int>(std::distance(profiles.begin(), it)));
 }
+
+void ProfileDisplay4::addControl(const QString &label, QWidget *widget)
+{
+    const int column = ui->gridLayout->columnCount();
+    ui->gridLayout->addWidget(new QLabel(label, ui->groupBoxProfile), 0, column);
+    ui->gridLayout->addWidget(widget, 0, column + 1);
+}
+
+void ProfileDisplay4::setTitle(const QString &title) { ui->groupBoxProfile->setTitle(title); }
 
 void ProfileDisplay4::profileIndexChanged(int index)
 {

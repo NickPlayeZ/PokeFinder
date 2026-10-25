@@ -149,6 +149,10 @@ add_library(PokeFinderCore STATIC
     Gen4/StaticTemplate4.hpp
     Gen4/Tools/ChainedSIDCalc.cpp
     Gen4/Tools/ChainedSIDCalc.hpp
+    Gen4/Tools/UndergroundGenerator.cpp
+    Gen4/Tools/UndergroundGenerator.hpp
+    Gen4/Tools/UndergroundData.inc
+    Gen4/Tools/UndergroundDiamondWeights.inc
     Gen4/Tools/SeedToTimeCalculator4.cpp
     Gen4/Tools/SeedToTimeCalculator4.hpp
     Gen5/DreamRadarTemplate.hpp

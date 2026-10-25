@@ -16,5 +16,6 @@
         <file alias="map.png">Images/map.png</file>
         <file alias="map_ioa.png">Images/map_ioa.png</file>
         <file alias="map_ct.png">Images/map_ct.png</file>
+        <file alias="underground_sprite_map.png">Images/underground_spritemap.PNG</file>
     </qresource>
 </RCC>

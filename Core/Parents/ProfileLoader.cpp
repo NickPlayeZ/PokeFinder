@@ -243,6 +243,8 @@ namespace ProfileLoader4
             j["tid"] = profile.getTID();
             j["sid"] = profile.getSID();
             j["dex"] = profile.getNationalDex();
+            j["undergroundOrb"] = profile.getUndergroundOrb();
+            j["minedPlates"] = profile.getMinedPlates();
             j["unownDiscovered"] = profile.getUnownDiscovered();
             j["unownPuzzle"] = profile.getUnownPuzzle();
             return j;
@@ -262,12 +264,14 @@ namespace ProfileLoader4
             u16 tid = j.value("tid", 0);
             u16 sid = j.value("sid", 0);
             bool dex = j.value("dex", false);
+            bool undergroundOrb = j.value("undergroundOrb", false);
+            std::array<bool, 16> minedPlates = j.value("minedPlates", std::array<bool, 16> {});
             std::array<bool, 26> unownDiscovered
                 = j.value("unownDiscovered", std::array<bool, 26> { false, false, false, false, false, false, false, false, false,
                                                                     false, false, false, false, false, false, false, false, false,
                                                                     false, false, false, false, false, false, false, false });
             std::array<bool, 4> unownPuzzle = j.value("unownPuzzle", std::array<bool, 4> { false, false, false, false });
-            return Profile4(name, version, tid, sid, dex, unownDiscovered, unownPuzzle);
+            return Profile4(name, version, tid, sid, dex, unownDiscovered, unownPuzzle, minedPlates, undergroundOrb);
         }
     }
 

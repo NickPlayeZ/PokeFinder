@@ -58,7 +58,8 @@ std::vector<u8> Profile4::getUnlockedUnownForms() const
 
 bool Profile4::operator==(const Profile4 &other) const
 {
-    return Profile::operator==(other) && dex == other.dex && unownDiscovered == other.unownDiscovered && unownPuzzle == other.unownPuzzle;
+    return Profile::operator==(other) && dex == other.dex && undergroundOrb == other.undergroundOrb && minedPlates == other.minedPlates
+        && unownDiscovered == other.unownDiscovered && unownPuzzle == other.unownPuzzle;
 }
 
 bool Profile4::operator!=(const Profile4 &other) const

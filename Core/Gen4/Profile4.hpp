@@ -41,8 +41,10 @@ public:
      * @param sid Secret ID
      * @param dex Whether national pokedex is obtained
      */
-    Profile4(const std::string &name, Game version, u16 tid, u16 sid, bool dex) : Profile(name, version, tid, sid), dex(dex)
+    Profile4(const std::string &name, Game version, u16 tid, u16 sid, bool dex) :
+        Profile(name, version, tid, sid), dex(dex), undergroundOrb(false)
     {
+        minedPlates.fill(false);
         unownDiscovered.fill(false);
         unownPuzzle.fill(false);
     }
@@ -59,8 +61,9 @@ public:
      * @param unownPuzzle Array of which Alpha Ruin puzzles have been completed
      */
     Profile4(const std::string &name, Game version, u16 tid, u16 sid, bool dex, const std::array<bool, 26> &unownDiscovered,
-             const std::array<bool, 4> &unownPuzzle) :
-        Profile(name, version, tid, sid), dex(dex), unownDiscovered(unownDiscovered), unownPuzzle(unownPuzzle)
+             const std::array<bool, 4> &unownPuzzle, const std::array<bool, 16> &minedPlates = {}, bool undergroundOrb = false) :
+        Profile(name, version, tid, sid), dex(dex), undergroundOrb(undergroundOrb), minedPlates(minedPlates),
+        unownDiscovered(unownDiscovered), unownPuzzle(unownPuzzle)
     {
     }
 
@@ -73,6 +76,16 @@ public:
     bool getNationalDex() const
     {
         return dex;
+    }
+
+    bool getUndergroundOrb() const
+    {
+        return undergroundOrb;
+    }
+
+    std::array<bool, 16> getMinedPlates() const
+    {
+        return minedPlates;
     }
 
     /**
@@ -133,6 +146,8 @@ public:
 
 private:
     bool dex;
+    bool undergroundOrb;
+    std::array<bool, 16> minedPlates;
     std::array<bool, 26> unownDiscovered;
     std::array<bool, 4> unownPuzzle;
 };

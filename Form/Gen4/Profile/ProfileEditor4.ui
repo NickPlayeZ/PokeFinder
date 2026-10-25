@@ -87,6 +87,23 @@
      </property>
     </widget>
    </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="labelPlates">
+     <property name="text">
+      <string>Plates</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="4" colspan="2">
+    <widget class="QCheckBox" name="checkBoxUndergroundOrb">
+     <property name="text">
+      <string>Picked up Adamant Orb</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="ComboMenu" name="comboMenuPlates"/>
+   </item>
    <item row="0" column="4">
     <widget class="QLabel" name="labelUnownPuzzles">
      <property name="text">
@@ -145,6 +162,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>ComboMenu</class>
+   <extends>QToolButton</extends>
+   <header>Form/Controls/ComboMenu.hpp</header>
+  </customwidget>
   <customwidget>
    <class>TextBox</class>
    <extends>QLineEdit</extends>

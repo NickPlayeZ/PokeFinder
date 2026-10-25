@@ -41,6 +41,7 @@
 #include <Form/Gen4/Tools/ChainedSID.hpp>
 #include <Form/Gen4/Tools/RockSmashItem.hpp>
 #include <Form/Gen4/Tools/SeedToTime4.hpp>
+#include <Form/Gen4/Tools/Underground.hpp>
 #include <Form/Gen4/Wild4.hpp>
 #include <Form/Gen5/DreamRadar.hpp>
 #include <Form/Gen5/Eggs5.hpp>
@@ -110,6 +111,7 @@ MainWindow::MainWindow(bool profile, QWidget *parent) : QMainWindow(parent), ui(
     connect(ui->actionIVstoPID4, &QAction::triggered, this, &MainWindow::openIVToPID);
     connect(ui->actionProfileManager4, &QAction::triggered, this, &MainWindow::openProfileManager4);
     connect(ui->actionRockSmashItems, &QAction::triggered, this, &MainWindow::openRockSmashItem);
+    connect(ui->actionUnderground, &QAction::triggered, this, &MainWindow::openUnderground4);
     connect(ui->actionSeedToTime4, &QAction::triggered, this, &MainWindow::openSeedToTime4);
     connect(ui->actionSIDfromChainedShiny, &QAction::triggered, this, &MainWindow::openSIDFromChainedShiny);
 
@@ -437,6 +439,14 @@ void MainWindow::openRockSmashItem()
     {
         QMessageBox::warning(this, tr("No profiles found"), tr("Please create a HeartGold or SoulSilver profile first"));
     }
+    window->show();
+}
+
+void MainWindow::openUnderground4()
+{
+    auto *window = new Underground4();
+    connect(window, &Underground4::profilesChanged, this, &MainWindow::updateProfiles);
+    connect(this, &MainWindow::profilesChanged4, window, &Underground4::updateProfiles);
     window->show();
 }
 

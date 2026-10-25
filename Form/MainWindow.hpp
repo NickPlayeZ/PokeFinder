@@ -49,6 +49,7 @@ class Raids;
 class Static8;
 class Wild8;
 class Underground;
+class Underground4;
 class QActionGroup;
 
 namespace Ui
@@ -238,6 +239,8 @@ private slots:
     void openPokeRadar();
 
     void openRockSmashItem();
+
+    void openUnderground4();
 
     /**
      * @brief Opens the Gen 4 Static window

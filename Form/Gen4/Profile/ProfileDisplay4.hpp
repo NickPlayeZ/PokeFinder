@@ -24,6 +24,7 @@
 #include <QWidget>
 
 class Profile4;
+class QWidget;
 enum class Game : u32;
 
 namespace Ui
@@ -88,6 +89,16 @@ public:
      * @brief Selects a profile, temporarily adding it when it is not saved
      */
     void setProfile(const Profile4 &profile);
+
+    /**
+     * @brief Adds a tool-specific control to the profile section
+     */
+    void addControl(const QString &label, QWidget *widget);
+
+    /**
+     * @brief Sets the profile section title
+     */
+    void setTitle(const QString &title);
 
 private:
     Ui::ProfileDisplay4 *ui;
