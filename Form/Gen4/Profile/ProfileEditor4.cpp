@@ -23,6 +23,7 @@
 #include <Core/Gen4/Profile4.hpp>
 #include <QMessageBox>
 #include <QSettings>
+#include <QTimer>
 
 namespace
 {
@@ -45,12 +46,24 @@ ProfileEditor4::ProfileEditor4(QWidget *parent) : QDialog(parent), ui(new Ui::Pr
 
     ui->comboMenuPlates->setMultiSelect(true);
     for (int i = 0; i < 16; i++) ui->comboMenuPlates->addAction(tr(plateNames[i]), i);
-    connect(ui->comboMenuPlates, &ComboMenu::checkedDataChanged, this, [this] {
+    const auto updatePlateText = [this] {
         const size_t checked = ui->comboMenuPlates->getRawCheckedData().size();
         if (checked == 0) ui->comboMenuPlates->setText(tr("None"));
         else if (checked == plateNames.size()) ui->comboMenuPlates->setText(tr("All"));
-    });
+        else
+        {
+            QStringList selected;
+            for (int plate : ui->comboMenuPlates->getRawCheckedData()) selected.append(tr(plateNames[plate]));
+            ui->comboMenuPlates->setText(ui->comboMenuPlates->fontMetrics().elidedText(
+                selected.join(QStringLiteral(", ")), Qt::ElideRight, ui->comboMenuPlates->width() - 20));
+        }
+    };
+    connect(ui->comboMenuPlates, &ComboMenu::checkedDataChanged, this, updatePlateText);
     ui->comboMenuPlates->setCheckedData({});
+    QTimer::singleShot(0, ui->comboMenuPlates, [this, updatePlateText] {
+        ui->comboMenuPlates->setFixedWidth(ui->comboBoxVersion->width());
+        updatePlateText();
+    });
 
     for (char letter = 'A'; letter <= 'Z'; letter++)
     {

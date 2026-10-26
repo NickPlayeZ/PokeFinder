@@ -1426,13 +1426,13 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     advances->setModel(advanceModel);
     advances->setSelectionBehavior(QAbstractItemView::SelectRows);
     advances->setSelectionMode(QAbstractItemView::SingleSelection);
-    auto *setAsCurrent = advances->addAction(tr("Set as Current Mining Field"));
+    auto *setAsCurrent = advances->addAction(tr("Set as Current Mining Spot"));
     generatorLayout->addWidget(advances, 1);
 
     auto *finderLayout = new QVBoxLayout(finderPage);
     finderLayout->setContentsMargins(4, 4, 4, 4);
     auto *finderTop = new QHBoxLayout;
-    auto *fieldGroup = new QGroupBox(tr("Your Current Mining Field"), finderPage);
+    auto *fieldGroup = new QGroupBox(tr("Your Current Mining Spot"), finderPage);
     auto *fieldLayout = new QVBoxLayout(fieldGroup);
     finderField = new DirtField4(fieldGroup);
     auto *resetField = new QPushButton(tr("Reset"), fieldGroup);
@@ -1440,7 +1440,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     fieldLayout->addWidget(resetField);
     finderTop->addWidget(fieldGroup);
 
-    auto *previewGroup = new QGroupBox(tr("Selected Seeds Mining Field"), finderPage);
+    auto *previewGroup = new QGroupBox(tr("Selected Seeds Mining Spot"), finderPage);
     auto *previewLayout = new QVBoxLayout(previewGroup);
     auto *previewTabs = new QTabBar(previewGroup);
     previewTabs->setExpanding(false);
@@ -1586,7 +1586,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherLayout->addLayout(searcherLeft, 1);
 
     auto *searcherRight = new QVBoxLayout;
-    auto *searcherPreviewGroup = new QGroupBox(tr("Selected Seed Mining Field"), searcherPage);
+    auto *searcherPreviewGroup = new QGroupBox(tr("Selected Seed Mining Spot"), searcherPage);
     auto *searcherPreviewLayout = new QVBoxLayout(searcherPreviewGroup);
     searcherPreview = new MiningField4(searcherPreviewGroup);
     searcherPreviewLayout->addWidget(searcherPreview, 0, Qt::AlignLeft);
@@ -1733,10 +1733,12 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
 
     QSettings store;
     store.beginGroup(settingPrefix);
-    seed->setText(store.value(QStringLiteral("seed"), QStringLiteral("0")).toString());
+    store.remove(QStringLiteral("seed"));
+    store.remove(QStringLiteral("finderItemCount"));
+    seed->setText(QStringLiteral("0"));
     finderTargetDelay->setText(store.value(QStringLiteral("finderTargetDelay"), finderTargetDelay->text()).toString());
     finderDelayRange->setText(store.value(QStringLiteral("finderDelayRange"), finderDelayRange->text()).toString());
-    finderItemCount->setCurrentIndex(finderItemCount->findData(store.value(QStringLiteral("finderItemCount"), 0).toInt()));
+    finderItemCount->setCurrentIndex(finderItemCount->findData(0));
     finderMaxTileMismatches->setValue(store.value(QStringLiteral("finderMaxTileMismatches"), 30).toInt());
     searcherStartDate->setDate(store.value(QStringLiteral("searcherStartDate"), QDate::currentDate()).toDate());
     searcherEndDate->setDate(store.value(QStringLiteral("searcherEndDate"), QDate::currentDate()).toDate());
@@ -1752,10 +1754,8 @@ Underground4::~Underground4()
 {
     QSettings store;
     store.beginGroup(settingPrefix);
-    store.setValue(QStringLiteral("seed"), seed->text());
     store.setValue(QStringLiteral("finderTargetDelay"), finderTargetDelay->text());
     store.setValue(QStringLiteral("finderDelayRange"), finderDelayRange->text());
-    store.setValue(QStringLiteral("finderItemCount"), finderItemCount->currentData());
     store.setValue(QStringLiteral("finderMaxTileMismatches"), finderMaxTileMismatches->value());
     store.setValue(QStringLiteral("searcherStartDate"), searcherStartDate->date());
     store.setValue(QStringLiteral("searcherEndDate"), searcherEndDate->date());
