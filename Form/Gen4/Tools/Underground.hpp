@@ -84,6 +84,7 @@ private:
     void updateItemFilters();
     void updateSearcherItemFilters();
     void applyItemFilters();
+    void updateTargetAdvance();
     void updatePlateText();
     ProfileDisplay4 *profileDisplay;
     TextBox *seed;
@@ -114,6 +115,7 @@ private:
     DateEdit *searcherEndDate;
     TextBox *searcherMinDelay;
     TextBox *searcherMaxDelay;
+    QSpinBox *searcherMaxWalls;
     QPushButton *searcherSearchButton;
     QPushButton *searcherCancelButton;
     QProgressBar *searcherProgress;
@@ -126,6 +128,7 @@ private:
     UndergroundTimeModel *searcherTimeModel;
     const Profile4 *currentProfile;
     std::vector<u32> miningFieldHistory;
+    std::vector<u32> targetRoute;
     u8 currentItemCount;
     bool advanceCacheValid;
 };

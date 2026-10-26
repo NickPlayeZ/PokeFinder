@@ -11,11 +11,19 @@
 #include <Form/Gen4/Profile/ProfileDisplay4.hpp>
 #include <Model/SortFilterProxyModel.hpp>
 #include <algorithm>
+#include <atomic>
 #include <bit>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <map>
+#include <memory>
+#include <mutex>
+#include <set>
+#include <thread>
 #include <tuple>
+#include <unordered_map>
+#include <unordered_set>
 #include <QAbstractItemView>
 #include <QAbstractTableModel>
 #include <QAction>
@@ -69,10 +77,10 @@ bool matchesUndergroundFilter(u8 filter, u8 item)
     }
 }
 
-void updateUndergroundFilterCount(QComboBox *filter, QSpinBox *count)
+void updateUndergroundFilterCount(QComboBox *filter, QSpinBox *count, int maximum = 4)
 {
     const int item = filter->currentData().toInt();
-    count->setMaximum(item >= 44 && item <= 59 ? 1 : 4);
+    count->setMaximum(item >= 44 && item <= 59 ? 1 : maximum);
     count->setEnabled(item != 0);
 }
 
@@ -235,6 +243,7 @@ private:
     {
         const u32 key = targetMask | (static_cast<u32>(pickaxes) << 8) | (static_cast<u32>(hammers) << 16);
         if (const auto it = groupAnswers.find(key); it != groupAnswers.end()) return it->second;
+        bool dominated = false;
         for (const auto &[knownKey, possible] : groupAnswers)
         {
             if (!possible || static_cast<u8>(knownKey) != targetMask) continue;
@@ -242,9 +251,14 @@ private:
             const u8 knownHammers = static_cast<u8>(knownKey >> 16);
             if (knownPickaxes <= pickaxes && knownHammers <= hammers)
             {
-                groupAnswers.emplace(key, true);
-                return true;
+                dominated = true;
+                break;
             }
+        }
+        if (dominated)
+        {
+            groupAnswers.emplace(key, true);
+            return true;
         }
         const bool answer = greedyRecover(targetMask, pickaxes, hammers, 0)
             || greedyRecover(targetMask, pickaxes, hammers, 1)
@@ -314,10 +328,144 @@ private:
     const UndergroundResult &result;
     std::array<bool, 130> metal = {};
     std::array<std::vector<int>, 4> itemCells;
-    std::map<u32, bool> combinedAnswers;
-    std::map<u32, bool> groupAnswers;
-    std::map<u32, bool> combineMemo;
+    std::unordered_map<u32, bool> combinedAnswers;
+    std::unordered_map<u32, bool> groupAnswers;
+    std::unordered_map<u32, bool> combineMemo;
 };
+
+struct RecoveryTransition
+{
+    u32 advances;
+    u8 recoveredMask;
+};
+
+struct MiningOutcome
+{
+    u32 advances;
+    u8 pickaxes;
+    u8 hammers;
+    bool collapsed;
+};
+
+const std::vector<MiningOutcome> &getMiningOutcomes()
+{
+    static const std::vector<MiningOutcome> outcomes = [] {
+        using State = std::tuple<u32, u8, u8>;
+        std::array<std::set<State>, 197> states;
+        states[0].emplace(0, 2, 0);
+        std::set<std::tuple<u32, u8, u8, bool>> unique;
+        for (u16 damage = 0; damage < 196; damage++)
+        {
+            for (const auto &[advances, lastTool, hammers] : states[damage])
+            {
+                Q_UNUSED(lastTool);
+                const u8 pickaxes = static_cast<u8>((damage - 8 * hammers) / 4);
+                for (u8 tool = 0; tool < 2; tool++)
+                {
+                    const u16 nextDamage = std::min<u16>(196, damage + (tool == 1 ? 8 : 4));
+                    const u8 nextPickaxes = pickaxes + (tool == 0);
+                    const u8 nextHammers = hammers + (tool == 1);
+                    const u8 duration = static_cast<u8>(nextDamage / 15);
+                    const u32 finalBase = advances + (duration > 1 ? 2 : 0);
+                    unique.emplace(finalBase, nextPickaxes, nextHammers, false);
+                    if (nextDamage == 196)
+                    {
+                        unique.emplace(finalBase, nextPickaxes, nextHammers, true);
+                        continue;
+                    }
+                    const u8 maximumShakeFrames = duration > 1 ? duration - 1 : 0;
+                    states[nextDamage].emplace(advances + 2 * maximumShakeFrames, tool, nextHammers);
+                }
+            }
+        }
+        std::vector<MiningOutcome> values;
+        for (const auto &[advances, pickaxes, hammers, collapsed] : unique)
+        {
+            const bool dominated = std::ranges::any_of(values, [&](const MiningOutcome &value) {
+                return value.advances == advances && value.collapsed == collapsed
+                    && value.pickaxes >= pickaxes && value.hammers >= hammers;
+            });
+            if (dominated) continue;
+            std::erase_if(values, [&](const MiningOutcome &value) {
+                return value.advances == advances && value.collapsed == collapsed
+                    && pickaxes >= value.pickaxes && hammers >= value.hammers;
+            });
+            values.push_back({ advances, pickaxes, hammers, collapsed });
+        }
+        return values;
+    }();
+    return outcomes;
+}
+
+u8 recoveredSphereCount(const UndergroundResult &result, u8 mask)
+{
+    u8 count = 0;
+    for (u8 item = 0; item < result.itemCount; item++)
+        if ((mask & (1 << item)) && result.items[item] >= 1 && result.items[item] <= 10) count++;
+    return count;
+}
+
+std::pair<u32, u32> getPotentialAdvanceRange(const UndergroundResult &result)
+{
+    u32 minimum = std::numeric_limits<u32>::max();
+    u32 maximum = 0;
+    const u8 allMask = static_cast<u8>((1 << result.itemCount) - 1);
+    const u8 spheres = recoveredSphereCount(result, allMask);
+    for (const MiningOutcome &outcome : getMiningOutcomes())
+    {
+        if (!outcome.collapsed)
+        {
+            const u32 advances = outcome.advances + 6 * result.itemCount + spheres;
+            minimum = std::min(minimum, advances);
+            maximum = std::max(maximum, advances);
+        }
+        else for (u8 mask = 0; mask < allMask; mask++)
+        {
+            const u32 advances
+                = outcome.advances + 88 + 6 * std::popcount(mask) + recoveredSphereCount(result, mask);
+            minimum = std::min(minimum, advances);
+            maximum = std::max(maximum, advances);
+        }
+    }
+    return { minimum, maximum };
+}
+
+std::vector<RecoveryTransition> getRecoveryTransitions(const UndergroundResult &result, MiningPlanner &planner,
+                                                       const std::vector<bool> *allowedOffsets = nullptr,
+                                                       u16 allowedMasks = std::numeric_limits<u16>::max())
+{
+    const auto [minimumAdvance, maximumAdvance] = getPotentialAdvanceRange(result);
+    Q_UNUSED(minimumAdvance);
+    std::vector<u16> transitions(maximumAdvance + 1);
+    const u8 allMask = static_cast<u8>((1 << result.itemCount) - 1);
+    const u8 spheres = recoveredSphereCount(result, allMask);
+    for (const MiningOutcome &outcome : getMiningOutcomes())
+    {
+        if (!outcome.collapsed)
+        {
+            const u32 advances = outcome.advances + 6 * result.itemCount + spheres;
+            if ((allowedMasks & (1 << allMask))
+                && (!allowedOffsets || (advances < allowedOffsets->size() && (*allowedOffsets)[advances]))
+                && planner.canRecover(allMask, outcome.pickaxes, outcome.hammers))
+                transitions[advances] |= 1 << allMask;
+            continue;
+        }
+        for (u8 mask = 0; mask < allMask; mask++)
+        {
+            if (!(allowedMasks & (1 << mask))) continue;
+            const u32 advances
+                = outcome.advances + 88 + 6 * std::popcount(mask) + recoveredSphereCount(result, mask);
+            if (allowedOffsets && (advances >= allowedOffsets->size() || !(*allowedOffsets)[advances])) continue;
+            if (planner.canRecover(mask, outcome.pickaxes, outcome.hammers)) transitions[advances] |= 1 << mask;
+        }
+    }
+
+    std::vector<RecoveryTransition> values;
+    for (u32 advances = 0; advances < transitions.size(); advances++)
+        for (u8 mask = 0; mask < 16; mask++)
+            if (transitions[advances] & (1 << mask)) values.push_back({ advances, mask });
+    return values;
+}
 
 bool betterGuidance(const AdvanceGuidance &candidate, const AdvanceGuidance &current, bool preferCollapse)
 {
@@ -399,6 +547,11 @@ public:
         return headers[section];
     }
     u32 getActualAdvance(int row) const { return rows[row].actualAdvance; }
+    int getRowForActualAdvance(u32 advance) const
+    {
+        const auto it = std::ranges::find(rows, advance, &UndergroundAdvanceRow::actualAdvance);
+        return it == rows.end() ? -1 : static_cast<int>(std::distance(rows.begin(), it));
+    }
     bool isCollapsed(int row) const { return rows[row].collapsed; }
     void setAllRows(std::vector<UndergroundAdvanceRow> values)
     {
@@ -481,6 +634,16 @@ struct UndergroundSearcherRow
     u32 delay;
     std::array<u8, 4> items;
     u8 itemCount;
+    u8 matchingItems;
+    u8 walls;
+    std::vector<u32> routeAdvances;
+};
+
+struct UndergroundRouteMatch
+{
+    u8 matchingItems;
+    u8 walls;
+    std::vector<u32> advances;
 };
 
 class UndergroundSearcherModel final : public QAbstractTableModel
@@ -488,21 +651,23 @@ class UndergroundSearcherModel final : public QAbstractTableModel
 public:
     explicit UndergroundSearcherModel(QObject *parent) : QAbstractTableModel(parent) {}
     int rowCount(const QModelIndex & = QModelIndex()) const override { return static_cast<int>(rows.size()); }
-    int columnCount(const QModelIndex & = QModelIndex()) const override { return 6; }
+    int columnCount(const QModelIndex & = QModelIndex()) const override { return 8; }
     QVariant data(const QModelIndex &index, int role) const override
     {
         if (!index.isValid() || role != Qt::DisplayRole) return {};
         const auto &row = rows[index.row()];
         if (index.column() == 0) return QString::number(row.seed, 16).toUpper();
         if (index.column() == 1) return row.delay;
+        if (index.column() == 6) return row.matchingItems;
+        if (index.column() == 7) return row.walls;
         const int item = index.column() - 2;
         return item < row.itemCount ? QString::fromStdString(UndergroundGenerator::getItemName(row.items[item])) : QStringLiteral("-");
     }
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
         if (orientation != Qt::Horizontal || role != Qt::DisplayRole) return {};
-        static const std::array<QString, 6> headers
-            = { tr("Seed"), tr("Delay"), tr("Item 1"), tr("Item 2"), tr("Item 3"), tr("Item 4") };
+        static const std::array<QString, 8> headers = { tr("Seed"), tr("Delay"), tr("Item 1"), tr("Item 2"), tr("Item 3"),
+            tr("Item 4"), tr("Items"), tr("Walls") };
         return headers[section];
     }
     const UndergroundSearcherRow &getRow(int row) const { return rows[row]; }
@@ -528,8 +693,9 @@ class UndergroundSeedSearcher final : public SearcherBase<UndergroundSearcherRow
 {
 public:
     UndergroundSeedSearcher(QDate startDate, QDate endDate, u32 minDelay, u32 maxDelay,
-                            std::array<std::pair<u8, u8>, 4> filters, UndergroundGenerator generator) :
-        startDate(startDate), endDate(endDate), minDelay(minDelay), maxDelay(maxDelay), filters(filters), generator(generator)
+                            std::array<std::pair<u8, u8>, 4> filters, u8 maxWalls, UndergroundGenerator generator) :
+        startDate(startDate), endDate(endDate), minDelay(minDelay), maxDelay(maxDelay), filters(filters), maxWalls(maxWalls),
+        generator(generator)
     {
     }
 
@@ -543,7 +709,308 @@ public:
         });
     }
 
+    int getDetailedProgress() const
+    {
+        return static_cast<int>((progress.load(std::memory_order_relaxed) * 10000) / maxProgress);
+    }
+
 private:
+    UndergroundRouteMatch findRoute(u64 seed, const UndergroundResult &initial)
+    {
+        bool hasFilter = false;
+        for (const auto &[item, minimum] : filters)
+        {
+            if (item != 0 && minimum != 0) hasFilter = true;
+            if (item != 0 && minimum > 4 * maxWalls) return { 0, 0, {} };
+        }
+        if (!hasFilter) return { 0, 1, {} };
+
+        struct RouteState
+        {
+            u32 advance;
+            u16 minedPlates;
+            std::array<u8, 4> counts;
+            u8 matchingItems;
+            std::array<u32, 4> route;
+            u8 routeLength;
+        };
+        struct RouteKey
+        {
+            u32 advance;
+            u16 minedPlates;
+            std::array<u8, 4> counts;
+            bool operator==(const RouteKey &) const = default;
+        };
+        struct RouteKeyHash
+        {
+            size_t operator()(const RouteKey &key) const
+            {
+                size_t value = key.advance;
+                value = value * 31 + key.minedPlates;
+                for (u8 count : key.counts) value = value * 31 + count;
+                return value;
+            }
+        };
+        using WallKey = std::pair<u32, u16>;
+        std::map<u16, UndergroundGenerator> generatorCache;
+        generatorCache.emplace(0, generator);
+        auto getRouteGenerator = [&](u16 minedPlates) -> const UndergroundGenerator & {
+            if (const auto it = generatorCache.find(minedPlates); it != generatorCache.end()) return it->second;
+            UndergroundGenerator routeGenerator = generator;
+            for (u8 plate = 0; plate < 16; plate++)
+                if (minedPlates & (1 << plate)) routeGenerator.setMinedPlate(44 + plate);
+            return generatorCache.emplace(minedPlates, std::move(routeGenerator)).first->second;
+        };
+        std::map<WallKey, UndergroundResult> wallCache;
+        wallCache.emplace(WallKey(0, 0), initial);
+        auto getWall = [&](u32 advance, u16 minedPlates) -> const UndergroundResult & {
+            const WallKey key(advance, minedPlates);
+            if (const auto it = wallCache.find(key); it != wallCache.end()) return it->second;
+            return wallCache
+                .emplace(key, getRouteGenerator(minedPlates).generate(UndergroundGenerator::advanceSeed(seed, advance)))
+                .first->second;
+        };
+        std::map<WallKey, std::unique_ptr<MiningPlanner>> plannerCache;
+        struct LookaheadKey
+        {
+            u32 advance;
+            u16 minedPlates;
+            std::array<u8, 4> counts;
+            u8 wall;
+            bool operator==(const LookaheadKey &) const = default;
+        };
+        struct LookaheadKeyHash
+        {
+            size_t operator()(const LookaheadKey &key) const
+            {
+                size_t value = key.advance;
+                value = value * 31 + key.minedPlates;
+                value = value * 31 + key.wall;
+                for (u8 count : key.counts) value = value * 31 + count;
+                return value;
+            }
+        };
+        std::unordered_map<LookaheadKey, bool, LookaheadKeyHash> lookaheadMemo;
+        std::function<bool(u8, u32, u16, std::array<u8, 4>)> canPossiblyComplete;
+        canPossiblyComplete = [&](u8 wall, u32 advance, u16 minedPlates, std::array<u8, 4> counts) {
+            if (cancelled.load(std::memory_order_relaxed)) return false;
+            const LookaheadKey key { advance, minedPlates, counts, wall };
+            if (const auto it = lookaheadMemo.find(key); it != lookaheadMemo.end()) return it->second;
+            const UndergroundResult &result = getWall(advance, minedPlates);
+            for (size_t filter = 0; filter < filters.size(); filter++)
+            {
+                if (filters[filter].first == 0) continue;
+                counts[filter] = std::min<u8>(filters[filter].second,
+                    counts[filter] + static_cast<u8>(countUndergroundFilter(
+                        result.items.begin(), result.items.begin() + result.itemCount, filters[filter].first)));
+            }
+            bool complete = true;
+            for (size_t filter = 0; filter < filters.size(); filter++)
+                if (filters[filter].first != 0 && counts[filter] < filters[filter].second)
+                {
+                    complete = false;
+                    break;
+                }
+            if (complete) return lookaheadMemo.emplace(key, true).first->second;
+            if (wall == maxWalls) return lookaheadMemo.emplace(key, false).first->second;
+            for (size_t filter = 0; filter < filters.size(); filter++)
+                if (filters[filter].first != 0 && counts[filter] + 4 * (maxWalls - wall) < filters[filter].second)
+                    return lookaheadMemo.emplace(key, false).first->second;
+
+            std::vector<u16> plateMasks = { 0 };
+            for (u8 item = 0; item < result.itemCount; item++)
+            {
+                if (result.items[item] < 44 || result.items[item] > 59) continue;
+                const u16 plate = static_cast<u16>(1 << (result.items[item] - 44));
+                const size_t size = plateMasks.size();
+                for (size_t index = 0; index < size; index++) plateMasks.push_back(plateMasks[index] | plate);
+            }
+            std::ranges::sort(plateMasks);
+            plateMasks.erase(std::unique(plateMasks.begin(), plateMasks.end()), plateMasks.end());
+            const auto [minimumOffset, maximumOffset] = getPotentialAdvanceRange(result);
+            for (u32 offset = minimumOffset;; offset++)
+            {
+                if (cancelled.load(std::memory_order_relaxed)) return false;
+                const u32 nextAdvance = advance + result.advances + offset;
+                for (u16 addedPlates : plateMasks)
+                    if (canPossiblyComplete(wall + 1, nextAdvance, minedPlates | addedPlates, counts))
+                        return lookaheadMemo.emplace(key, true).first->second;
+                if (offset == maximumOffset) break;
+            }
+            return lookaheadMemo.emplace(key, false).first->second;
+        };
+        std::vector<RouteState> current = { { 0, 0, {}, 0, {}, 0 } };
+        for (u8 wall = 1; wall <= maxWalls && !cancelled.load(std::memory_order_relaxed); wall++)
+        {
+            std::vector<RouteState> next;
+            std::unordered_map<RouteKey, size_t, RouteKeyHash> seen;
+            UndergroundRouteMatch best = { 0, 0, {} };
+            for (const RouteState &state : current)
+            {
+                const UndergroundResult &result = getWall(state.advance, state.minedPlates);
+                bool canStillComplete = true;
+                for (size_t filter = 0; filter < filters.size(); filter++)
+                {
+                    if (filters[filter].first == 0) continue;
+                    const u8 onThisWall = static_cast<u8>(countUndergroundFilter(
+                        result.items.begin(), result.items.begin() + result.itemCount, filters[filter].first));
+                    const u8 futureMaximum = static_cast<u8>(4 * (maxWalls - wall));
+                    if (state.counts[filter] + onThisWall + futureMaximum < filters[filter].second)
+                    {
+                        canStillComplete = false;
+                        break;
+                    }
+                }
+                if (!canStillComplete) continue;
+
+                const u8 allMask = static_cast<u8>((1 << result.itemCount) - 1);
+                u16 allowedMasks = 0;
+                for (u8 mask = 0; mask <= allMask; mask++)
+                {
+                    bool useful = true;
+                    for (size_t filter = 0; filter < filters.size(); filter++)
+                    {
+                        if (filters[filter].first == 0) continue;
+                        u8 recovered = 0;
+                        for (u8 item = 0; item < result.itemCount; item++)
+                            if ((mask & (1 << item)) && matchesUndergroundFilter(filters[filter].first, result.items[item]))
+                                recovered++;
+                        if (state.counts[filter] + recovered + 4 * (maxWalls - wall) < filters[filter].second)
+                        {
+                            useful = false;
+                            break;
+                        }
+                    }
+                    if (useful) allowedMasks |= 1 << mask;
+                }
+                if (allowedMasks == 0) continue;
+
+                const auto [minimumOffset, maximumOffset] = getPotentialAdvanceRange(result);
+                std::vector<bool> allowedOffsets(maximumOffset + 1);
+                if (wall < maxWalls)
+                {
+                    std::vector<u16> possiblePlateMasks = { 0 };
+                    for (u8 item = 0; item < result.itemCount; item++)
+                    {
+                        if (result.items[item] < 44 || result.items[item] > 59) continue;
+                        const u16 plate = static_cast<u16>(1 << (result.items[item] - 44));
+                        const size_t size = possiblePlateMasks.size();
+                        for (size_t i = 0; i < size; i++) possiblePlateMasks.push_back(possiblePlateMasks[i] | plate);
+                    }
+                    std::ranges::sort(possiblePlateMasks);
+                    possiblePlateMasks.erase(std::unique(possiblePlateMasks.begin(), possiblePlateMasks.end()),
+                                             possiblePlateMasks.end());
+
+                    std::array<u8, 4> currentMaximum = {};
+                    for (size_t filter = 0; filter < filters.size(); filter++)
+                        if (filters[filter].first != 0)
+                            currentMaximum[filter] = static_cast<u8>(countUndergroundFilter(
+                                result.items.begin(), result.items.begin() + result.itemCount, filters[filter].first));
+                    std::array<u8, 4> optimisticCounts = state.counts;
+                    for (size_t filter = 0; filter < filters.size(); filter++)
+                        optimisticCounts[filter] = std::min<u8>(filters[filter].second,
+                            optimisticCounts[filter] + currentMaximum[filter]);
+                    for (u32 offset = minimumOffset;; offset++)
+                    {
+                        const u32 nextAdvance = state.advance + result.advances + offset;
+                        bool promising = false;
+                        for (u16 addedPlates : possiblePlateMasks)
+                        {
+                            promising = canPossiblyComplete(
+                                wall + 1, nextAdvance, state.minedPlates | addedPlates, optimisticCounts);
+                            if (promising) break;
+                        }
+                        if (promising) allowedOffsets[offset] = true;
+                        if (offset == maximumOffset) break;
+                    }
+                    if (std::ranges::none_of(allowedOffsets, [](bool allowed) { return allowed; })) continue;
+                }
+
+                const WallKey wallKey(state.advance, state.minedPlates);
+                auto &planner = plannerCache[wallKey];
+                if (!planner) planner = std::make_unique<MiningPlanner>(result);
+                const auto transitions = getRecoveryTransitions(
+                    result, *planner, wall < maxWalls ? &allowedOffsets : nullptr, allowedMasks);
+                for (const RecoveryTransition &transition : transitions)
+                {
+                    if (cancelled.load(std::memory_order_relaxed)) return { 0, 0, {} };
+                    RouteState candidate = state;
+                    candidate.advance = state.advance + result.advances + transition.advances;
+                    for (u8 itemIndex = 0; itemIndex < result.itemCount; itemIndex++)
+                    {
+                        if (!(transition.recoveredMask & (1 << itemIndex))) continue;
+                        const u8 item = result.items[itemIndex];
+                        bool matchesAny = false;
+                        for (size_t filter = 0; filter < filters.size(); filter++)
+                        {
+                            if (filters[filter].first == 0 || !matchesUndergroundFilter(filters[filter].first, item)) continue;
+                            candidate.counts[filter] = std::min<u8>(filters[filter].second, candidate.counts[filter] + 1);
+                            matchesAny = true;
+                        }
+                        if (matchesAny) candidate.matchingItems++;
+                        if (item >= 44 && item <= 59) candidate.minedPlates |= 1 << (item - 44);
+                    }
+                    bool complete = true;
+                    for (size_t filter = 0; filter < filters.size(); filter++)
+                    {
+                        if (filters[filter].first != 0 && candidate.counts[filter] < filters[filter].second)
+                        {
+                            complete = false;
+                            break;
+                        }
+                    }
+                    if (complete)
+                    {
+                        if (best.walls == 0 || candidate.matchingItems > best.matchingItems)
+                        {
+                            best = { candidate.matchingItems, wall,
+                                std::vector<u32>(state.route.begin(), state.route.begin() + state.routeLength) };
+                        }
+                        continue;
+                    }
+                    if (wall == maxWalls) continue;
+                    candidate.route[candidate.routeLength++] = candidate.advance;
+                    const RouteKey key { candidate.advance, candidate.minedPlates, candidate.counts };
+                    const auto [it, inserted] = seen.emplace(key, next.size());
+                    if (inserted) next.emplace_back(std::move(candidate));
+                    else if (candidate.matchingItems > next[it->second].matchingItems)
+                        next[it->second] = std::move(candidate);
+                }
+            }
+            if (best.walls != 0) return best;
+            std::ranges::sort(next, {}, [](const RouteState &state) {
+                return std::pair(state.advance, state.minedPlates);
+            });
+            std::vector<RouteState> pruned;
+            for (size_t begin = 0; begin < next.size();)
+            {
+                size_t end = begin + 1;
+                while (end < next.size() && next[end].advance == next[begin].advance
+                       && next[end].minedPlates == next[begin].minedPlates)
+                    end++;
+                std::vector<RouteState> frontier;
+                for (size_t index = begin; index < end; index++)
+                {
+                    const RouteState &candidate = next[index];
+                    const auto dominates = [](const RouteState &left, const RouteState &right) {
+                        return left.matchingItems >= right.matchingItems
+                            && std::ranges::equal(left.counts, right.counts, std::greater_equal<>());
+                    };
+                    if (std::ranges::any_of(frontier,
+                            [&](const RouteState &state) { return dominates(state, candidate); }))
+                        continue;
+                    std::erase_if(frontier, [&](const RouteState &state) { return dominates(candidate, state); });
+                    frontier.push_back(candidate);
+                }
+                pruned.insert(pruned.end(), std::make_move_iterator(frontier.begin()),
+                              std::make_move_iterator(frontier.end()));
+                begin = end;
+            }
+            current = std::move(pruned);
+        }
+        return { 0, 0, {} };
+    }
+
     void run()
     {
         u64 lastCheckedSeed = 0;
@@ -565,50 +1032,62 @@ private:
             }
 
             const u64 candidateSpan = bases.back() + maxDelay - (bases.front() + minDelay) + 1;
-            u64 processed = 0;
+            std::atomic<u64> processed = 0;
             auto testRange = [&](u64 first, u64 last) {
                 if (haveLastCheckedSeed && first <= lastCheckedSeed) first = lastCheckedSeed + 1;
-                std::vector<UndergroundSearcherRow> found;
-                auto flush = [&] {
-                    if (found.empty()) return;
-                    std::lock_guard<std::mutex> guard(mutex);
-                    results.insert(results.end(), std::make_move_iterator(found.begin()), std::make_move_iterator(found.end()));
-                    found.clear();
-                };
-                for (u64 candidateSeed = first; candidateSeed <= last && !cancelled.load(std::memory_order_relaxed); candidateSeed++)
+                if (first > last) return;
+                std::atomic<u64> nextSeed = first;
+                const u64 threadCount = std::min<u64>(std::max(1u, std::thread::hardware_concurrency()), last - first + 1);
+                std::vector<std::thread> workers;
+                workers.reserve(static_cast<size_t>(threadCount));
+                for (u64 thread = 0; thread < threadCount; thread++)
                 {
-                    const UndergroundResult result = generator.generate(candidateSeed);
-                    bool matches = true;
-                    for (const auto &[item, minimum] : filters)
-                    {
-                        if (item == 0) continue;
-                        const int count = countUndergroundFilter(result.items.begin(), result.items.begin() + result.itemCount, item);
-                        if (count < minimum)
+                    workers.emplace_back([&, first, last] {
+                        std::vector<UndergroundSearcherRow> found;
+                        auto flush = [&] {
+                            if (found.empty()) return;
+                            std::lock_guard<std::mutex> guard(mutex);
+                            results.insert(results.end(), std::make_move_iterator(found.begin()),
+                                           std::make_move_iterator(found.end()));
+                            found.clear();
+                        };
+                        while (!cancelled.load(std::memory_order_relaxed))
                         {
-                            matches = false;
-                            break;
+                            const u64 chunkStart = nextSeed.fetch_add(32, std::memory_order_relaxed);
+                            if (chunkStart > last) break;
+                            const u64 chunkEnd = std::min<u64>(last, chunkStart + 31);
+                            for (u64 candidateSeed = chunkStart; candidateSeed <= chunkEnd; candidateSeed++)
+                            {
+                                const UndergroundResult result = generator.generate(candidateSeed);
+                                UndergroundRouteMatch route = findRoute(candidateSeed, result);
+                                if (route.walls != 0)
+                                {
+                                    const u64 minimumBase = candidateSeed >= maxDelay ? candidateSeed - maxDelay : 0;
+                                    const u64 maximumBase = candidateSeed >= minDelay ? candidateSeed - minDelay : 0;
+                                    auto base = std::upper_bound(bases.begin(), bases.end(), maximumBase);
+                                    if (base != bases.begin())
+                                    {
+                                        --base;
+                                        if (*base >= minimumBase)
+                                        {
+                                            found.push_back({ candidateSeed, static_cast<u32>(candidateSeed - *base), result.items,
+                                                              result.itemCount, route.matchingItems, route.walls,
+                                                              std::move(route.advances) });
+                                            flush();
+                                        }
+                                    }
+                                }
+                                const u64 done = processed.fetch_add(1, std::memory_order_relaxed) + 1;
+                                progress.store(dateIndex * 1000 + std::min<u64>(999, (done * 1000) / candidateSpan),
+                                               std::memory_order_relaxed);
+                                if (cancelled.load(std::memory_order_relaxed) || candidateSeed == chunkEnd) break;
+                            }
+                            if (found.size() >= 64) flush();
                         }
-                    }
-                    if (matches)
-                    {
-                        const u64 minimumBase = candidateSeed >= maxDelay ? candidateSeed - maxDelay : 0;
-                        const u64 maximumBase = candidateSeed >= minDelay ? candidateSeed - minDelay : 0;
-                        auto base = std::upper_bound(bases.begin(), bases.end(), maximumBase);
-                        if (base != bases.begin())
-                        {
-                            --base;
-                            if (*base >= minimumBase)
-                                found.push_back({ candidateSeed, static_cast<u32>(candidateSeed - *base), result.items, result.itemCount });
-                        }
-                    }
-                    if (found.size() >= 64) flush();
-                    processed++;
-                    if ((processed & 0xFF) == 0)
-                        progress.store(dateIndex * 1000 + std::min<u64>(999, (processed * 1000) / candidateSpan),
-                                       std::memory_order_relaxed);
-                    if (candidateSeed == last) break;
+                        flush();
+                    });
                 }
-                flush();
+                for (std::thread &worker : workers) worker.join();
                 if (!haveLastCheckedSeed || last > lastCheckedSeed)
                 {
                     lastCheckedSeed = last;
@@ -631,7 +1110,8 @@ private:
                 }
             }
             if (!cancelled.load(std::memory_order_relaxed)) testRange(rangeStart, rangeEnd);
-            progress.store((dateIndex + 1) * 1000, std::memory_order_relaxed);
+            if (!cancelled.load(std::memory_order_relaxed))
+                progress.store((dateIndex + 1) * 1000, std::memory_order_relaxed);
         }
     }
 
@@ -640,6 +1120,7 @@ private:
     u32 minDelay;
     u32 maxDelay;
     std::array<std::pair<u8, u8>, 4> filters;
+    u8 maxWalls;
     UndergroundGenerator generator;
 };
 
@@ -1084,6 +1565,9 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherMaxDelay = new TextBox(searcherRngGroup);
     searcherMaxDelay->setValues(InputType::Delay);
     searcherMaxDelay->setText(QStringLiteral("2000"));
+    searcherMaxWalls = new QSpinBox(searcherRngGroup);
+    searcherMaxWalls->setRange(1, 5);
+    searcherMaxWalls->setValue(1);
     searcherSearchButton = new QPushButton(tr("Search"), searcherRngGroup);
     searcherCancelButton = new QPushButton(tr("Cancel"), searcherRngGroup);
     searcherCancelButton->setEnabled(false);
@@ -1093,6 +1577,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherRng->addRow(tr("End Date"), searcherEndDate);
     searcherRng->addRow(tr("Min Delay"), searcherMinDelay);
     searcherRng->addRow(tr("Max Delay"), searcherMaxDelay);
+    searcherRng->addRow(tr("Maximum Walls"), searcherMaxWalls);
     auto *searchButtons = new QWidget(searcherRngGroup);
     auto *searchButtonsLayout = new QHBoxLayout(searchButtons);
     searchButtonsLayout->setContentsMargins(0, 0, 0, 0);
@@ -1111,14 +1596,14 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         searcherItemFilters[i] = itemFilter;
         itemFilter->addItem(tr("Any"), 0);
         searcherItemFilterCounts[i] = new QSpinBox(searcherFiltersGroup);
-        searcherItemFilterCounts[i]->setRange(1, 4);
+        searcherItemFilterCounts[i]->setRange(1, 20);
         searcherItemFilterCounts[i]->setFixedWidth(55);
         searcherItemFilterCounts[i]->setEnabled(false);
         searcherFiltersLayout->addWidget(itemFilter, i, 0);
         searcherFiltersLayout->addWidget(searcherItemFilterCounts[i], i, 1);
         connect(itemFilter, &QComboBox::currentIndexChanged, searcherItemFilterCounts[i], [this, i](int index) {
             Q_UNUSED(index);
-            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i]);
+            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i], 20);
         });
     }
     auto *resetSearcherFilters = new QPushButton(tr("Reset"), searcherFiltersGroup);
@@ -1128,7 +1613,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         {
             searcherItemFilters[i]->setCurrentIndex(0);
             searcherItemFilterCounts[i]->setValue(1);
-            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i]);
+            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i], 20);
         }
     });
     searcherFiltersLayout->setColumnStretch(0, 1);
@@ -1184,11 +1669,14 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         advanceCacheValid = false;
         currentFrame->setValue(0);
         miningFieldHistory.clear();
+        targetRoute.clear();
+        advances->clearTargetAdvance();
         backButton->setEnabled(false);
         resetButton->setEnabled(false);
     });
     connect(backButton, &QPushButton::clicked, this, [this, backButton, resetButton] {
         if (miningFieldHistory.empty()) return;
+        targetRoute.clear();
         currentFrame->setValue(static_cast<int>(miningFieldHistory.back()));
         miningFieldHistory.pop_back();
         advanceCacheValid = false;
@@ -1198,6 +1686,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     });
     connect(resetButton, &QPushButton::clicked, this, [this, backButton, resetButton] {
         miningFieldHistory.clear();
+        targetRoute.clear();
         currentFrame->setValue(0);
         advanceCacheValid = false;
         generate();
@@ -1233,12 +1722,16 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         tabs->setCurrentIndex(0);
         generate();
     });
-    connect(searcherGoToGenerator, &QAction::triggered, this, [this, tabs, backButton, resetButton] {
+    connect(searcherGoToGenerator, &QAction::triggered, this, [this, tabs, backButton, resetButton, searcherProxy] {
         const QModelIndex index = searcherTable->currentIndex();
         if (!index.isValid()) return;
+        const QModelIndex sourceIndex = searcherProxy->mapToSource(index);
+        if (!sourceIndex.isValid()) return;
+        const UndergroundSearcherRow &row = searcherModel->getRow(sourceIndex.row());
         seed->setText(index.siblingAtColumn(0).data().toString());
         currentFrame->setValue(0);
         miningFieldHistory.clear();
+        targetRoute = row.routeAdvances;
         backButton->setEnabled(false);
         resetButton->setEnabled(false);
         tabs->setCurrentIndex(0);
@@ -1272,8 +1765,11 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     connect(setAsCurrent, &QAction::triggered, this, [this, backButton, resetButton] {
         const QModelIndex index = advances->currentIndex();
         if (!index.isValid()) return;
+        const u32 selectedAdvance = advanceModel->getActualAdvance(index.row());
+        if (!targetRoute.empty() && selectedAdvance == targetRoute.front()) targetRoute.erase(targetRoute.begin());
+        else targetRoute.clear();
         miningFieldHistory.push_back(static_cast<u32>(currentFrame->value()));
-        currentFrame->setValue(static_cast<int>(advanceModel->getActualAdvance(index.row())));
+        currentFrame->setValue(static_cast<int>(selectedAdvance));
         advanceCacheValid = false;
         generate();
         backButton->setEnabled(true);
@@ -1294,6 +1790,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherEndDate->setDate(store.value(QStringLiteral("searcherEndDate"), QDate::currentDate()).toDate());
     searcherMinDelay->setText(store.value(QStringLiteral("searcherMinDelay"), searcherMinDelay->text()).toString());
     searcherMaxDelay->setText(store.value(QStringLiteral("searcherMaxDelay"), searcherMaxDelay->text()).toString());
+    searcherMaxWalls->setValue(store.value(QStringLiteral("searcherMaxWalls"), 1).toInt());
     if (store.contains(QStringLiteral("geometry"))) restoreGeometry(store.value(QStringLiteral("geometry")).toByteArray());
     else resize(1600, 900);
     store.endGroup();
@@ -1312,6 +1809,7 @@ Underground4::~Underground4()
     store.setValue(QStringLiteral("searcherEndDate"), searcherEndDate->date());
     store.setValue(QStringLiteral("searcherMinDelay"), searcherMinDelay->text());
     store.setValue(QStringLiteral("searcherMaxDelay"), searcherMaxDelay->text());
+    store.setValue(QStringLiteral("searcherMaxWalls"), searcherMaxWalls->value());
     store.setValue(QStringLiteral("geometry"), saveGeometry());
     store.endGroup();
 }
@@ -1321,6 +1819,8 @@ void Underground4::profileChanged(const Profile4 &profile)
 {
     currentProfile = &profile;
     advanceCacheValid = false;
+    targetRoute.clear();
+    advances->clearTargetAdvance();
     std::vector<int> plates;
     const auto mined = profile.getMinedPlates();
     for (int i = 0; i < static_cast<int>(mined.size()); i++)
@@ -1408,6 +1908,7 @@ void Underground4::search()
     const QDate endDate = searcherEndDate->date();
     const u32 minDelay = searcherMinDelay->getUInt();
     const u32 maxDelay = searcherMaxDelay->getUInt();
+    const u8 maxWalls = static_cast<u8>(searcherMaxWalls->value());
     const UndergroundGenerator generator = getGenerator();
     std::array<std::pair<u8, u8>, 4> filters = {};
     for (size_t i = 0; i < filters.size(); i++)
@@ -1417,9 +1918,10 @@ void Underground4::search()
     searcherModel->setRows({});
     searcherSearchButton->setEnabled(false);
     searcherCancelButton->setEnabled(true);
-    searcherProgress->setRange(0, static_cast<int>(startDate.daysTo(endDate) + 1));
+    searcherProgress->setRange(0, 10000);
     searcherProgress->setValue(0);
-    auto *searcher = new UndergroundSeedSearcher(startDate, endDate, minDelay, maxDelay, filters, generator);
+    searcherProgress->setFormat(QStringLiteral("%p%"));
+    auto *searcher = new UndergroundSeedSearcher(startDate, endDate, minDelay, maxDelay, filters, maxWalls, generator);
     auto *timer = new QTimer(this);
     connect(searcherCancelButton, &QPushButton::clicked, timer, [this, searcher] {
         searcher->cancelSearch();
@@ -1427,12 +1929,16 @@ void Underground4::search()
     });
     connect(timer, &QTimer::timeout, this, [this, searcher, timer] {
         searcherModel->addRows(searcher->getResults());
-        searcherProgress->setValue((searcherProgress->maximum() * searcher->getProgress()) / 100);
+        const int detailedProgress = searcher->getDetailedProgress();
+        searcherProgress->setValue(detailedProgress);
         if (!searcher->isSearching())
         {
             timer->stop();
             searcherModel->addRows(searcher->getResults());
-            if (!searcher->isCancelled()) searcherProgress->setValue(searcherProgress->maximum());
+            if (!searcher->isCancelled())
+            {
+                searcherProgress->setValue(searcherProgress->maximum());
+            }
             searcherSearchButton->setEnabled(true);
             searcherCancelButton->setEnabled(false);
             delete searcher;
@@ -1565,7 +2071,7 @@ void Underground4::updateSearcherItemFilters()
         const int index = filter->findData(selected);
         filter->setCurrentIndex(index >= 0 ? index : 0);
         filter->blockSignals(false);
-        updateUndergroundFilterCount(filter, searcherItemFilterCounts[filterIndex]);
+        updateUndergroundFilterCount(filter, searcherItemFilterCounts[filterIndex], 20);
     }
 }
 
@@ -1579,6 +2085,19 @@ void Underground4::applyItemFilters()
                            static_cast<u8>(itemFilterCounts[index]->value()) };
     }
     advanceModel->applyFilters(filters);
+    updateTargetAdvance();
+}
+
+void Underground4::updateTargetAdvance()
+{
+    if (targetRoute.empty())
+    {
+        advances->clearTargetAdvance();
+        return;
+    }
+    const int row = advanceModel->getRowForActualAdvance(targetRoute.front());
+    if (row < 0) advances->clearTargetAdvance();
+    else advances->setTargetAdvance(advanceModel->index(row, 0).data().toUInt());
 }
 
 void Underground4::generateFrame(bool current)

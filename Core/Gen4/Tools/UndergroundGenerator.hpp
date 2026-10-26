@@ -29,16 +29,25 @@ struct UndergroundResult
     u32 advances = 0;
 };
 
+struct UndergroundItemResult
+{
+    std::array<u8, 4> items = {};
+    u8 itemCount = 0;
+};
+
 class UndergroundGenerator
 {
 public:
     UndergroundGenerator(Game version, u16 tid, bool nationalDex, const std::array<bool, 16> &minedPlates, bool undergroundOrb);
     UndergroundResult generate(u64 seed) const;
+    UndergroundItemResult generateItems(u64 seed) const;
     static u64 advanceSeed(u64 seed, u32 advances);
+    static u64 nextSeed(u64 seed);
     static u64 advanceBetweenSpots(u64 state, const UndergroundResult &current, bool allItemsReceived,
                                    const std::array<bool, 4> &uncovered, const std::vector<u8> &tools, u32 &advances);
     static std::string getItemName(u8 item);
     std::vector<u8> getAvailableItems() const;
+    void setMinedPlate(u8 item);
 
 private:
     Game version;
@@ -46,6 +55,9 @@ private:
     bool nationalDex;
     bool undergroundOrb;
     std::array<bool, 16> minedPlates;
+    std::array<u16, 71> activeWeights;
+    std::array<u32, 71> cumulativeWeights;
+    u32 totalWeight;
 };
 
 #endif // UNDERGROUNDGENERATOR_HPP

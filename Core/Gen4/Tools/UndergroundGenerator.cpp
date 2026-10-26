@@ -26,19 +26,43 @@ constexpr WeightData diamondPearlWeights[] = {
 #include "UndergroundDiamondWeights.inc"
 };
 
+constexpr u64 miningMultiplier = 0x5D588B656C078965ULL;
+constexpr u64 miningIncrement = 0x269EC3ULL;
+
+u64 advanceMiningState(u64 state, u32 advances)
+{
+    u64 multiplier = 1;
+    u64 increment = 0;
+    u64 currentMultiplier = miningMultiplier;
+    u64 currentIncrement = miningIncrement;
+    while (advances != 0)
+    {
+        if (advances & 1)
+        {
+            multiplier *= currentMultiplier;
+            increment = increment * currentMultiplier + currentIncrement;
+        }
+        currentIncrement *= currentMultiplier + 1;
+        currentMultiplier *= currentMultiplier;
+        advances >>= 1;
+    }
+    return state * multiplier + increment;
+}
+
 class MiningRNG
 {
 public:
     explicit MiningRNG(u64 seed) : state(seed), advances(0) {}
     u32 next(u32 bound)
     {
-        state = state * 0x5D588B656C078965ULL + 0x269EC3ULL;
+        state = state * miningMultiplier + miningIncrement;
         advances++;
         return static_cast<u32>((static_cast<u64>(state >> 32) * bound) >> 32);
     }
     void advance(u32 count)
     {
-        while (count--) next(1);
+        state = advanceMiningState(state, count);
+        advances += count;
     }
     u64 getState() const { return state; }
     u32 getAdvances() const { return advances; }
@@ -72,52 +96,20 @@ bool place(const MiningObjectData &object, u8 x, u8 y, u8 value, std::array<u8, 
     }
     return true;
 }
-}
 
-UndergroundGenerator::UndergroundGenerator(Game version, u16 tid, bool nationalDex, const std::array<bool, 16> &minedPlates,
-                                           bool undergroundOrb) :
-    version(version), tid(tid), nationalDex(nationalDex), undergroundOrb(undergroundOrb), minedPlates(minedPlates)
+void generateTreasures(MiningRNG &rng, const std::array<u32, 71> &cumulativeWeights, u32 totalWeight,
+                       const std::array<bool, 16> &minedPlates, UndergroundResult &result, std::array<u8, 130> &grid)
 {
-}
-
-UndergroundResult UndergroundGenerator::generate(u64 seed) const
-{
-    MiningRNG rng(seed);
-    UndergroundResult result;
-    std::array<u8, 130> grid = {};
-    const bool odd = (tid & 1) != 0;
-    const auto &objects = platinumObjects;
     constexpr size_t treasureCount = 71;
-    constexpr size_t rockStart = 71;
-    constexpr size_t rockCount = std::size(objects) - rockStart;
-
-    auto activeWeight = [&](size_t index) {
-        if (version == Game::Platinum) return weight(objects[index], odd, nationalDex);
-        const auto &entry = diamondPearlWeights[index];
-        const bool diamond = version == Game::Diamond;
-        u16 value = nationalDex ? (diamond ? entry.diamondDex : entry.pearlDex) : (diamond ? entry.diamond : entry.pearl);
-        if (undergroundOrb)
-        {
-            if ((diamond && objects[index].item == 1) || (!diamond && objects[index].item == 2)) value += 66;
-            if ((diamond && objects[index].item == 6) || (!diamond && objects[index].item == 7)) value += 33;
-        }
-        return value;
-    };
-    u32 totalWeight = 0;
-    for (size_t i = 0; i < treasureCount; i++) totalWeight += activeWeight(i);
     result.itemCount = static_cast<u8>(rng.next(3) + 2);
 
     std::array<u8, 4> selectedPlates = {};
     for (u8 placed = 0; placed < result.itemCount;)
     {
-        s32 roll = static_cast<s32>(rng.next(totalWeight));
-        size_t index = 0;
-        for (; index < treasureCount; index++)
-        {
-            roll -= activeWeight(index);
-            if (roll < 0) break;
-        }
-        const auto &object = objects[index];
+        const u32 roll = rng.next(totalWeight);
+        const size_t index = static_cast<size_t>(
+            std::upper_bound(cumulativeWeights.begin(), cumulativeWeights.end(), roll) - cumulativeWeights.begin());
+        const auto &object = platinumObjects[index];
         if (object.item >= 44 && object.item <= 59)
         {
             if (minedPlates[object.item - 44]) continue;
@@ -132,6 +124,45 @@ UndergroundResult UndergroundGenerator::generate(u64 seed) const
         result.objects.push_back({ object.item, static_cast<u8>(placed + 1), x, y, object.width, object.height, object.shape, false });
         placed++;
     }
+}
+}
+
+UndergroundGenerator::UndergroundGenerator(Game version, u16 tid, bool nationalDex, const std::array<bool, 16> &minedPlates,
+                                           bool undergroundOrb) :
+    version(version), tid(tid), nationalDex(nationalDex), undergroundOrb(undergroundOrb), minedPlates(minedPlates), totalWeight(0)
+{
+    const bool odd = (tid & 1) != 0;
+    for (size_t index = 0; index < activeWeights.size(); index++)
+    {
+        if (version == Game::Platinum) activeWeights[index] = weight(platinumObjects[index], odd, nationalDex);
+        else
+        {
+            const auto &entry = diamondPearlWeights[index];
+            const bool diamond = version == Game::Diamond;
+            activeWeights[index]
+                = nationalDex ? (diamond ? entry.diamondDex : entry.pearlDex) : (diamond ? entry.diamond : entry.pearl);
+            if (undergroundOrb)
+            {
+                if ((diamond && platinumObjects[index].item == 1) || (!diamond && platinumObjects[index].item == 2))
+                    activeWeights[index] += 66;
+                if ((diamond && platinumObjects[index].item == 6) || (!diamond && platinumObjects[index].item == 7))
+                    activeWeights[index] += 33;
+            }
+        }
+        totalWeight += activeWeights[index];
+        cumulativeWeights[index] = totalWeight;
+    }
+}
+
+UndergroundResult UndergroundGenerator::generate(u64 seed) const
+{
+    MiningRNG rng(seed);
+    UndergroundResult result;
+    std::array<u8, 130> grid = {};
+    const auto &objects = platinumObjects;
+    constexpr size_t rockStart = 71;
+    constexpr size_t rockCount = std::size(objects) - rockStart;
+    generateTreasures(rng, cumulativeWeights, totalWeight, minedPlates, result, grid);
 
     for (u16 attempt = 0; attempt < 100; attempt++)
     {
@@ -193,28 +224,23 @@ UndergroundResult UndergroundGenerator::generate(u64 seed) const
     return result;
 }
 
+UndergroundItemResult UndergroundGenerator::generateItems(u64 seed) const
+{
+    MiningRNG rng(seed);
+    UndergroundResult result;
+    std::array<u8, 130> grid = {};
+    generateTreasures(rng, cumulativeWeights, totalWeight, minedPlates, result, grid);
+    return { result.items, result.itemCount };
+}
+
 std::vector<u8> UndergroundGenerator::getAvailableItems() const
 {
     std::vector<u8> items;
     constexpr size_t treasureCount = 71;
-    const bool odd = (tid & 1) != 0;
     for (size_t index = 0; index < treasureCount; index++)
     {
         const auto &object = platinumObjects[index];
-        u16 activeWeight;
-        if (version == Game::Platinum) activeWeight = weight(object, odd, nationalDex);
-        else
-        {
-            const auto &entry = diamondPearlWeights[index];
-            const bool diamond = version == Game::Diamond;
-            activeWeight = nationalDex ? (diamond ? entry.diamondDex : entry.pearlDex) : (diamond ? entry.diamond : entry.pearl);
-            if (undergroundOrb)
-            {
-                if ((diamond && object.item == 1) || (!diamond && object.item == 2)) activeWeight += 66;
-                if ((diamond && object.item == 6) || (!diamond && object.item == 7)) activeWeight += 33;
-            }
-        }
-        if (activeWeight == 0 || (object.item >= 44 && object.item <= 59 && minedPlates[object.item - 44])) continue;
+        if (activeWeights[index] == 0 || (object.item >= 44 && object.item <= 59 && minedPlates[object.item - 44])) continue;
         if (std::find(items.begin(), items.end(), object.item) == items.end()) items.push_back(object.item);
     }
     return items;
@@ -222,10 +248,10 @@ std::vector<u8> UndergroundGenerator::getAvailableItems() const
 
 u64 UndergroundGenerator::advanceSeed(u64 seed, u32 advances)
 {
-    MiningRNG rng(seed);
-    rng.advance(advances);
-    return rng.getState();
+    return advanceMiningState(seed, advances);
 }
+
+u64 UndergroundGenerator::nextSeed(u64 seed) { return seed * miningMultiplier + miningIncrement; }
 
 u64 UndergroundGenerator::advanceBetweenSpots(u64 state, const UndergroundResult &current, bool allItemsReceived,
                                                const std::array<bool, 4> &uncovered, const std::vector<u8> &tools, u32 &advances)
@@ -259,4 +285,9 @@ std::string UndergroundGenerator::getItemName(u8 item)
         if (object.item == item) return object.name;
     }
     return "-";
+}
+
+void UndergroundGenerator::setMinedPlate(u8 item)
+{
+    if (item >= 44 && item <= 59) minedPlates[item - 44] = true;
 }
