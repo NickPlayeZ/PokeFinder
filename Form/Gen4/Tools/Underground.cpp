@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <atomic>
 #include <bit>
-#include <functional>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -771,73 +770,13 @@ private:
                 .first->second;
         };
         std::map<WallKey, std::unique_ptr<MiningPlanner>> plannerCache;
-        struct LookaheadKey
-        {
-            u32 advance;
-            u16 minedPlates;
-            std::array<u8, 4> counts;
-            u8 wall;
-            bool operator==(const LookaheadKey &) const = default;
-        };
-        struct LookaheadKeyHash
-        {
-            size_t operator()(const LookaheadKey &key) const
-            {
-                size_t value = key.advance;
-                value = value * 31 + key.minedPlates;
-                value = value * 31 + key.wall;
-                for (u8 count : key.counts) value = value * 31 + count;
-                return value;
-            }
-        };
-        std::unordered_map<LookaheadKey, bool, LookaheadKeyHash> lookaheadMemo;
-        std::function<bool(u8, u32, u16, std::array<u8, 4>)> canPossiblyComplete;
-        canPossiblyComplete = [&](u8 wall, u32 advance, u16 minedPlates, std::array<u8, 4> counts) {
-            if (cancelled.load(std::memory_order_relaxed)) return false;
-            const LookaheadKey key { advance, minedPlates, counts, wall };
-            if (const auto it = lookaheadMemo.find(key); it != lookaheadMemo.end()) return it->second;
-            const UndergroundResult &result = getWall(advance, minedPlates);
-            for (size_t filter = 0; filter < filters.size(); filter++)
-            {
-                if (filters[filter].first == 0) continue;
-                counts[filter] = std::min<u8>(filters[filter].second,
-                    counts[filter] + static_cast<u8>(countUndergroundFilter(
-                        result.items.begin(), result.items.begin() + result.itemCount, filters[filter].first)));
-            }
-            bool complete = true;
-            for (size_t filter = 0; filter < filters.size(); filter++)
-                if (filters[filter].first != 0 && counts[filter] < filters[filter].second)
-                {
-                    complete = false;
-                    break;
-                }
-            if (complete) return lookaheadMemo.emplace(key, true).first->second;
-            if (wall == maxWalls) return lookaheadMemo.emplace(key, false).first->second;
-            for (size_t filter = 0; filter < filters.size(); filter++)
-                if (filters[filter].first != 0 && counts[filter] + 4 * (maxWalls - wall) < filters[filter].second)
-                    return lookaheadMemo.emplace(key, false).first->second;
-
-            std::vector<u16> plateMasks = { 0 };
-            for (u8 item = 0; item < result.itemCount; item++)
-            {
-                if (result.items[item] < 44 || result.items[item] > 59) continue;
-                const u16 plate = static_cast<u16>(1 << (result.items[item] - 44));
-                const size_t size = plateMasks.size();
-                for (size_t index = 0; index < size; index++) plateMasks.push_back(plateMasks[index] | plate);
-            }
-            std::ranges::sort(plateMasks);
-            plateMasks.erase(std::unique(plateMasks.begin(), plateMasks.end()), plateMasks.end());
-            const auto [minimumOffset, maximumOffset] = getPotentialAdvanceRange(result);
-            for (u32 offset = minimumOffset;; offset++)
-            {
-                if (cancelled.load(std::memory_order_relaxed)) return false;
-                const u32 nextAdvance = advance + result.advances + offset;
-                for (u16 addedPlates : plateMasks)
-                    if (canPossiblyComplete(wall + 1, nextAdvance, minedPlates | addedPlates, counts))
-                        return lookaheadMemo.emplace(key, true).first->second;
-                if (offset == maximumOffset) break;
-            }
-            return lookaheadMemo.emplace(key, false).first->second;
+        std::map<WallKey, UndergroundItemResult> itemCache;
+        auto getItems = [&](u32 advance, u16 minedPlates, u64 advancedSeed) -> const UndergroundItemResult & {
+            const WallKey key(advance, minedPlates);
+            if (const auto it = itemCache.find(key); it != itemCache.end()) return it->second;
+            if (const auto it = wallCache.find(key); it != wallCache.end())
+                return itemCache.emplace(key, UndergroundItemResult { it->second.items, it->second.itemCount }).first->second;
+            return itemCache.emplace(key, getRouteGenerator(minedPlates).generateItems(advancedSeed)).first->second;
         };
         std::vector<RouteState> current = { { 0, 0, {}, 0, {}, 0 } };
         for (u8 wall = 1; wall <= maxWalls && !cancelled.load(std::memory_order_relaxed); wall++)
@@ -906,22 +845,35 @@ private:
                         if (filters[filter].first != 0)
                             currentMaximum[filter] = static_cast<u8>(countUndergroundFilter(
                                 result.items.begin(), result.items.begin() + result.itemCount, filters[filter].first));
-                    std::array<u8, 4> optimisticCounts = state.counts;
-                    for (size_t filter = 0; filter < filters.size(); filter++)
-                        optimisticCounts[filter] = std::min<u8>(filters[filter].second,
-                            optimisticCounts[filter] + currentMaximum[filter]);
+                    u64 advancedSeed
+                        = UndergroundGenerator::advanceSeed(seed, state.advance + result.advances + minimumOffset);
                     for (u32 offset = minimumOffset;; offset++)
                     {
                         const u32 nextAdvance = state.advance + result.advances + offset;
                         bool promising = false;
                         for (u16 addedPlates : possiblePlateMasks)
                         {
-                            promising = canPossiblyComplete(
-                                wall + 1, nextAdvance, state.minedPlates | addedPlates, optimisticCounts);
+                            const UndergroundItemResult &nextWall
+                                = getItems(nextAdvance, state.minedPlates | addedPlates, advancedSeed);
+                            promising = true;
+                            for (size_t filter = 0; filter < filters.size(); filter++)
+                            {
+                                if (filters[filter].first == 0) continue;
+                                const u8 nextMaximum = static_cast<u8>(countUndergroundFilter(
+                                    nextWall.items.begin(), nextWall.items.begin() + nextWall.itemCount, filters[filter].first));
+                                if (state.counts[filter] + currentMaximum[filter] + nextMaximum
+                                        + 4 * (maxWalls - wall - 1)
+                                    < filters[filter].second)
+                                {
+                                    promising = false;
+                                    break;
+                                }
+                            }
                             if (promising) break;
                         }
                         if (promising) allowedOffsets[offset] = true;
                         if (offset == maximumOffset) break;
+                        advancedSeed = UndergroundGenerator::nextSeed(advancedSeed);
                     }
                     if (std::ranges::none_of(allowedOffsets, [](bool allowed) { return allowed; })) continue;
                 }
