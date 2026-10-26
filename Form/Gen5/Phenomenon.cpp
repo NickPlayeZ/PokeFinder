@@ -40,6 +40,7 @@
 #include <Form/Controls/ComboMenu.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <Form/Gen5/Tools/PhenomenonItem.hpp>
 #include <Form/Gen5/ResultToGenerator.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
@@ -276,6 +277,15 @@ Phenomenon::Phenomenon(QWidget *parent) : QWidget(parent), ui(new Ui::Phenomenon
 {
     ui->setupUi(this);
     setAttribute(Qt::WA_QuitOnClose, false);
+
+    itemTool = new PhenomenonItem(true, ui->tabRNGSelector);
+    ui->tabRNGSelector->addTab(itemTool, tr("Items"));
+    connect(itemTool, &PhenomenonItem::openGenerator, this,
+            [this](const Profile5 &profile, Encounter encounter, u8 location, u64 seed, u8 exploringPower,
+                   const std::vector<u32> &targetAdvances) {
+                configureGenerator(profile, encounter, location, seed, exploringPower, targetAdvances);
+                ui->tabRNGSelector->setCurrentIndex(0);
+            });
 
     generatorModel = new WildGeneratorModel5(ui->tableViewGenerator);
     searcherModel = new WildSearcherModel5(ui->tableViewSearcher);
@@ -1252,6 +1262,7 @@ void Phenomenon::profileIndexChanged(int index)
     if (index >= 0)
     {
         currentProfile = &profiles[index];
+        itemTool->setProfile(*currentProfile);
 
         ui->labelProfileTIDValue->setText(QString::number(currentProfile->getTID()));
         ui->labelProfileSIDValue->setText(QString::number(currentProfile->getSID()));

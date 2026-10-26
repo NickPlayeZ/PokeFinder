@@ -30,6 +30,7 @@ class EncounterArea5;
 class CheckList;
 class IVCache;
 class Profile5;
+class PhenomenonItem;
 class SHA1Cache;
 class SortFilterProxyModel;
 class QGroupBox;
@@ -104,6 +105,7 @@ private:
     std::vector<Profile5> profiles;
     WildGeneratorModel5 *generatorModel;
     WildSearcherModel5 *searcherModel;
+    PhenomenonItem *itemTool;
     std::array<QPushButton *, 121> phenomenonTiles {};
     std::vector<PhenomenonChunk> phenomenonChunks;
     QGroupBox *phenomenonPositionGroup = nullptr;

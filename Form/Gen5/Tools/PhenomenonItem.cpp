@@ -60,14 +60,18 @@ static std::vector<u8> getExploringPowers(const ComboMenu *comboMenu)
     return powers;
 }
 
-PhenomenonItem::PhenomenonItem(QWidget *parent) : QWidget(parent), ui(new Ui::PhenomenonItem), currentProfile(nullptr)
+PhenomenonItem::PhenomenonItem(bool embedded, QWidget *parent) :
+    QWidget(parent), ui(new Ui::PhenomenonItem), currentProfile(nullptr), embedded(embedded)
 {
     ui->setupUi(this);
     ui->gridLayout->setColumnStretch(0, 1);
     ui->gridLayout->setColumnStretch(1, 2);
     ui->gridLayout->setColumnStretch(2, 1);
-    setAttribute(Qt::WA_QuitOnClose, false);
-    setAttribute(Qt::WA_DeleteOnClose);
+    if (!embedded)
+    {
+        setAttribute(Qt::WA_QuitOnClose, false);
+        setAttribute(Qt::WA_DeleteOnClose);
+    }
 
     ui->profileDisplay->setup(settingPrefix, Game::Gen5);
 
@@ -79,6 +83,7 @@ PhenomenonItem::PhenomenonItem(QWidget *parent) : QWidget(parent), ui(new Ui::Ph
     ui->textBoxSearcherMaxAdvances->setValues(InputType::Advance32Bit);
 
     ui->comboBoxSearcherLocation->enableAutoComplete();
+    ui->comboBoxSearcherItem->enableAutoComplete();
     ui->comboBoxSearcherEncounter->addItem(tr("Dust Cloud"), toInt(Encounter::DustCloud));
     ui->comboBoxSearcherEncounter->addItem(tr("Flying Shadow"), toInt(Encounter::FlyingShadow));
 
@@ -104,11 +109,12 @@ PhenomenonItem::PhenomenonItem(QWidget *parent) : QWidget(parent), ui(new Ui::Ph
     connect(ui->comboBoxSearcherLocation, &QComboBox::currentIndexChanged, this, &PhenomenonItem::searcherLocationIndexChanged);
     connect(ui->pushButtonSearch, &QPushButton::clicked, this, &PhenomenonItem::search);
 
-    updateProfiles();
+    if (embedded) ui->profileDisplay->hide();
+    else updateProfiles();
 
     QSettings setting;
     setting.beginGroup(settingPrefix);
-    if (setting.contains("geometry"))
+    if (!embedded && setting.contains("geometry"))
     {
         this->restoreGeometry(setting.value("geometry").toByteArray());
     }
@@ -127,7 +133,7 @@ PhenomenonItem::~PhenomenonItem()
 {
     QSettings setting;
     setting.beginGroup(settingPrefix);
-    setting.setValue("geometry", this->saveGeometry());
+    if (!embedded) setting.setValue("geometry", this->saveGeometry());
     setting.setValue("startDate", ui->dateEditSearcherStartDate->date());
     setting.setValue("endDate", ui->dateEditSearcherEndDate->date());
     setting.endGroup();
@@ -139,6 +145,8 @@ bool PhenomenonItem::hasProfiles() const
 {
     return ui->profileDisplay->hasProfiles();
 }
+
+void PhenomenonItem::setProfile(const Profile5 &profile) { profileChanged(profile); }
 
 void PhenomenonItem::updateProfiles()
 {

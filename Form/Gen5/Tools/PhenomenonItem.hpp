@@ -58,7 +58,7 @@ public:
      *
      * @param parent Parent widget, which takes memory ownership
      */
-    PhenomenonItem(QWidget *parent = nullptr);
+    PhenomenonItem(bool embedded = false, QWidget *parent = nullptr);
 
     /**
      * @brief Destroy the Phenomenon object
@@ -73,6 +73,8 @@ public:
      */
     bool hasProfiles() const;
 
+    void setProfile(const Profile5 &profile);
+
 public slots:
     /**
      * @brief Reloads profiles
@@ -86,6 +88,7 @@ private:
     const Profile5 *currentProfile;
     SortFilterProxyModel *proxyModel;
     std::vector<PhenomenonArea> encounter;
+    bool embedded;
 
 private slots:
     /**
