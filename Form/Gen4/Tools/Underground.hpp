@@ -116,6 +116,7 @@ private:
     TextBox *searcherMinDelay;
     TextBox *searcherMaxDelay;
     QSpinBox *searcherMaxWalls;
+    QCheckBox *searcherRecoverAllPlates;
     QPushButton *searcherSearchButton;
     QPushButton *searcherCancelButton;
     QProgressBar *searcherProgress;
@@ -123,7 +124,7 @@ private:
     std::array<QSpinBox *, 4> searcherItemFilterCounts;
     UndergroundSearcherModel *searcherModel;
     TableView *searcherTable;
-    MiningField4 *searcherPreview;
+    std::array<MiningField4 *, 5> searcherPreviews;
     TextBox *searcherSeed;
     UndergroundTimeModel *searcherTimeModel;
     const Profile4 *currentProfile;

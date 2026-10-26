@@ -636,6 +636,7 @@ struct UndergroundSearcherRow
     u8 matchingItems;
     u8 walls;
     std::vector<u32> routeAdvances;
+    std::vector<u16> routePlateMasks;
 };
 
 struct UndergroundRouteMatch
@@ -643,6 +644,7 @@ struct UndergroundRouteMatch
     u8 matchingItems;
     u8 walls;
     std::vector<u32> advances;
+    std::vector<u16> plateMasks;
 };
 
 class UndergroundSearcherModel final : public QAbstractTableModel
@@ -692,9 +694,10 @@ class UndergroundSeedSearcher final : public SearcherBase<UndergroundSearcherRow
 {
 public:
     UndergroundSeedSearcher(QDate startDate, QDate endDate, u32 minDelay, u32 maxDelay,
-                            std::array<std::pair<u8, u8>, 4> filters, u8 maxWalls, UndergroundGenerator generator) :
+                            std::array<std::pair<u8, u8>, 4> filters, u8 maxWalls, bool recoverAllPlates,
+                            UndergroundGenerator generator) :
         startDate(startDate), endDate(endDate), minDelay(minDelay), maxDelay(maxDelay), filters(filters), maxWalls(maxWalls),
-        generator(generator)
+        recoverAllPlates(recoverAllPlates), generator(generator)
     {
     }
 
@@ -714,15 +717,19 @@ public:
     }
 
 private:
-    UndergroundRouteMatch findRoute(u64 seed, const UndergroundResult &initial)
+    std::vector<UndergroundRouteMatch> findRoutes(u64 seed, const UndergroundResult &initial)
     {
         bool hasFilter = false;
+        bool anyPlateTarget = false;
+        u16 targetedPlates = 0;
         for (const auto &[item, minimum] : filters)
         {
             if (item != 0 && minimum != 0) hasFilter = true;
-            if (item != 0 && minimum > 4 * maxWalls) return { 0, 0, {} };
+            if (item != 0 && minimum > 4 * maxWalls) return {};
+            if (item == filterAnyPlate) anyPlateTarget = true;
+            else if (item >= 44 && item <= 59) targetedPlates |= static_cast<u16>(1 << (item - 44));
         }
-        if (!hasFilter) return { 0, 1, {} };
+        if (!hasFilter) return { { 0, 1, {}, {} } };
 
         struct RouteState
         {
@@ -731,6 +738,7 @@ private:
             std::array<u8, 4> counts;
             u8 matchingItems;
             std::array<u32, 4> route;
+            std::array<u16, 4> routePlateMasks;
             u8 routeLength;
         };
         struct RouteKey
@@ -738,6 +746,9 @@ private:
             u32 advance;
             u16 minedPlates;
             std::array<u8, 4> counts;
+            u8 matchingItems;
+            std::array<u32, 4> route;
+            u8 routeLength;
             bool operator==(const RouteKey &) const = default;
         };
         struct RouteKeyHash
@@ -747,6 +758,9 @@ private:
                 size_t value = key.advance;
                 value = value * 31 + key.minedPlates;
                 for (u8 count : key.counts) value = value * 31 + count;
+                value = value * 31 + key.matchingItems;
+                for (u8 index = 0; index < key.routeLength; index++) value = value * 31 + key.route[index];
+                value = value * 31 + key.routeLength;
                 return value;
             }
         };
@@ -778,12 +792,13 @@ private:
                 return itemCache.emplace(key, UndergroundItemResult { it->second.items, it->second.itemCount }).first->second;
             return itemCache.emplace(key, getRouteGenerator(minedPlates).generateItems(advancedSeed)).first->second;
         };
-        std::vector<RouteState> current = { { 0, 0, {}, 0, {}, 0 } };
+        std::vector<RouteState> current = { { 0, 0, {}, 0, {}, {}, 0 } };
         for (u8 wall = 1; wall <= maxWalls && !cancelled.load(std::memory_order_relaxed); wall++)
         {
             std::vector<RouteState> next;
-            std::unordered_map<RouteKey, size_t, RouteKeyHash> seen;
-            UndergroundRouteMatch best = { 0, 0, {} };
+            std::unordered_set<RouteKey, RouteKeyHash> seen;
+            std::vector<UndergroundRouteMatch> matches;
+            std::set<std::pair<std::vector<u32>, u8>> uniqueMatches;
             for (const RouteState &state : current)
             {
                 const UndergroundResult &result = getWall(state.advance, state.minedPlates);
@@ -803,10 +818,13 @@ private:
                 if (!canStillComplete) continue;
 
                 const u8 allMask = static_cast<u8>((1 << result.itemCount) - 1);
+                u8 plateItemMask = 0;
+                for (u8 item = 0; item < result.itemCount; item++)
+                    if (result.items[item] >= 44 && result.items[item] <= 59) plateItemMask |= 1 << item;
                 u16 allowedMasks = 0;
                 for (u8 mask = 0; mask <= allMask; mask++)
                 {
-                    bool useful = true;
+                    bool useful = !recoverAllPlates || (mask & plateItemMask) == plateItemMask;
                     for (size_t filter = 0; filter < filters.size(); filter++)
                     {
                         if (filters[filter].first == 0) continue;
@@ -828,14 +846,22 @@ private:
                 std::vector<bool> allowedOffsets(maximumOffset + 1);
                 if (wall < maxWalls)
                 {
+                    u16 mandatoryPlateMask = 0;
                     std::vector<u16> possiblePlateMasks = { 0 };
                     for (u8 item = 0; item < result.itemCount; item++)
                     {
                         if (result.items[item] < 44 || result.items[item] > 59) continue;
                         const u16 plate = static_cast<u16>(1 << (result.items[item] - 44));
+                        if (recoverAllPlates)
+                        {
+                            mandatoryPlateMask |= plate;
+                            continue;
+                        }
+                        if (!anyPlateTarget && !(targetedPlates & plate)) continue;
                         const size_t size = possiblePlateMasks.size();
                         for (size_t i = 0; i < size; i++) possiblePlateMasks.push_back(possiblePlateMasks[i] | plate);
                     }
+                    if (recoverAllPlates) possiblePlateMasks = { mandatoryPlateMask };
                     std::ranges::sort(possiblePlateMasks);
                     possiblePlateMasks.erase(std::unique(possiblePlateMasks.begin(), possiblePlateMasks.end()),
                                              possiblePlateMasks.end());
@@ -885,7 +911,7 @@ private:
                     result, *planner, wall < maxWalls ? &allowedOffsets : nullptr, allowedMasks);
                 for (const RecoveryTransition &transition : transitions)
                 {
-                    if (cancelled.load(std::memory_order_relaxed)) return { 0, 0, {} };
+                    if (cancelled.load(std::memory_order_relaxed)) return {};
                     RouteState candidate = state;
                     candidate.advance = state.advance + result.advances + transition.advances;
                     for (u8 itemIndex = 0; itemIndex < result.itemCount; itemIndex++)
@@ -900,7 +926,11 @@ private:
                             matchesAny = true;
                         }
                         if (matchesAny) candidate.matchingItems++;
-                        if (item >= 44 && item <= 59) candidate.minedPlates |= 1 << (item - 44);
+                        if (item >= 44 && item <= 59)
+                        {
+                            const u16 plate = static_cast<u16>(1 << (item - 44));
+                            if (recoverAllPlates || anyPlateTarget || (targetedPlates & plate)) candidate.minedPlates |= plate;
+                        }
                     }
                     bool complete = true;
                     for (size_t filter = 0; filter < filters.size(); filter++)
@@ -913,54 +943,27 @@ private:
                     }
                     if (complete)
                     {
-                        if (best.walls == 0 || candidate.matchingItems > best.matchingItems)
-                        {
-                            best = { candidate.matchingItems, wall,
-                                std::vector<u32>(state.route.begin(), state.route.begin() + state.routeLength) };
-                        }
+                        std::vector<u32> route(state.route.begin(), state.route.begin() + state.routeLength);
+                        std::vector<u16> plateMasks(
+                            state.routePlateMasks.begin(), state.routePlateMasks.begin() + state.routeLength);
+                        if (uniqueMatches.emplace(route, candidate.matchingItems).second)
+                            matches.push_back(
+                                { candidate.matchingItems, wall, std::move(route), std::move(plateMasks) });
                         continue;
                     }
                     if (wall == maxWalls) continue;
-                    candidate.route[candidate.routeLength++] = candidate.advance;
-                    const RouteKey key { candidate.advance, candidate.minedPlates, candidate.counts };
-                    const auto [it, inserted] = seen.emplace(key, next.size());
-                    if (inserted) next.emplace_back(std::move(candidate));
-                    else if (candidate.matchingItems > next[it->second].matchingItems)
-                        next[it->second] = std::move(candidate);
+                    candidate.route[candidate.routeLength] = candidate.advance;
+                    candidate.routePlateMasks[candidate.routeLength] = candidate.minedPlates;
+                    candidate.routeLength++;
+                    const RouteKey key { candidate.advance, candidate.minedPlates, candidate.counts, candidate.matchingItems,
+                                         candidate.route, candidate.routeLength };
+                    if (seen.insert(key).second) next.emplace_back(std::move(candidate));
                 }
             }
-            if (best.walls != 0) return best;
-            std::ranges::sort(next, {}, [](const RouteState &state) {
-                return std::pair(state.advance, state.minedPlates);
-            });
-            std::vector<RouteState> pruned;
-            for (size_t begin = 0; begin < next.size();)
-            {
-                size_t end = begin + 1;
-                while (end < next.size() && next[end].advance == next[begin].advance
-                       && next[end].minedPlates == next[begin].minedPlates)
-                    end++;
-                std::vector<RouteState> frontier;
-                for (size_t index = begin; index < end; index++)
-                {
-                    const RouteState &candidate = next[index];
-                    const auto dominates = [](const RouteState &left, const RouteState &right) {
-                        return left.matchingItems >= right.matchingItems
-                            && std::ranges::equal(left.counts, right.counts, std::greater_equal<>());
-                    };
-                    if (std::ranges::any_of(frontier,
-                            [&](const RouteState &state) { return dominates(state, candidate); }))
-                        continue;
-                    std::erase_if(frontier, [&](const RouteState &state) { return dominates(candidate, state); });
-                    frontier.push_back(candidate);
-                }
-                pruned.insert(pruned.end(), std::make_move_iterator(frontier.begin()),
-                              std::make_move_iterator(frontier.end()));
-                begin = end;
-            }
-            current = std::move(pruned);
+            if (!matches.empty()) return matches;
+            current = std::move(next);
         }
-        return { 0, 0, {} };
+        return {};
     }
 
     void run()
@@ -1011,8 +1014,8 @@ private:
                             for (u64 candidateSeed = chunkStart; candidateSeed <= chunkEnd; candidateSeed++)
                             {
                                 const UndergroundResult result = generator.generate(candidateSeed);
-                                UndergroundRouteMatch route = findRoute(candidateSeed, result);
-                                if (route.walls != 0)
+                                std::vector<UndergroundRouteMatch> routes = findRoutes(candidateSeed, result);
+                                if (!routes.empty())
                                 {
                                     const u64 minimumBase = candidateSeed >= maxDelay ? candidateSeed - maxDelay : 0;
                                     const u64 maximumBase = candidateSeed >= minDelay ? candidateSeed - minDelay : 0;
@@ -1022,9 +1025,10 @@ private:
                                         --base;
                                         if (*base >= minimumBase)
                                         {
-                                            found.push_back({ candidateSeed, static_cast<u32>(candidateSeed - *base), result.items,
-                                                              result.itemCount, route.matchingItems, route.walls,
-                                                              std::move(route.advances) });
+                                            for (UndergroundRouteMatch &route : routes)
+                                                found.push_back({ candidateSeed, static_cast<u32>(candidateSeed - *base), result.items,
+                                                                  result.itemCount, route.matchingItems, route.walls,
+                                                                  std::move(route.advances), std::move(route.plateMasks) });
                                             flush();
                                         }
                                     }
@@ -1073,6 +1077,7 @@ private:
     u32 maxDelay;
     std::array<std::pair<u8, u8>, 4> filters;
     u8 maxWalls;
+    bool recoverAllPlates;
     UndergroundGenerator generator;
 };
 
@@ -1541,6 +1546,9 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
 
     auto *searcherFiltersGroup = new QGroupBox(tr("Filters"), searcherPage);
     auto *searcherFiltersLayout = new QGridLayout(searcherFiltersGroup);
+    searcherRecoverAllPlates = new QCheckBox(
+        tr("Consider a Plate Recovered for subsequent walls, even if that Plate is not the target"), searcherFiltersGroup);
+    searcherFiltersLayout->addWidget(searcherRecoverAllPlates, 0, 0, 1, 2);
     for (int i = 0; i < 4; i++)
     {
         auto *itemFilter = new ComboBox(searcherFiltersGroup);
@@ -1551,16 +1559,17 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         searcherItemFilterCounts[i]->setRange(1, 20);
         searcherItemFilterCounts[i]->setFixedWidth(55);
         searcherItemFilterCounts[i]->setEnabled(false);
-        searcherFiltersLayout->addWidget(itemFilter, i, 0);
-        searcherFiltersLayout->addWidget(searcherItemFilterCounts[i], i, 1);
+        searcherFiltersLayout->addWidget(itemFilter, i + 1, 0);
+        searcherFiltersLayout->addWidget(searcherItemFilterCounts[i], i + 1, 1);
         connect(itemFilter, &QComboBox::currentIndexChanged, searcherItemFilterCounts[i], [this, i](int index) {
             Q_UNUSED(index);
             updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i], 20);
         });
     }
     auto *resetSearcherFilters = new QPushButton(tr("Reset"), searcherFiltersGroup);
-    searcherFiltersLayout->addWidget(resetSearcherFilters, 4, 0, 1, 2);
+    searcherFiltersLayout->addWidget(resetSearcherFilters, 5, 0, 1, 2);
     connect(resetSearcherFilters, &QPushButton::clicked, this, [this] {
+        searcherRecoverAllPlates->setChecked(false);
         for (size_t i = 0; i < searcherItemFilters.size(); i++)
         {
             searcherItemFilters[i]->setCurrentIndex(0);
@@ -1588,8 +1597,17 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     auto *searcherRight = new QVBoxLayout;
     auto *searcherPreviewGroup = new QGroupBox(tr("Selected Seed Mining Spot"), searcherPage);
     auto *searcherPreviewLayout = new QVBoxLayout(searcherPreviewGroup);
-    searcherPreview = new MiningField4(searcherPreviewGroup);
-    searcherPreviewLayout->addWidget(searcherPreview, 0, Qt::AlignLeft);
+    auto *searcherPreviewTabs = new QTabWidget(searcherPreviewGroup);
+    for (size_t wall = 0; wall < searcherPreviews.size(); wall++)
+    {
+        auto *page = new QWidget(searcherPreviewTabs);
+        auto *layout = new QHBoxLayout(page);
+        searcherPreviews[wall] = new MiningField4(page);
+        layout->addWidget(searcherPreviews[wall], 0, Qt::AlignLeft);
+        layout->addStretch();
+        searcherPreviewTabs->addTab(page, tr("Wall %1").arg(wall + 1));
+    }
+    searcherPreviewLayout->addWidget(searcherPreviewTabs);
     searcherRight->addWidget(searcherPreviewGroup);
 
     auto *timesGroup = new QGroupBox(tr("Seed to Time"), searcherPage);
@@ -1697,14 +1715,34 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         if (valid) finderPreview->setResult(getGenerator().generate(selectedSeed));
     });
     connect(searcherTable->selectionModel(), &QItemSelectionModel::currentChanged, this,
-            [this](const QModelIndex &current, const QModelIndex &) {
+            [this, searcherProxy](const QModelIndex &current, const QModelIndex &) {
         if (!currentProfile || !current.isValid()) return;
+        const QModelIndex sourceIndex = searcherProxy->mapToSource(current);
+        if (!sourceIndex.isValid()) return;
+        const UndergroundSearcherRow &row = searcherModel->getRow(sourceIndex.row());
         const QString value = current.siblingAtColumn(0).data().toString();
         bool valid = false;
         const u64 selectedSeed = value.toULongLong(&valid, 16);
         if (!valid) return;
         searcherSeed->setText(value);
-        searcherPreview->setResult(getGenerator().generate(selectedSeed));
+        UndergroundGenerator previewGenerator = getGenerator();
+        searcherPreviews[0]->setResult(previewGenerator.generate(selectedSeed));
+        for (size_t wall = 1; wall < searcherPreviews.size(); wall++)
+        {
+            if (wall < row.walls && wall - 1 < row.routeAdvances.size() && wall - 1 < row.routePlateMasks.size())
+            {
+                UndergroundGenerator wallGenerator = getGenerator();
+                const u16 plateMask = row.routePlateMasks[wall - 1];
+                for (u8 plate = 0; plate < 16; plate++)
+                    if (plateMask & (1 << plate)) wallGenerator.setMinedPlate(44 + plate);
+                searcherPreviews[wall]->setResult(
+                    wallGenerator.generate(UndergroundGenerator::advanceSeed(selectedSeed, row.routeAdvances[wall - 1])));
+            }
+            else
+            {
+                searcherPreviews[wall]->setResult({});
+            }
+        }
         generateTimes();
     });
     connect(minedPlates, &ComboMenu::checkedDataChanged, this, &Underground4::platesChanged);
@@ -1745,6 +1783,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherMinDelay->setText(store.value(QStringLiteral("searcherMinDelay"), searcherMinDelay->text()).toString());
     searcherMaxDelay->setText(store.value(QStringLiteral("searcherMaxDelay"), searcherMaxDelay->text()).toString());
     searcherMaxWalls->setValue(store.value(QStringLiteral("searcherMaxWalls"), 1).toInt());
+    searcherRecoverAllPlates->setChecked(store.value(QStringLiteral("searcherRecoverAllPlates"), false).toBool());
     if (store.contains(QStringLiteral("geometry"))) restoreGeometry(store.value(QStringLiteral("geometry")).toByteArray());
     else resize(1600, 900);
     store.endGroup();
@@ -1762,6 +1801,7 @@ Underground4::~Underground4()
     store.setValue(QStringLiteral("searcherMinDelay"), searcherMinDelay->text());
     store.setValue(QStringLiteral("searcherMaxDelay"), searcherMaxDelay->text());
     store.setValue(QStringLiteral("searcherMaxWalls"), searcherMaxWalls->value());
+    store.setValue(QStringLiteral("searcherRecoverAllPlates"), searcherRecoverAllPlates->isChecked());
     store.setValue(QStringLiteral("geometry"), saveGeometry());
     store.endGroup();
 }
@@ -1873,7 +1913,8 @@ void Underground4::search()
     searcherProgress->setRange(0, 10000);
     searcherProgress->setValue(0);
     searcherProgress->setFormat(QStringLiteral("%p%"));
-    auto *searcher = new UndergroundSeedSearcher(startDate, endDate, minDelay, maxDelay, filters, maxWalls, generator);
+    auto *searcher = new UndergroundSeedSearcher(
+        startDate, endDate, minDelay, maxDelay, filters, maxWalls, searcherRecoverAllPlates->isChecked(), generator);
     auto *timer = new QTimer(this);
     connect(searcherCancelButton, &QPushButton::clicked, timer, [this, searcher] {
         searcher->cancelSearch();
