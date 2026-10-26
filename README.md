@@ -18,12 +18,13 @@ Gen 3 Emerald
 
 Gen 4
 - added full DPPt Poké Radar RNG support
-- added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)
+- added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)#
+- added DPPt Underground Item RNG Support
 - added HGSS Rock Smash item searcher tool
 - added items to HGSS Rock Smash generator
 - added multi lead search, so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once
 - added right click menu entry "Go to Generator" for most gen 4 and 5 searcher tabs that auto fills out all relevant fields such as the seed, location, lead etc. and marks the target advance red (color can be adjusted or turned off in the settings)
-- added seed to time Chatot seed finder functionality
+- added seed to time Chatot seed finder and Delay Parity Matcher functionality
 - expanded Advance Finder functionality
 
 Gen 5
