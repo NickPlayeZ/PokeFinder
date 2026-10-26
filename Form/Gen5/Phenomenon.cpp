@@ -39,6 +39,7 @@
 #include <Form/Controls/CheckList.hpp>
 #include <Form/Controls/ComboMenu.hpp>
 #include <Form/Controls/Controls.hpp>
+#include <Form/Controls/ResponsiveGrid.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/PhenomenonItem.hpp>
 #include <Form/Gen5/ResultToGenerator.hpp>
@@ -901,21 +902,16 @@ void Phenomenon::choosePhenomenonMapPosition()
     auto *content = new QHBoxLayout();
     outer->addLayout(content);
 
-    auto *mapWidget = new QWidget(&dialog);
-    auto *mapLayout = new QGridLayout(mapWidget);
-    mapLayout->setContentsMargins(6, 6, 6, 6);
-    mapLayout->setHorizontalSpacing(1);
-    mapLayout->setVerticalSpacing(1);
+    auto *mapWidget = new ResponsiveGrid(32, 32, 20, 10, &dialog);
     std::array<QPushButton *, 1024> buttons { };
     for (int z = 0; z < 32; z++)
     {
         for (int x = 0; x < 32; x++)
         {
             auto *button = new QPushButton(mapWidget);
-            button->setFixedSize(20, 20);
             button->setContextMenuPolicy(Qt::CustomContextMenu);
             buttons[z * 32 + x] = button;
-            mapLayout->addWidget(button, z, x);
+            mapWidget->addWidget(button, z, x);
         }
     }
     content->addWidget(mapWidget);
@@ -1051,14 +1047,22 @@ void Phenomenon::choosePhenomenonMapPosition()
     scroll->setWidget(previews);
     scroll->setWidgetResizable(true);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scroll->setMinimumWidth(previewColumns == 2 ? 195 : 105);
+    scroll->setFixedWidth(previewColumns == 2 ? 195 : 105);
+    scroll->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     content->addWidget(scroll);
 
     refreshMap();
+    auto *dialogButtons = new QHBoxLayout;
+    auto *resetWindowSize = new QPushButton(tr("Reset Window Size"), &dialog);
     auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dialog);
-    outer->addWidget(buttonBox);
+    dialogButtons->addWidget(resetWindowSize);
+    dialogButtons->addStretch();
+    dialogButtons->addWidget(buttonBox);
+    outer->addLayout(dialogButtons);
+    connect(resetWindowSize, &QPushButton::clicked, &dialog, [mapWidget] { mapWidget->resetSize(); });
     connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    dialog.adjustSize();
     if (dialog.exec() == QDialog::Accepted)
     {
         phenomenonChunk = selectedChunk;

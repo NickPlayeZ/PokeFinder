@@ -37,6 +37,7 @@
 #include <Form/Controls/ComboBoxProxy.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Controls/Filter.hpp>
+#include <Form/Controls/ResponsiveGrid.hpp>
 #include <Form/Controls/TableView.hpp>
 #include <Form/Controls/TabWidget.hpp>
 #include <Form/Controls/TextBox.hpp>
@@ -1477,13 +1478,8 @@ void PokeRadar::choosePosition()
     dialog.setWindowTitle(tr("Choose Position"));
 
     auto *layout = new QVBoxLayout(&dialog);
-    auto *grid = new QWidget(&dialog);
-    auto *gridLayout = new QGridLayout(grid);
-    gridLayout->setContentsMargins(6, 6, 6, 6);
-    gridLayout->setHorizontalSpacing(1);
-    gridLayout->setVerticalSpacing(1);
-    gridLayout->setSizeConstraint(QLayout::SetFixedSize);
-    grid->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    int tileSize = generator.fieldHeight > 36 ? 15 : 20;
+    auto *grid = new ResponsiveGrid(generator.fieldHeight, generator.fieldWidth, tileSize, tileSize / 2, &dialog);
 
     std::optional<QPoint> selectedPosition = generator.currentPosition ? generator.currentPosition : generator.startPosition;
     std::optional<QPoint> markedPosition = generator.currentPosition;
@@ -1501,7 +1497,6 @@ void PokeRadar::choosePosition()
     const QString weakStyle = QStringLiteral("QPushButton { background-color: #7fbd73; border: 1px solid black; }");
     const QString strongStyle = QStringLiteral("QPushButton { background-color: #1f5f2f; border: 1px solid black; }");
     const QString shinyStyle = QStringLiteral("QPushButton { background-color: #d9c63f; border: 1px solid black; }");
-    int tileSize = generator.fieldHeight > 36 ? 15 : 20;
     std::vector<QPushButton *> buttons(generator.fieldWidth * generator.fieldHeight, nullptr);
     std::vector<PokeRadarTileMark> marks(generator.fieldWidth * generator.fieldHeight, PokeRadarTileMark::None);
     std::vector<bool> continues(generator.fieldWidth * generator.fieldHeight, false);
@@ -1585,8 +1580,6 @@ void PokeRadar::choosePosition()
         for (int x = 0; x < generator.fieldWidth; x++)
         {
             auto *button = new QPushButton(&dialog);
-            button->setFixedSize(tileSize, tileSize);
-            button->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
             bool grass = generator.fieldGrass[getGrassFieldIndex(generator, QPoint(x, y))];
             button->setEnabled(grass);
             buttons[y * generator.fieldWidth + x] = button;
@@ -1594,7 +1587,7 @@ void PokeRadar::choosePosition()
             button->setProperty("radarRow", y);
             updateButton(button, x, y);
 
-            gridLayout->addWidget(button, y, x);
+            grid->addWidget(button, y, x);
             connect(button, &QPushButton::clicked, &dialog,
                     [button, &selectedButton, &selectedPosition, &updateButton, x, y] {
                 QPushButton *oldButton = selectedButton;
@@ -1620,8 +1613,10 @@ void PokeRadar::choosePosition()
 
     auto *buttonLayout = new QHBoxLayout;
     auto *removeMarking = new QPushButton(tr("Remove marking"), &dialog);
+    auto *resetWindowSize = new QPushButton(tr("Reset Window Size"), &dialog);
     auto *cancel = new QPushButton(tr("Cancel"), &dialog);
     auto *save = new QPushButton(tr("Save Position"), &dialog);
+    buttonLayout->addWidget(resetWindowSize);
     buttonLayout->addStretch(1);
     buttonLayout->addWidget(removeMarking);
     buttonLayout->addWidget(save);
@@ -1633,6 +1628,7 @@ void PokeRadar::choosePosition()
         updateMarks();
         updateButtons();
     });
+    connect(resetWindowSize, &QPushButton::clicked, &dialog, [grid] { grid->resetSize(); });
     connect(cancel, &QPushButton::clicked, &dialog, &QDialog::reject);
     connect(save, &QPushButton::clicked, &dialog, [this, &dialog, &selectedPosition] {
         if (selectedPosition)

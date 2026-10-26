@@ -42,8 +42,11 @@
 #include <QPushButton>
 #include <QPixmap>
 #include <QProgressBar>
+#include <QProxyStyle>
 #include <QSettings>
 #include <QSpinBox>
+#include <QStackedLayout>
+#include <QStyleFactory>
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTimer>
@@ -62,6 +65,33 @@ constexpr u8 filterAnyPlate = 252;
 constexpr u8 filterAnyFossil = 253;
 constexpr u8 filterAnyShard = 254;
 constexpr u8 filterAnyValuable = 255;
+
+class CompactTabBar final : public QTabBar
+{
+public:
+    explicit CompactTabBar(QWidget *parent = nullptr) : QTabBar(parent) {}
+
+    QSize tabSizeHint(int index) const override
+    {
+        QSize size = QTabBar::tabSizeHint(index);
+        size.setWidth(std::max(0, size.width() - 6));
+        return size;
+    }
+};
+
+class CompactTabTextStyle final : public QProxyStyle
+{
+public:
+    explicit CompactTabTextStyle(const QString &style) : QProxyStyle(style) {}
+
+    QRect subElementRect(SubElement element, const QStyleOption *option = nullptr,
+                         const QWidget *widget = nullptr) const override
+    {
+        QRect rect = QProxyStyle::subElementRect(element, option, widget);
+        if (element == SE_TabBarTabText) rect.adjust(-3, 0, 3, 0);
+        return rect;
+    }
+};
 
 bool matchesUndergroundFilter(u8 filter, u8 item)
 {
@@ -668,7 +698,7 @@ public:
     {
         if (orientation != Qt::Horizontal || role != Qt::DisplayRole) return {};
         static const std::array<QString, 8> headers = { tr("Seed"), tr("Delay"), tr("Item 1"), tr("Item 2"), tr("Item 3"),
-            tr("Item 4"), tr("Items"), tr("Walls") };
+            tr("Item 4"), tr("Items"), tr("Spots") };
         return headers[section];
     }
     const UndergroundSearcherRow &getRow(int row) const { return rows[row]; }
@@ -737,8 +767,8 @@ private:
             u16 minedPlates;
             std::array<u8, 4> counts;
             u8 matchingItems;
-            std::array<u32, 4> route;
-            std::array<u16, 4> routePlateMasks;
+            std::array<u32, 7> route;
+            std::array<u16, 7> routePlateMasks;
             u8 routeLength;
         };
         struct RouteKey
@@ -747,7 +777,7 @@ private:
             u16 minedPlates;
             std::array<u8, 4> counts;
             u8 matchingItems;
-            std::array<u32, 4> route;
+            std::array<u32, 7> route;
             u8 routeLength;
             bool operator==(const RouteKey &) const = default;
         };
@@ -1523,7 +1553,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherMaxDelay->setValues(InputType::Delay);
     searcherMaxDelay->setText(QStringLiteral("2000"));
     searcherMaxWalls = new QSpinBox(searcherRngGroup);
-    searcherMaxWalls->setRange(1, 5);
+    searcherMaxWalls->setRange(1, 8);
     searcherMaxWalls->setValue(1);
     searcherSearchButton = new QPushButton(tr("Search"), searcherRngGroup);
     searcherCancelButton = new QPushButton(tr("Cancel"), searcherRngGroup);
@@ -1534,7 +1564,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherRng->addRow(tr("End Date"), searcherEndDate);
     searcherRng->addRow(tr("Min Delay"), searcherMinDelay);
     searcherRng->addRow(tr("Max Delay"), searcherMaxDelay);
-    searcherRng->addRow(tr("Maximum Walls"), searcherMaxWalls);
+    searcherRng->addRow(tr("Maximum Spots"), searcherMaxWalls);
     auto *searchButtons = new QWidget(searcherRngGroup);
     auto *searchButtonsLayout = new QHBoxLayout(searchButtons);
     searchButtonsLayout->setContentsMargins(0, 0, 0, 0);
@@ -1547,7 +1577,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     auto *searcherFiltersGroup = new QGroupBox(tr("Filters"), searcherPage);
     auto *searcherFiltersLayout = new QGridLayout(searcherFiltersGroup);
     searcherRecoverAllPlates = new QCheckBox(
-        tr("Consider a Plate Recovered for subsequent walls, even if that Plate is not the target"), searcherFiltersGroup);
+        tr("Consider a Plate Recovered for subsequent spots, even if that Plate is not the target"), searcherFiltersGroup);
     searcherFiltersLayout->addWidget(searcherRecoverAllPlates, 0, 0, 1, 2);
     for (int i = 0; i < 4; i++)
     {
@@ -1597,17 +1627,23 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     auto *searcherRight = new QVBoxLayout;
     auto *searcherPreviewGroup = new QGroupBox(tr("Selected Seed Mining Spot"), searcherPage);
     auto *searcherPreviewLayout = new QVBoxLayout(searcherPreviewGroup);
-    auto *searcherPreviewTabs = new QTabWidget(searcherPreviewGroup);
+    auto *searcherPreviewTabs = new CompactTabBar(searcherPreviewGroup);
+    searcherPreviewTabs->setExpanding(false);
+    searcherPreviewTabs->setUsesScrollButtons(false);
+    auto *compactTabTextStyle = new CompactTabTextStyle(searcherPreviewTabs->style()->objectName());
+    compactTabTextStyle->setParent(searcherPreviewTabs);
+    searcherPreviewTabs->setStyle(compactTabTextStyle);
+    auto *searcherPreviewStack = new QStackedLayout;
     for (size_t wall = 0; wall < searcherPreviews.size(); wall++)
     {
-        auto *page = new QWidget(searcherPreviewTabs);
-        auto *layout = new QHBoxLayout(page);
-        searcherPreviews[wall] = new MiningField4(page);
-        layout->addWidget(searcherPreviews[wall], 0, Qt::AlignLeft);
-        layout->addStretch();
-        searcherPreviewTabs->addTab(page, tr("Wall %1").arg(wall + 1));
+        searcherPreviews[wall] = new MiningField4(searcherPreviewGroup);
+        searcherPreviewStack->addWidget(searcherPreviews[wall]);
+        searcherPreviewStack->setAlignment(searcherPreviews[wall], Qt::AlignLeft | Qt::AlignTop);
+        searcherPreviewTabs->addTab(tr("Spot %1").arg(wall + 1));
     }
-    searcherPreviewLayout->addWidget(searcherPreviewTabs);
+    connect(searcherPreviewTabs, &QTabBar::currentChanged, searcherPreviewStack, &QStackedLayout::setCurrentIndex);
+    searcherPreviewLayout->addWidget(searcherPreviewTabs, 0, Qt::AlignLeft);
+    searcherPreviewLayout->addLayout(searcherPreviewStack);
     searcherRight->addWidget(searcherPreviewGroup);
 
     auto *timesGroup = new QGroupBox(tr("Seed to Time"), searcherPage);
