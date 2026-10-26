@@ -98,6 +98,13 @@
           <string>Calibration</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="checkBoxDPPtDelayParity">
+            <property name="text">
+             <string>Match Delay Parity</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="1">
            <widget class="QLabel" name="labelDPPtDelayCalibration">
             <property name="text">
@@ -352,6 +359,13 @@
           <string>Calibration</string>
          </property>
          <layout class="QGridLayout">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="checkBoxHGSSDelayParity">
+            <property name="text">
+             <string>Match Delay Parity</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="1">
            <widget class="QLabel" name="labelHGSSDelayCalibration">
             <property name="text">

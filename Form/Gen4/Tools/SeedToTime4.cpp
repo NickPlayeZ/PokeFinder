@@ -166,7 +166,8 @@ void SeedToTime4::dpptCalibrate()
     const SeedTime4 &target = dpptModel->getItem(index.row());
 
     dpptCalibrateModel->clearModel();
-    auto results = SeedToTimeCalculator4::calibrate(delayCalibration, secondCalibration, target);
+    auto results = SeedToTimeCalculator4::calibrate(
+        delayCalibration, secondCalibration, ui->checkBoxDPPtDelayParity->isChecked(), target);
     dpptCalibrateModel->addItems(results);
 
     int count = (results.size() - 1) / 2;
@@ -212,7 +213,8 @@ void SeedToTime4::hgssCalibrate()
     const SeedTime4 &target = hgssModel->getItem(index.row());
 
     hgssCalibrateModel->clearModel();
-    auto results = SeedToTimeCalculator4::calibrate(delayCalibration, secondCalibration, playerLocation, roamers, routes, target);
+    auto results = SeedToTimeCalculator4::calibrate(
+        delayCalibration, secondCalibration, ui->checkBoxHGSSDelayParity->isChecked(), playerLocation, roamers, routes, target);
     hgssCalibrateModel->addItems(results);
 
     int count = (results.size() - 1) / 2;

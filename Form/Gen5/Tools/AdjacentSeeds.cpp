@@ -76,6 +76,11 @@ AdjacentSeeds::AdjacentSeeds(QWidget *parent) : QWidget(parent), ui(new Ui::Adja
 
     ui->ivFilter->setOrientation(Qt::Horizontal);
 
+    QSettings setting;
+    setting.beginGroup(settingPrefix);
+    ui->spinBoxSeconds->setValue(setting.value("seconds", ui->spinBoxSeconds->value()).toInt());
+    setting.endGroup();
+
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &AdjacentSeeds::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &AdjacentSeeds::profilesChanged);
     connect(ui->pushButtonGenerate, &QPushButton::clicked, this, &AdjacentSeeds::generate);
