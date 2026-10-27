@@ -54,6 +54,8 @@ public:
 
     void setSecondaryAction(QAction *action);
 
+    void setSortContextMenuAlphabetically(bool enabled);
+
     void setRemoveTargetAction(QAction *action);
 
     /**
@@ -79,6 +81,7 @@ private:
     QAction *removeTargetAction;
     QAction *outputTXT;
     QAction *outputCSV;
+    bool sortContextMenuAlphabetically;
     std::vector<u32> targetAdvances;
 
     /**

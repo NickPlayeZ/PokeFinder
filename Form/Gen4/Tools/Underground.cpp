@@ -27,10 +27,12 @@
 #include <QAbstractTableModel>
 #include <QAction>
 #include <QCheckBox>
+#include <QButtonGroup>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QGridLayout>
+#include <QGuiApplication>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QItemSelectionModel>
@@ -44,13 +46,16 @@
 #include <QProgressBar>
 #include <QProxyStyle>
 #include <QSettings>
+#include <QSignalBlocker>
 #include <QSpinBox>
 #include <QStackedLayout>
 #include <QStyleFactory>
+#include <QStyleHints>
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTimer>
 #include <QTimeEdit>
+#include <QToolButton>
 #include <QTransform>
 #include <QVBoxLayout>
 
@@ -90,6 +95,56 @@ public:
         QRect rect = QProxyStyle::subElementRect(element, option, widget);
         if (element == SE_TabBarTabText) rect.adjust(-3, 0, 3, 0);
         return rect;
+    }
+};
+
+class CheckBoxLabel final : public QLabel
+{
+public:
+    CheckBoxLabel(QCheckBox *checkBox, QWidget *parent = nullptr) : QLabel(parent), checkBox(checkBox) {}
+
+protected:
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton && rect().contains(event->position().toPoint())) checkBox->click();
+        QLabel::mouseReleaseEvent(event);
+    }
+
+private:
+    QCheckBox *checkBox;
+};
+
+class BrushLinkButton final : public QToolButton
+{
+public:
+    explicit BrushLinkButton(QWidget *parent = nullptr) : QToolButton(parent)
+    {
+        setCheckable(true);
+        setChecked(true);
+        setFixedSize(24, 24);
+        setToolTip(tr("Link Brush Dimensions"));
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        QToolButton::paintEvent(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QPen(palette().color(QPalette::ButtonText), 1.7));
+        painter.setBrush(Qt::NoBrush);
+        painter.translate(width() / 2.0, height() / 2.0);
+        painter.rotate(-45);
+        if (isChecked())
+        {
+            painter.drawRoundedRect(QRectF(-8, -5, 10, 7), 3, 3);
+            painter.drawRoundedRect(QRectF(-2, -2, 10, 7), 3, 3);
+        }
+        else
+        {
+            painter.drawRoundedRect(QRectF(-9, -6, 9, 6), 3, 3);
+            painter.drawRoundedRect(QRectF(0, 0, 9, 6), 3, 3);
+        }
     }
 };
 
@@ -879,6 +934,8 @@ public:
     {
         if (!index.isValid() || role != Qt::DisplayRole) return {};
         const auto &row = rows[index.row()];
+        if (index.row() == static_cast<int>(rows.size()) - 1 && index.column() >= 1 && index.column() <= 4)
+            return QStringLiteral("-");
         switch (index.column())
         {
         case 0: return row.spot;
@@ -1006,7 +1063,7 @@ private:
                     UndergroundChainerRow row { static_cast<u8>(spot + 1), state.displayAdvance, state.advance,
                         transition.sequence,
                         recoveredItems.isEmpty() ? QStringLiteral("-") : recoveredItems.join(QStringLiteral(", ")),
-                        transition.collapsed ? Underground4::tr("Wall Collapsed") : Underground4::tr("All Item Recovered"),
+                        transition.collapsed ? Underground4::tr("Wall Collapsed") : Underground4::tr("All Items Recovered"),
                         {}, result, spotSeed, state.plates };
                     for (u8 item = 0; item < 4; item++)
                         row.items[item] = item < result.itemCount
@@ -1471,6 +1528,7 @@ private:
 DirtField4::DirtField4(QWidget *parent) : QWidget(parent)
 {
     setFixedSize(416, 320);
+    setMouseTracking(true);
     reset();
 }
 
@@ -1481,6 +1539,27 @@ void DirtField4::reset()
     dirt.fill(2);
     painted.fill(false);
     update();
+}
+
+void DirtField4::setBrushDepth(u8 depth) { paintDepth = depth; }
+
+void DirtField4::setBrushSize(u8 width, u8 height)
+{
+    brushWidth = width;
+    brushHeight = height;
+    update();
+}
+
+QRect DirtField4::brushRect(int index) const
+{
+    if (index < 0) return {};
+    const int centerX = index % 13;
+    const int centerY = index / 13;
+    const int left = std::max(0, centerX - (brushWidth - 1) / 2);
+    const int top = std::max(0, centerY - (brushHeight - 1) / 2);
+    const int right = std::min(13, centerX - (brushWidth - 1) / 2 + brushWidth);
+    const int bottom = std::min(10, centerY - (brushHeight - 1) / 2 + brushHeight);
+    return QRect(left * 32, top * 32, (right - left) * 32, (bottom - top) * 32);
 }
 
 int DirtField4::tileAt(const QPoint &position) const
@@ -1499,23 +1578,50 @@ void DirtField4::paintTile(int index)
     update(QRect((index % 13) * 32, (index / 13) * 32, 32, 32));
 }
 
+void DirtField4::paintBrush(int index)
+{
+    if (index < 0) return;
+    const int centerX = index % 13;
+    const int centerY = index / 13;
+    const int left = centerX - (brushWidth - 1) / 2;
+    const int top = centerY - (brushHeight - 1) / 2;
+    for (int y = 0; y < brushHeight; y++) for (int x = 0; x < brushWidth; x++)
+    {
+        const int tileX = left + x;
+        const int tileY = top + y;
+        if (tileX >= 0 && tileX < 13 && tileY >= 0 && tileY < 10) paintTile(tileY * 13 + tileX);
+    }
+}
+
 void DirtField4::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton) return;
     const int index = tileAt(event->position().toPoint());
     if (index < 0) return;
     painted.fill(false);
-    paintDepth = dirt[index] == 2 ? 4 : dirt[index] == 4 ? 6 : 2;
     painting = true;
-    paintTile(index);
+    paintBrush(index);
 }
 
 void DirtField4::mouseMoveEvent(QMouseEvent *event)
 {
-    if (painting && (event->buttons() & Qt::LeftButton)) paintTile(tileAt(event->position().toPoint()));
+    const int index = tileAt(event->position().toPoint());
+    if (hoverIndex != index)
+    {
+        hoverIndex = index;
+        update();
+    }
+    if (painting && (event->buttons() & Qt::LeftButton)) paintBrush(index);
 }
 
 void DirtField4::mouseReleaseEvent(QMouseEvent *) { painting = false; }
+
+void DirtField4::leaveEvent(QEvent *)
+{
+    hoverIndex = -1;
+    painting = false;
+    update();
+}
 
 void DirtField4::paintEvent(QPaintEvent *)
 {
@@ -1525,6 +1631,17 @@ void DirtField4::paintEvent(QPaintEvent *)
     {
         const int atlasX = dirt[index] == 6 ? 3 : dirt[index] == 4 ? 2 : 1;
         painter.drawPixmap((index % 13) * 32, (index / 13) * 32, atlas.copy(atlasX * 32, 0, 32, 32));
+    }
+    if (hoverIndex >= 0)
+    {
+        const Qt::ColorScheme colorScheme = QGuiApplication::styleHints()->colorScheme();
+        const bool lightMode = colorScheme == Qt::ColorScheme::Light
+            || (colorScheme == Qt::ColorScheme::Unknown && palette().color(QPalette::Window).lightness() >= 128);
+        QColor outline(lightMode ? QStringLiteral("#5a5a5a") : QStringLiteral("#a6a6a6"));
+        outline.setAlpha(204);
+        painter.setPen(QPen(outline, 2));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(brushRect(hoverIndex).adjusted(1, 1, -1, -1));
     }
 }
 
@@ -1716,7 +1833,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     auto *settingsGroup = new QGroupBox(tr("Settings"), this);
     auto *controls = new QFormLayout(settingsGroup);
     outcomePriority = new QComboBox(settingsGroup);
-    outcomePriority->addItems({ tr("Wall Collapsed"), tr("All Item Recovered") });
+    outcomePriority->addItems({ tr("Wall Collapsed"), tr("All Items Recovered") });
     outcomePriority->setCurrentIndex(1);
     controls->addRow(tr("Outcome Priority"), outcomePriority);
     auto *requiredWidget = new QWidget(settingsGroup);
@@ -1786,6 +1903,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     advances->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     advances->horizontalHeader()->setStretchLastSection(false);
     auto *setAsCurrent = advances->addAction(tr("Set as Current Mining Spot"));
+    advances->setSortContextMenuAlphabetically(true);
     generatorLayout->addWidget(advances, 1);
 
     auto *finderLayout = new QGridLayout(finderPage);
@@ -1795,6 +1913,70 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     finderField = new DirtField4(fieldGroup);
     auto *resetField = new QPushButton(tr("Reset"), fieldGroup);
     fieldLayout->addWidget(finderField, 0, Qt::AlignLeft);
+    auto *paintTools = new QWidget(fieldGroup);
+    auto *paintToolsLayout = new QHBoxLayout(paintTools);
+    paintToolsLayout->setContentsMargins(0, 0, 0, 0);
+    auto *depthGroup = new QButtonGroup(paintTools);
+    depthGroup->setExclusive(true);
+    const QPixmap dirtAtlas(QStringLiteral(":/images/underground_sprite_map.png"));
+    for (int depth : { 2, 4, 6 })
+    {
+        auto *depthButton = new QCheckBox(paintTools);
+        depthButton->setChecked(depth == 4);
+        depthGroup->addButton(depthButton, depth);
+        paintToolsLayout->addWidget(depthButton);
+        auto *depthTile = new CheckBoxLabel(depthButton, paintTools);
+        depthTile->setPixmap(dirtAtlas.copy((depth / 2) * 32, 0, 32, 32));
+        depthTile->setFixedSize(32, 32);
+        paintToolsLayout->addWidget(depthTile);
+    }
+    paintToolsLayout->addSpacing(8);
+    paintToolsLayout->addWidget(new QLabel(tr("Brush Size"), paintTools));
+    auto *brushWidth = new QSpinBox(paintTools);
+    brushWidth->setRange(1, 13);
+    brushWidth->setValue(1);
+    auto *brushHeight = new QSpinBox(paintTools);
+    brushHeight->setRange(1, 10);
+    brushHeight->setValue(1);
+    paintToolsLayout->addWidget(brushWidth);
+    paintToolsLayout->addWidget(new QLabel(QStringLiteral("x"), paintTools));
+    paintToolsLayout->addWidget(brushHeight);
+    auto *linkBrushSize = new BrushLinkButton(paintTools);
+    paintToolsLayout->addWidget(linkBrushSize);
+    paintToolsLayout->addStretch();
+    connect(depthGroup, &QButtonGroup::idClicked, finderField,
+            [this](int depth) { finderField->setBrushDepth(static_cast<u8>(depth)); });
+    connect(brushWidth, &QSpinBox::valueChanged, this, [this, brushWidth, brushHeight, linkBrushSize](int value) {
+        if (linkBrushSize->isChecked())
+        {
+            value = std::min(value, brushHeight->maximum());
+            const QSignalBlocker blockWidth(brushWidth);
+            const QSignalBlocker blockHeight(brushHeight);
+            brushWidth->setValue(value);
+            brushHeight->setValue(value);
+        }
+        finderField->setBrushSize(static_cast<u8>(brushWidth->value()), static_cast<u8>(brushHeight->value()));
+    });
+    connect(brushHeight, &QSpinBox::valueChanged, this, [this, brushWidth, brushHeight, linkBrushSize](int value) {
+        if (linkBrushSize->isChecked())
+        {
+            const QSignalBlocker blockWidth(brushWidth);
+            brushWidth->setValue(value);
+        }
+        finderField->setBrushSize(static_cast<u8>(brushWidth->value()), static_cast<u8>(brushHeight->value()));
+    });
+    connect(linkBrushSize, &QToolButton::toggled, this, [this, brushWidth, brushHeight](bool linked) {
+        if (linked)
+        {
+            const int value = std::min(brushWidth->value(), brushHeight->value());
+            const QSignalBlocker blockWidth(brushWidth);
+            const QSignalBlocker blockHeight(brushHeight);
+            brushWidth->setValue(value);
+            brushHeight->setValue(value);
+            finderField->setBrushSize(static_cast<u8>(value), static_cast<u8>(value));
+        }
+    });
+    fieldLayout->addWidget(paintTools);
     fieldLayout->addWidget(resetField);
     finderLayout->addWidget(fieldGroup, 0, 0);
 
@@ -1866,7 +2048,8 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     auto *plateOption = new QWidget(chainerOptionsGroup);
     auto *plateOptionLayout = new QHBoxLayout(plateOption);
     plateOptionLayout->setContentsMargins(0, 0, 0, 0);
-    auto *plateOptionText = new QLabel(tr("Always Recover All Plates"), plateOption);
+    auto *plateOptionText = new CheckBoxLabel(chainerRecoverAllPlates, plateOption);
+    plateOptionText->setText(tr("Always Recover All Plates"));
     plateOptionText->setWordWrap(true);
     plateOptionLayout->addWidget(chainerRecoverAllPlates, 0, Qt::AlignTop);
     plateOptionLayout->addWidget(plateOptionText, 1);
@@ -1903,6 +2086,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     finderTable->horizontalHeader()->setStretchLastSection(false);
     auto *goToGenerator = finderTable->addAction(tr("Go to Generator"));
     finderTable->setPrimaryAction(goToGenerator);
+    finderTable->setSortContextMenuAlphabetically(true);
     chainerTable = new TableView(finderPage);
     chainerModel = new UndergroundChainerModel(chainerTable);
     chainerTable->setModel(chainerModel);
@@ -1912,7 +2096,9 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     chainerTable->horizontalHeader()->setStretchLastSection(false);
     auto *setChainerStart = chainerTable->addAction(tr("Set as Starting Seed"));
     auto *chainerGoToGenerator = chainerTable->addAction(tr("Go to Generator"));
-    chainerTable->setPrimaryAction(setChainerStart);
+    chainerTable->setPrimaryAction(chainerGoToGenerator);
+    chainerTable->setSecondaryAction(setChainerStart);
+    chainerTable->setSortContextMenuAlphabetically(true);
     auto *finderBottom = new QHBoxLayout;
     finderBottom->setContentsMargins(0, 0, 0, 0);
     finderBottom->addWidget(finderTable, 35);
@@ -2007,8 +2193,10 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherTable->setSelectionMode(QAbstractItemView::SingleSelection);
     searcherTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     searcherTable->horizontalHeader()->setStretchLastSection(false);
+    auto *searcherGoToFinder = searcherTable->addAction(tr("Go to Finder"));
     auto *searcherGoToGenerator = searcherTable->addAction(tr("Go to Generator"));
     searcherTable->setPrimaryAction(searcherGoToGenerator);
+    searcherTable->setSecondaryAction(searcherGoToFinder);
     searcherLeft->addWidget(searcherTable, 1);
     searcherLayout->addLayout(searcherLeft, 1);
 
@@ -2052,6 +2240,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     timesTable->horizontalHeader()->setStretchLastSection(true);
     auto *goToFinder = timesTable->addAction(tr("Go to Finder"));
     timesTable->setPrimaryAction(goToFinder);
+    timesTable->setSortContextMenuAlphabetically(true);
     timesLayout->addWidget(timesTable, 1);
     searcherRight->addWidget(timesGroup, 1);
     searcherLayout->addLayout(searcherRight);
@@ -2102,7 +2291,15 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     for (QCheckBox *required : requiredItems)
         connect(required, &QCheckBox::toggled, this, [this] { advanceCacheValid = false; });
     connect(onlyTargetAdvances, &QCheckBox::toggled, this, &Underground4::applyItemFilters);
-    connect(resetField, &QPushButton::clicked, finderField, &DirtField4::reset);
+    connect(resetField, &QPushButton::clicked, this, [this, depthGroup, brushWidth, brushHeight, linkBrushSize] {
+        finderField->reset();
+        depthGroup->button(4)->setChecked(true);
+        finderField->setBrushDepth(4);
+        linkBrushSize->setChecked(true);
+        brushWidth->setValue(1);
+        brushHeight->setValue(1);
+        finderField->setBrushSize(1, 1);
+    });
     connect(findButton, &QPushButton::clicked, this, &Underground4::find);
     connect(searcherSearchButton, &QPushButton::clicked, this, &Underground4::search);
     connect(chainerSearchButton, &QPushButton::clicked, this, &Underground4::chain);
@@ -2132,6 +2329,37 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         resetButton->setEnabled(false);
         tabs->setCurrentIndex(0);
         generate();
+    });
+    connect(searcherGoToFinder, &QAction::triggered, this, [this, tabs, searcherProxy] {
+        const QModelIndex index = searcherTable->currentIndex();
+        if (!index.isValid()) return;
+        const QModelIndex sourceIndex = searcherProxy->mapToSource(index);
+        if (!sourceIndex.isValid()) return;
+        const UndergroundSearcherRow &row = searcherModel->getRow(sourceIndex.row());
+        if (row.seed < row.delay) return;
+        u64 value = row.seed - row.delay;
+        const int second = value % 64; value /= 64;
+        const int minute = value % 64; value /= 64;
+        const int hour = value % 32; value /= 32;
+        const int day = value % 32; value /= 32;
+        const int month = value % 16; value /= 16;
+        if (value >= 100 || second >= 60 || minute >= 60 || hour >= 24) return;
+        QDate date;
+        for (int year = searcherStartDate->date().year(); year <= searcherEndDate->date().year(); year++)
+        {
+            const QDate candidate(year, month, day);
+            if (year % 100 == static_cast<int>(value) && candidate.isValid()
+                && candidate >= searcherStartDate->date() && candidate <= searcherEndDate->date())
+            {
+                date = candidate;
+                break;
+            }
+        }
+        if (!date.isValid()) return;
+        finderDate->setDate(date);
+        finderTime->setTime(QTime(hour, minute, second));
+        finderTargetDelay->setText(QString::number(row.delay));
+        tabs->setCurrentIndex(1);
     });
     connect(searcherGoToGenerator, &QAction::triggered, this, [this, tabs, backButton, resetButton, searcherProxy] {
         const QModelIndex index = searcherTable->currentIndex();
@@ -2168,7 +2396,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         }
     });
     connect(searcherTable->selectionModel(), &QItemSelectionModel::currentChanged, this,
-            [this, searcherProxy](const QModelIndex &current, const QModelIndex &) {
+            [this, searcherProxy, timesProxy, timesTable](const QModelIndex &current, const QModelIndex &) {
         if (!currentProfile || !current.isValid()) return;
         const QModelIndex sourceIndex = searcherProxy->mapToSource(current);
         if (!sourceIndex.isValid()) return;
@@ -2197,6 +2425,14 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
             }
         }
         generateTimes();
+        for (int timeRow = 0; timeRow < timesProxy->rowCount(); timeRow++)
+        {
+            const QModelIndex delayIndex = timesProxy->index(timeRow, 2);
+            if (delayIndex.data().toUInt() != row.delay) continue;
+            timesTable->selectRow(timeRow);
+            timesTable->scrollTo(delayIndex, QAbstractItemView::PositionAtCenter);
+            break;
+        }
     });
     connect(chainerTable->selectionModel(), &QItemSelectionModel::currentChanged, this,
             [this](const QModelIndex &current, const QModelIndex &) {
@@ -2661,7 +2897,7 @@ void Underground4::updateChainerItems()
     });
     chainerItem->blockSignals(true);
     chainerItem->clear();
-    chainerItem->addItem(tr("Any Plate"), filterAnyPlate);
+    addUndergroundFilterCategories(chainerItem);
     for (const auto &[name, item] : namedItems) chainerItem->addItem(name, item);
     const int index = chainerItem->findData(selected);
     chainerItem->setCurrentIndex(index >= 0 ? index : 0);
@@ -2826,7 +3062,7 @@ void Underground4::populateAdvances(const UndergroundGenerator &generator)
         const u32 actualAdvance = currentAdvance + first.advances + betweenAdvance;
         const UndergroundResult result = generator.generate(UndergroundGenerator::advanceSeed(seed->getULong(), actualAdvance));
         UndergroundAdvanceRow value { 0, actualAdvance, guide.sequence, guide.recovered,
-            guide.collapsed ? tr("Wall Collapsed") : tr("All Item Recovered"), guide.collapsed, {}, result.items, result.itemCount };
+            guide.collapsed ? tr("Wall Collapsed") : tr("All Items Recovered"), guide.collapsed, {}, result.items, result.itemCount };
         for (int item = 0; item < 4; item++)
         {
             value.items[item] = item < result.itemCount ? QString::fromStdString(UndergroundGenerator::getItemName(result.items[item]))

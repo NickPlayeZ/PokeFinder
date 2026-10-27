@@ -74,7 +74,7 @@ namespace
 }
 
 TableView::TableView(QWidget *parent) :
-    QTableView(parent), primaryAction(nullptr), secondaryAction(nullptr), removeTargetAction(nullptr)
+    QTableView(parent), primaryAction(nullptr), secondaryAction(nullptr), removeTargetAction(nullptr), sortContextMenuAlphabetically(false)
 {
     setItemDelegate(new TargetMarkDelegate(this));
     outputTXT = addAction(tr("Output Results to TXT"));
@@ -127,6 +127,11 @@ void TableView::setSecondaryAction(QAction *action)
     secondaryAction = action;
 }
 
+void TableView::setSortContextMenuAlphabetically(bool enabled)
+{
+    sortContextMenuAlphabetically = enabled;
+}
+
 void TableView::setRemoveTargetAction(QAction *action)
 {
     removeTargetAction = action;
@@ -169,6 +174,12 @@ void TableView::contextMenuEvent(QContextMenuEvent *event)
                 menuActions.prepend(secondaryAction);
             }
             menuActions.prepend(primaryAction);
+        }
+        if (sortContextMenuAlphabetically)
+        {
+            std::ranges::sort(menuActions, [](const QAction *left, const QAction *right) {
+                return QString::localeAwareCompare(left->text(), right->text()) < 0;
+            });
         }
         QMenu::exec(menuActions, event->globalPos(), nullptr, this);
     }

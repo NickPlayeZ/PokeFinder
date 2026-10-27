@@ -19,9 +19,11 @@ class UndergroundChainerModel;
 class UndergroundTimeModel;
 class QCheckBox;
 class QComboBox;
+class QEvent;
 class QLabel;
 class QMouseEvent;
 class QPoint;
+class QRect;
 class QPushButton;
 class QProgressBar;
 class QSpinBox;
@@ -48,17 +50,25 @@ public:
     explicit DirtField4(QWidget *parent = nullptr);
     const std::array<u8, 130> &getDirt() const;
     void reset();
+    void setBrushDepth(u8 depth);
+    void setBrushSize(u8 width, u8 height);
 protected:
+    void leaveEvent(QEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
 private:
+    QRect brushRect(int index) const;
     int tileAt(const QPoint &position) const;
+    void paintBrush(int index);
     void paintTile(int index);
     std::array<u8, 130> dirt;
     std::array<bool, 130> painted;
-    u8 paintDepth = 2;
+    u8 paintDepth = 4;
+    u8 brushWidth = 1;
+    u8 brushHeight = 1;
+    int hoverIndex = -1;
     bool painting = false;
 };
 
