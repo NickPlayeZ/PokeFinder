@@ -7,6 +7,7 @@
 #include <vector>
 
 class ComboMenu;
+class ComboBox;
 class DateEdit;
 class Profile4;
 class ProfileDisplay4;
@@ -14,6 +15,7 @@ class TableView;
 class UndergroundAdvanceModel;
 class UndergroundFinderModel;
 class UndergroundSearcherModel;
+class UndergroundChainerModel;
 class UndergroundTimeModel;
 class QCheckBox;
 class QComboBox;
@@ -75,14 +77,16 @@ private slots:
     void generate();
     void find();
     void search();
+    void chain();
     void generateTimes();
     void platesChanged();
 private:
     void generateFrame(bool current);
-    UndergroundGenerator getGenerator() const;
+    UndergroundGenerator getGenerator(bool includeTemporaryPlates = false) const;
     void populateAdvances(const UndergroundGenerator &generator);
     void updateItemFilters();
     void updateSearcherItemFilters();
+    void updateChainerItems();
     void applyItemFilters();
     void updateTargetAdvance();
     void updatePlateText();
@@ -91,6 +95,7 @@ private:
     ComboMenu *minedPlates;
     QComboBox *outcomePriority;
     std::array<QCheckBox *, 4> requiredItems;
+    QCheckBox *onlyTargetAdvances;
     std::array<QComboBox *, 4> itemFilters;
     std::array<QSpinBox *, 4> itemFilterCounts;
     MiningField4 *currentField;
@@ -127,9 +132,26 @@ private:
     std::array<MiningField4 *, 8> searcherPreviews;
     TextBox *searcherSeed;
     UndergroundTimeModel *searcherTimeModel;
+    TextBox *chainerSeed;
+    ComboBox *chainerItem;
+    QSpinBox *chainerMaxSpots;
+    QCheckBox *chainerRecoverAllPlates;
+    QPushButton *chainerSearchButton;
+    QPushButton *chainerCancelButton;
+    QProgressBar *chainerProgress;
+    UndergroundChainerModel *chainerModel;
+    TableView *chainerTable;
+    MiningField4 *chainerPreview;
+    QLabel *chainerItemNames;
+    QLabel *chainerRecovered;
+    u16 chainerTemporaryPlates = 0;
     const Profile4 *currentProfile;
     std::vector<u32> miningFieldHistory;
+    std::vector<u16> miningPlateHistory;
     std::vector<u32> targetRoute;
+    std::vector<u16> targetPlateRoute;
+    u16 generatorTemporaryPlates = 0;
+    u16 generatorInitialTemporaryPlates = 0;
     u8 currentItemCount;
     bool advanceCacheValid;
 };

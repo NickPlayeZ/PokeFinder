@@ -109,7 +109,9 @@ bool matchesUndergroundFilter(u8 filter, u8 item)
 void updateUndergroundFilterCount(QComboBox *filter, QSpinBox *count, int maximum = 4)
 {
     const int item = filter->currentData().toInt();
-    count->setMaximum(item >= 44 && item <= 59 ? 1 : maximum);
+    if (item >= 44 && item <= 59) count->setMaximum(1);
+    else if (item == filterAnyPlate) count->setMaximum(std::min(maximum, 16));
+    else count->setMaximum(maximum);
     count->setEnabled(item != 0);
 }
 
@@ -368,6 +370,16 @@ struct RecoveryTransition
     u8 recoveredMask;
 };
 
+struct GuidedRecoveryTransition
+{
+    u32 advances;
+    u8 recoveredMask;
+    QString sequence;
+    bool collapsed;
+    u8 switches;
+    u8 strikes;
+};
+
 struct MiningOutcome
 {
     u32 advances;
@@ -424,6 +436,120 @@ const std::vector<MiningOutcome> &getMiningOutcomes()
         return values;
     }();
     return outcomes;
+}
+
+u8 recoveredSphereCount(const UndergroundResult &result, u8 mask);
+QString formatStrikeSequence(const QString &sequence);
+
+struct GuidedMiningOutcome
+{
+    u32 advances;
+    u8 pickaxes;
+    u8 hammers;
+    QString sequence;
+    u8 switches;
+    u8 strikes;
+    bool collapsed;
+};
+
+const std::vector<GuidedMiningOutcome> &getGuidedMiningOutcomes()
+{
+    static const std::vector<GuidedMiningOutcome> outcomes = [] {
+        using StateKey = std::tuple<u32, u8, u8>;
+        std::array<std::map<StateKey, StrikeState>, 197> states;
+        states[0].emplace(StateKey(0, 2, 0), StrikeState());
+        std::map<std::tuple<u32, u8, u8, bool>, GuidedMiningOutcome> best;
+        for (u16 damage = 0; damage < 196; damage++)
+        {
+            for (const auto &[key, state] : states[damage])
+            {
+                for (u8 tool = 0; tool < 2; tool++)
+                {
+                    StrikeState next = state;
+                    next.damage = std::min<u16>(196, damage + (tool == 1 ? 8 : 4));
+                    next.sequence += next.sequence.isEmpty() ? (tool == 1 ? QStringLiteral("H") : QStringLiteral("P"))
+                                                            : (tool == 1 ? QStringLiteral(", H") : QStringLiteral(", P"));
+                    if (state.lastTool == tool) next.lastRun++;
+                    else
+                    {
+                        if (state.lastTool != 2) next.switches++;
+                        next.lastRun = 1;
+                    }
+                    next.lastTool = tool;
+                    if (tool == 1) next.hammers++;
+                    else next.pickaxes++;
+
+                    const u8 duration = static_cast<u8>(next.damage / 15);
+                    const u32 finalBase = state.advances + (duration > 1 ? 2 : 0);
+                    for (bool collapsed : { false, true })
+                    {
+                        if (collapsed && next.damage != 196) continue;
+                        const auto outcomeKey = std::make_tuple(finalBase, next.pickaxes, next.hammers, collapsed);
+                        GuidedMiningOutcome candidate { finalBase, next.pickaxes, next.hammers,
+                            formatStrikeSequence(next.sequence), next.switches,
+                            static_cast<u8>(next.pickaxes + next.hammers), collapsed };
+                        const auto it = best.find(outcomeKey);
+                        if (it == best.end() || candidate.switches < it->second.switches)
+                            best[outcomeKey] = std::move(candidate);
+                    }
+                    if (next.damage == 196) continue;
+
+                    const u8 maximumShakeFrames = duration > 1 ? duration - 1 : 0;
+                    StrikeState continued = next;
+                    continued.advances = state.advances + 2 * maximumShakeFrames;
+                    const StateKey nextKey(continued.advances, continued.lastTool, continued.hammers);
+                    auto [it, inserted] = states[continued.damage].emplace(nextKey, continued);
+                    if (!inserted && continued.switches < it->second.switches) it->second = std::move(continued);
+                }
+            }
+        }
+        std::vector<GuidedMiningOutcome> values;
+        values.reserve(best.size());
+        for (auto &[key, outcome] : best) values.emplace_back(std::move(outcome));
+        return values;
+    }();
+    return outcomes;
+}
+
+std::vector<GuidedRecoveryTransition> getGuidedRecoveryTransitions(const UndergroundResult &result, MiningPlanner &planner,
+                                                                   bool requireAllPlates)
+{
+    struct Key
+    {
+        u32 advances;
+        u8 mask;
+        bool operator<(const Key &other) const { return std::tie(advances, mask) < std::tie(other.advances, other.mask); }
+    };
+    std::map<Key, GuidedRecoveryTransition> best;
+    const u8 allMask = static_cast<u8>((1 << result.itemCount) - 1);
+    u8 plateMask = 0;
+    for (u8 item = 0; item < result.itemCount; item++)
+        if (result.items[item] >= 44 && result.items[item] <= 59) plateMask |= 1 << item;
+
+    for (const GuidedMiningOutcome &outcome : getGuidedMiningOutcomes())
+    {
+        const u8 firstMask = outcome.collapsed ? 0 : allMask;
+        const u8 lastMask = outcome.collapsed ? static_cast<u8>(allMask - 1) : allMask;
+        for (u8 mask = firstMask; mask <= lastMask; mask++)
+        {
+            if (requireAllPlates && (mask & plateMask) != plateMask) continue;
+            if (!planner.canRecover(mask, outcome.pickaxes, outcome.hammers)) continue;
+            const u32 advances = outcome.advances
+                + (outcome.collapsed ? 88 + 6 * std::popcount(mask) + recoveredSphereCount(result, mask)
+                                     : 6 * result.itemCount + recoveredSphereCount(result, allMask));
+            GuidedRecoveryTransition candidate { advances, mask, outcome.sequence, outcome.collapsed,
+                                                   outcome.switches, outcome.strikes };
+            const Key key { advances, mask };
+            const auto it = best.find(key);
+            if (it == best.end() || std::tie(candidate.switches, candidate.strikes)
+                    < std::tie(it->second.switches, it->second.strikes))
+                best[key] = std::move(candidate);
+        }
+    }
+    std::vector<GuidedRecoveryTransition> transitions;
+    transitions.reserve(best.size());
+    for (auto &[key, transition] : best) transitions.emplace_back(std::move(transition));
+    return transitions;
 }
 
 u8 recoveredSphereCount(const UndergroundResult &result, u8 mask)
@@ -586,10 +712,11 @@ public:
     {
         allRows = std::move(values);
     }
-    void applyFilters(const std::array<std::pair<u8, u8>, 4> &filters)
+    void applyFilters(const std::array<std::pair<u8, u8>, 4> &filters, bool onlyTarget = false, u32 target = 0)
     {
         beginResetModel();
         rows.clear();
+        u32 visibleAdvance = 0;
         for (const UndergroundAdvanceRow &source : allRows)
         {
             bool matches = true;
@@ -604,8 +731,10 @@ public:
                 }
             }
             if (!matches) continue;
+            const u32 advance = visibleAdvance++;
+            if (onlyTarget && source.actualAdvance != target) continue;
             UndergroundAdvanceRow row = source;
-            row.advance = static_cast<u32>(rows.size());
+            row.advance = advance;
             rows.emplace_back(std::move(row));
         }
         endResetModel();
@@ -718,6 +847,197 @@ public:
     }
 private:
     std::vector<UndergroundSearcherRow> rows;
+};
+
+struct UndergroundChainerRow
+{
+    u8 spot;
+    u32 targetAdvance;
+    u32 actualAdvance;
+    QString sequence;
+    QString recovered;
+    QString outcome;
+    std::array<QString, 4> items;
+    UndergroundResult result;
+    u64 spotSeed;
+    u16 platesBefore;
+};
+
+struct UndergroundChainerResult
+{
+    std::vector<UndergroundChainerRow> rows;
+    u8 recovered = 0;
+};
+
+class UndergroundChainerModel final : public QAbstractTableModel
+{
+public:
+    explicit UndergroundChainerModel(QObject *parent) : QAbstractTableModel(parent) {}
+    int rowCount(const QModelIndex & = QModelIndex()) const override { return static_cast<int>(rows.size()); }
+    int columnCount(const QModelIndex & = QModelIndex()) const override { return 9; }
+    QVariant data(const QModelIndex &index, int role) const override
+    {
+        if (!index.isValid() || role != Qt::DisplayRole) return {};
+        const auto &row = rows[index.row()];
+        switch (index.column())
+        {
+        case 0: return row.spot;
+        case 1: return row.targetAdvance;
+        case 2: return row.sequence;
+        case 3: return row.recovered;
+        case 4: return row.outcome;
+        default: return row.items[index.column() - 5];
+        }
+    }
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override
+    {
+        if (orientation != Qt::Horizontal || role != Qt::DisplayRole) return {};
+        static const std::array<QString, 9> headers = { tr("Spot"), tr("Target Advance"), tr("Hit Sequence"),
+            tr("Recovered"), tr("Outcome"), tr("Item 1"), tr("Item 2"), tr("Item 3"), tr("Item 4") };
+        return headers[section];
+    }
+    const UndergroundChainerRow &getRow(int row) const { return rows[row]; }
+    void setRows(std::vector<UndergroundChainerRow> values)
+    {
+        beginResetModel();
+        rows = std::move(values);
+        endResetModel();
+    }
+private:
+    std::vector<UndergroundChainerRow> rows;
+};
+
+class UndergroundChainerSearcher final : public SearcherBase<UndergroundChainerResult>
+{
+public:
+    UndergroundChainerSearcher(u64 seed, u8 target, u8 spots, bool recoverAllPlates, u16 startingPlates,
+                               UndergroundGenerator generator) :
+        seed(seed), target(target), spots(spots), recoverAllPlates(recoverAllPlates), startingPlates(startingPlates),
+        generator(std::move(generator))
+    {
+    }
+
+    void start()
+    {
+        setMaxProgress(10000);
+        activeThreads.store(1);
+        threadContainer.emplace_back([this] {
+            run();
+            activeThreads.fetch_sub(1);
+        });
+    }
+
+    int getDetailedProgress() const { return static_cast<int>(progress.load(std::memory_order_relaxed)); }
+
+private:
+    struct State
+    {
+        u32 advance = 0;
+        u16 plates = 0;
+        u8 recovered = 0;
+        u16 switches = 0;
+        u16 hits = 0;
+        u32 displayAdvance = 0;
+        std::vector<UndergroundChainerRow> rows;
+    };
+
+    static bool better(const State &left, const State &right)
+    {
+        if (left.recovered != right.recovered) return left.recovered > right.recovered;
+        if (left.switches != right.switches) return left.switches < right.switches;
+        if (left.hits != right.hits) return left.hits < right.hits;
+        return left.advance < right.advance;
+    }
+
+    void run()
+    {
+        using Key = std::pair<u32, u16>;
+        std::map<u16, UndergroundGenerator> generators;
+        auto getGenerator = [&](u16 plates) -> UndergroundGenerator & {
+            if (const auto it = generators.find(plates); it != generators.end()) return it->second;
+            UndergroundGenerator value = generator;
+            for (u8 plate = 0; plate < 16; plate++)
+                if (plates & (1 << plate)) value.setMinedPlate(44 + plate);
+            return generators.emplace(plates, std::move(value)).first->second;
+        };
+
+        std::map<Key, State> current;
+        current.emplace(Key(0, startingPlates), State { 0, startingPlates });
+        for (u8 spot = 0; spot < spots && !cancelled.load(std::memory_order_relaxed); spot++)
+        {
+            std::map<Key, State> next;
+            size_t processed = 0;
+            for (const auto &[key, state] : current)
+            {
+                UndergroundGenerator &routeGenerator = getGenerator(state.plates);
+                const u64 spotSeed = UndergroundGenerator::advanceSeed(seed, state.advance);
+                const UndergroundResult result = routeGenerator.generate(spotSeed);
+                MiningPlanner planner(result);
+                const auto transitions = getGuidedRecoveryTransitions(result, planner, false);
+                u8 plateItemMask = 0;
+                for (u8 item = 0; item < result.itemCount; item++)
+                    if (result.items[item] >= 44 && result.items[item] <= 59) plateItemMask |= 1 << item;
+                u32 displayAdvance = 0;
+                u32 previousAdvance = std::numeric_limits<u32>::max();
+                for (const GuidedRecoveryTransition &transition : transitions)
+                {
+                    if (cancelled.load(std::memory_order_relaxed)) return;
+                    if (transition.advances != previousAdvance)
+                    {
+                        if (previousAdvance != std::numeric_limits<u32>::max()) displayAdvance++;
+                        previousAdvance = transition.advances;
+                    }
+                    if (recoverAllPlates && (transition.recoveredMask & plateItemMask) != plateItemMask) continue;
+                    State candidate = state;
+                    candidate.advance += result.advances + transition.advances;
+                    candidate.switches += transition.switches;
+                    candidate.hits += transition.strikes;
+                    QStringList recoveredItems;
+                    for (u8 item = 0; item < result.itemCount; item++)
+                    {
+                        if (!(transition.recoveredMask & (1 << item))) continue;
+                        recoveredItems.append(QString::number(item + 1));
+                        const u8 itemID = result.items[item];
+                        if (matchesUndergroundFilter(target, itemID)) candidate.recovered++;
+                        if (itemID >= 44 && itemID <= 59
+                            && (recoverAllPlates || target == filterAnyPlate || target == itemID))
+                            candidate.plates |= static_cast<u16>(1 << (itemID - 44));
+                    }
+                    UndergroundChainerRow row { static_cast<u8>(spot + 1), state.displayAdvance, state.advance,
+                        transition.sequence,
+                        recoveredItems.isEmpty() ? QStringLiteral("-") : recoveredItems.join(QStringLiteral(", ")),
+                        transition.collapsed ? Underground4::tr("Wall Collapsed") : Underground4::tr("All Item Recovered"),
+                        {}, result, spotSeed, state.plates };
+                    for (u8 item = 0; item < 4; item++)
+                        row.items[item] = item < result.itemCount
+                            ? QString::fromStdString(UndergroundGenerator::getItemName(result.items[item])) : QStringLiteral("-");
+                    candidate.rows.push_back(std::move(row));
+                    candidate.displayAdvance = displayAdvance;
+                    const Key nextKey(candidate.advance, candidate.plates);
+                    const auto it = next.find(nextKey);
+                    if (it == next.end() || better(candidate, it->second)) next[nextKey] = std::move(candidate);
+                }
+                processed++;
+                progress.store((static_cast<u64>(spot) * 10000
+                                    + static_cast<u64>(processed) * 10000 / current.size()) / spots,
+                               std::memory_order_relaxed);
+            }
+            current = std::move(next);
+        }
+        if (cancelled.load(std::memory_order_relaxed) || current.empty()) return;
+        const State *best = nullptr;
+        for (const auto &[key, state] : current)
+            if (!best || better(state, *best)) best = &state;
+        std::lock_guard<std::mutex> guard(mutex);
+        results.push_back({ best->rows, best->recovered });
+    }
+
+    u64 seed;
+    u8 target;
+    u8 spots;
+    bool recoverAllPlates;
+    u16 startingPlates;
+    UndergroundGenerator generator;
 };
 
 class UndergroundSeedSearcher final : public SearcherBase<UndergroundSearcherRow>
@@ -1396,7 +1716,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     auto *settingsGroup = new QGroupBox(tr("Settings"), this);
     auto *controls = new QFormLayout(settingsGroup);
     outcomePriority = new QComboBox(settingsGroup);
-    outcomePriority->addItems({ tr("Wall Collapsed"), tr("Got All Items") });
+    outcomePriority->addItems({ tr("Wall Collapsed"), tr("All Item Recovered") });
     outcomePriority->setCurrentIndex(1);
     controls->addRow(tr("Outcome Priority"), outcomePriority);
     auto *requiredWidget = new QWidget(settingsGroup);
@@ -1409,6 +1729,8 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         requiredLayout->addWidget(requiredItems[i]);
     }
     controls->addRow(tr("Required Items"), requiredWidget);
+    onlyTargetAdvances = new QCheckBox(tr("Only Display Target Advances"), settingsGroup);
+    controls->addRow(onlyTargetAdvances);
     middle->addWidget(settingsGroup, 1);
 
     auto *filtersGroup = new QGroupBox(tr("Filters"), this);
@@ -1461,19 +1783,20 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     advances->setModel(advanceModel);
     advances->setSelectionBehavior(QAbstractItemView::SelectRows);
     advances->setSelectionMode(QAbstractItemView::SingleSelection);
+    advances->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    advances->horizontalHeader()->setStretchLastSection(false);
     auto *setAsCurrent = advances->addAction(tr("Set as Current Mining Spot"));
     generatorLayout->addWidget(advances, 1);
 
-    auto *finderLayout = new QVBoxLayout(finderPage);
+    auto *finderLayout = new QGridLayout(finderPage);
     finderLayout->setContentsMargins(4, 4, 4, 4);
-    auto *finderTop = new QHBoxLayout;
     auto *fieldGroup = new QGroupBox(tr("Your Current Mining Spot"), finderPage);
     auto *fieldLayout = new QVBoxLayout(fieldGroup);
     finderField = new DirtField4(fieldGroup);
     auto *resetField = new QPushButton(tr("Reset"), fieldGroup);
     fieldLayout->addWidget(finderField, 0, Qt::AlignLeft);
     fieldLayout->addWidget(resetField);
-    finderTop->addWidget(fieldGroup);
+    finderLayout->addWidget(fieldGroup, 0, 0);
 
     auto *previewGroup = new QGroupBox(tr("Selected Seeds Mining Spot"), finderPage);
     auto *previewLayout = new QVBoxLayout(previewGroup);
@@ -1484,6 +1807,8 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     previewTabs->addTab(tr("Wall"));
     previewTabs->setCurrentIndex(2);
     finderPreview = new MiningField4(previewGroup);
+    chainerPreview = finderPreview;
+    chainerItemNames = new QLabel(previewGroup);
     finderPreview->setDisplayMode(2);
     connect(previewTabs, &QTabBar::currentChanged, finderPreview,
             [this](int index) { finderPreview->setDisplayMode(index); });
@@ -1492,6 +1817,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     finderPreview->setResult(previewResult);
     previewLayout->addWidget(previewTabs, 0, Qt::AlignLeft);
     previewLayout->addWidget(finderPreview, 0, Qt::AlignLeft | Qt::AlignTop);
+    previewLayout->addWidget(chainerItemNames);
     previewLayout->addStretch();
 
     auto *finderRngGroup = new QGroupBox(tr("RNG Info"), finderPage);
@@ -1523,19 +1849,77 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     finderRng->addRow(tr("Item Count"), finderItemCount);
     finderRng->addRow(tr("Max Tile Mismatches"), finderMaxTileMismatches);
     finderRng->addRow(findButton);
-    finderTop->addWidget(finderRngGroup, 1);
-    finderTop->addWidget(previewGroup);
-    finderLayout->addLayout(finderTop);
+    auto *finderControls = new QVBoxLayout;
+    finderControls->addWidget(finderRngGroup);
+
+    {
+    auto *chainerOptionsGroup = new QGroupBox(tr("Item Finder"), finderPage);
+    auto *chainerOptions = new QFormLayout(chainerOptionsGroup);
+    chainerSeed = new TextBox(chainerOptionsGroup);
+    chainerSeed->setValues(InputType::Seed64Bit);
+    chainerItem = new ComboBox(chainerOptionsGroup);
+    chainerItem->enableAutoComplete();
+    chainerMaxSpots = new QSpinBox(chainerOptionsGroup);
+    chainerMaxSpots->setRange(1, 8);
+    chainerMaxSpots->setValue(1);
+    chainerRecoverAllPlates = new QCheckBox(chainerOptionsGroup);
+    auto *plateOption = new QWidget(chainerOptionsGroup);
+    auto *plateOptionLayout = new QHBoxLayout(plateOption);
+    plateOptionLayout->setContentsMargins(0, 0, 0, 0);
+    auto *plateOptionText = new QLabel(tr("Always Recover All Plates"), plateOption);
+    plateOptionText->setWordWrap(true);
+    plateOptionLayout->addWidget(chainerRecoverAllPlates, 0, Qt::AlignTop);
+    plateOptionLayout->addWidget(plateOptionText, 1);
+    chainerSearchButton = new QPushButton(tr("Search"), chainerOptionsGroup);
+    chainerCancelButton = new QPushButton(tr("Cancel"), chainerOptionsGroup);
+    chainerCancelButton->setEnabled(false);
+    chainerProgress = new QProgressBar(chainerOptionsGroup);
+    chainerProgress->setRange(0, 100);
+    chainerProgress->setValue(0);
+    chainerRecovered = new QLabel(QStringLiteral("0"), chainerOptionsGroup);
+    chainerOptions->addRow(tr("Seed"), chainerSeed);
+    chainerOptions->addRow(tr("Target Item"), chainerItem);
+    chainerOptions->addRow(tr("Max Mining Spots"), chainerMaxSpots);
+    chainerOptions->addRow(plateOption);
+    auto *chainerButtons = new QWidget(chainerOptionsGroup);
+    auto *chainerButtonsLayout = new QHBoxLayout(chainerButtons);
+    chainerButtonsLayout->setContentsMargins(0, 0, 0, 0);
+    chainerButtonsLayout->addWidget(chainerSearchButton);
+    chainerButtonsLayout->addWidget(chainerCancelButton);
+    chainerOptions->addRow(chainerButtons);
+    chainerOptions->addRow(chainerProgress);
+    chainerOptions->addRow(tr("Maximum Recovered"), chainerRecovered);
+    finderControls->addWidget(chainerOptionsGroup);
+    }
+    finderControls->addStretch();
+    finderLayout->addLayout(finderControls, 0, 1);
+    finderLayout->addWidget(previewGroup, 0, 2);
     auto *finderTable = new TableView(finderPage);
     finderModel = new UndergroundFinderModel(finderTable);
     auto *finderProxy = new SortFilterProxyModel(finderTable, finderModel);
     finderTable->setModel(finderProxy);
     finderTable->setSortingEnabled(true);
     finderTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    finderTable->horizontalHeader()->setStretchLastSection(true);
+    finderTable->horizontalHeader()->setStretchLastSection(false);
     auto *goToGenerator = finderTable->addAction(tr("Go to Generator"));
     finderTable->setPrimaryAction(goToGenerator);
-    finderLayout->addWidget(finderTable, 1);
+    chainerTable = new TableView(finderPage);
+    chainerModel = new UndergroundChainerModel(chainerTable);
+    chainerTable->setModel(chainerModel);
+    chainerTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    chainerTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    chainerTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    chainerTable->horizontalHeader()->setStretchLastSection(false);
+    auto *setChainerStart = chainerTable->addAction(tr("Set as Starting Seed"));
+    auto *chainerGoToGenerator = chainerTable->addAction(tr("Go to Generator"));
+    chainerTable->setPrimaryAction(setChainerStart);
+    auto *finderBottom = new QHBoxLayout;
+    finderBottom->setContentsMargins(0, 0, 0, 0);
+    finderBottom->addWidget(finderTable, 35);
+    finderBottom->addWidget(chainerTable, 65);
+    finderLayout->addLayout(finderBottom, 1, 0, 1, 3);
+    finderLayout->setColumnStretch(1, 1);
+    finderLayout->setRowStretch(1, 1);
 
     auto *searcherLayout = new QHBoxLayout(searcherPage);
     searcherLayout->setContentsMargins(4, 4, 4, 4);
@@ -1564,7 +1948,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherRng->addRow(tr("End Date"), searcherEndDate);
     searcherRng->addRow(tr("Min Delay"), searcherMinDelay);
     searcherRng->addRow(tr("Max Delay"), searcherMaxDelay);
-    searcherRng->addRow(tr("Maximum Spots"), searcherMaxWalls);
+    searcherRng->addRow(tr("Max Mining Spots"), searcherMaxWalls);
     auto *searchButtons = new QWidget(searcherRngGroup);
     auto *searchButtonsLayout = new QHBoxLayout(searchButtons);
     searchButtonsLayout->setContentsMargins(0, 0, 0, 0);
@@ -1593,9 +1977,13 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         searcherFiltersLayout->addWidget(searcherItemFilterCounts[i], i + 1, 1);
         connect(itemFilter, &QComboBox::currentIndexChanged, searcherItemFilterCounts[i], [this, i](int index) {
             Q_UNUSED(index);
-            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i], 20);
+            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i], 4 * searcherMaxWalls->value());
         });
     }
+    connect(searcherMaxWalls, &QSpinBox::valueChanged, this, [this] {
+        for (size_t i = 0; i < searcherItemFilters.size(); i++)
+            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i], 4 * searcherMaxWalls->value());
+    });
     auto *resetSearcherFilters = new QPushButton(tr("Reset"), searcherFiltersGroup);
     searcherFiltersLayout->addWidget(resetSearcherFilters, 5, 0, 1, 2);
     connect(resetSearcherFilters, &QPushButton::clicked, this, [this] {
@@ -1604,7 +1992,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         {
             searcherItemFilters[i]->setCurrentIndex(0);
             searcherItemFilterCounts[i]->setValue(1);
-            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i], 20);
+            updateUndergroundFilterCount(searcherItemFilters[i], searcherItemFilterCounts[i], 4 * searcherMaxWalls->value());
         }
     });
     searcherFiltersLayout->setColumnStretch(0, 1);
@@ -1625,7 +2013,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherLayout->addLayout(searcherLeft, 1);
 
     auto *searcherRight = new QVBoxLayout;
-    auto *searcherPreviewGroup = new QGroupBox(tr("Selected Seed Mining Spot"), searcherPage);
+    auto *searcherPreviewGroup = new QGroupBox(tr("Selected Seeds Mining Spot"), searcherPage);
     auto *searcherPreviewLayout = new QVBoxLayout(searcherPreviewGroup);
     auto *searcherPreviewTabs = new CompactTabBar(searcherPreviewGroup);
     searcherPreviewTabs->setExpanding(false);
@@ -1675,7 +2063,9 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         advanceCacheValid = false;
         currentFrame->setValue(0);
         miningFieldHistory.clear();
+        miningPlateHistory.clear();
         targetRoute.clear();
+        targetPlateRoute.clear();
         advances->clearTargetAdvance();
         backButton->setEnabled(false);
         resetButton->setEnabled(false);
@@ -1683,8 +2073,14 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     connect(backButton, &QPushButton::clicked, this, [this, backButton, resetButton] {
         if (miningFieldHistory.empty()) return;
         targetRoute.clear();
+        targetPlateRoute.clear();
         currentFrame->setValue(static_cast<int>(miningFieldHistory.back()));
         miningFieldHistory.pop_back();
+        if (!miningPlateHistory.empty())
+        {
+            generatorTemporaryPlates = miningPlateHistory.back();
+            miningPlateHistory.pop_back();
+        }
         advanceCacheValid = false;
         generate();
         backButton->setEnabled(!miningFieldHistory.empty());
@@ -1692,8 +2088,11 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     });
     connect(resetButton, &QPushButton::clicked, this, [this, backButton, resetButton] {
         miningFieldHistory.clear();
+        miningPlateHistory.clear();
         targetRoute.clear();
+        targetPlateRoute.clear();
         currentFrame->setValue(0);
+        generatorTemporaryPlates = generatorInitialTemporaryPlates;
         advanceCacheValid = false;
         generate();
         backButton->setEnabled(false);
@@ -1702,9 +2101,11 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     connect(outcomePriority, &QComboBox::currentIndexChanged, this, [this] { advanceCacheValid = false; });
     for (QCheckBox *required : requiredItems)
         connect(required, &QCheckBox::toggled, this, [this] { advanceCacheValid = false; });
+    connect(onlyTargetAdvances, &QCheckBox::toggled, this, &Underground4::applyItemFilters);
     connect(resetField, &QPushButton::clicked, finderField, &DirtField4::reset);
     connect(findButton, &QPushButton::clicked, this, &Underground4::find);
     connect(searcherSearchButton, &QPushButton::clicked, this, &Underground4::search);
+    connect(chainerSearchButton, &QPushButton::clicked, this, &Underground4::chain);
     connect(generateTimesButton, &QPushButton::clicked, this, &Underground4::generateTimes);
     connect(goToFinder, &QAction::triggered, this, [this, tabs, timesTable] {
         const QModelIndex index = timesTable->currentIndex();
@@ -1721,8 +2122,12 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         const QModelIndex index = finderTable->currentIndex();
         if (!index.isValid()) return;
         seed->setText(index.siblingAtColumn(0).data().toString());
+        generatorTemporaryPlates = 0;
+        generatorInitialTemporaryPlates = 0;
+        targetPlateRoute.clear();
         currentFrame->setValue(0);
         miningFieldHistory.clear();
+        miningPlateHistory.clear();
         backButton->setEnabled(false);
         resetButton->setEnabled(false);
         tabs->setCurrentIndex(0);
@@ -1735,9 +2140,13 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         if (!sourceIndex.isValid()) return;
         const UndergroundSearcherRow &row = searcherModel->getRow(sourceIndex.row());
         seed->setText(index.siblingAtColumn(0).data().toString());
+        generatorTemporaryPlates = 0;
+        generatorInitialTemporaryPlates = 0;
         currentFrame->setValue(0);
         miningFieldHistory.clear();
+        miningPlateHistory.clear();
         targetRoute = row.routeAdvances;
+        targetPlateRoute = row.routePlateMasks;
         backButton->setEnabled(false);
         resetButton->setEnabled(false);
         tabs->setCurrentIndex(0);
@@ -1748,7 +2157,15 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         if (!currentProfile || !current.isValid()) return;
         bool valid = false;
         const u64 selectedSeed = current.siblingAtColumn(0).data().toString().toULongLong(&valid, 16);
-        if (valid) finderPreview->setResult(getGenerator().generate(selectedSeed));
+        if (valid)
+        {
+            const QString value = current.siblingAtColumn(0).data().toString();
+            chainerTemporaryPlates = 0;
+            chainerSeed->setText(value);
+            const UndergroundResult result = getGenerator().generate(selectedSeed);
+            finderPreview->setResult(result);
+            updateItemNames(chainerItemNames, result);
+        }
     });
     connect(searcherTable->selectionModel(), &QItemSelectionModel::currentChanged, this,
             [this, searcherProxy](const QModelIndex &current, const QModelIndex &) {
@@ -1781,6 +2198,50 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         }
         generateTimes();
     });
+    connect(chainerTable->selectionModel(), &QItemSelectionModel::currentChanged, this,
+            [this](const QModelIndex &current, const QModelIndex &) {
+        if (!current.isValid()) return;
+        const UndergroundChainerRow &row = chainerModel->getRow(current.row());
+        chainerPreview->setResult(row.result);
+        updateItemNames(chainerItemNames, row.result);
+    });
+    connect(setChainerStart, &QAction::triggered, this, [this] {
+        const QModelIndex index = chainerTable->currentIndex();
+        if (!index.isValid()) return;
+        const UndergroundChainerRow &row = chainerModel->getRow(index.row());
+        chainerTemporaryPlates = row.platesBefore;
+        chainerSeed->setText(QString::number(row.spotSeed, 16).toUpper());
+    });
+    connect(chainerGoToGenerator, &QAction::triggered, this, [this, tabs, backButton, resetButton] {
+        const QModelIndex index = chainerTable->currentIndex();
+        if (!index.isValid()) return;
+        const int selected = index.row();
+        const UndergroundChainerRow &row = chainerModel->getRow(selected);
+        seed->setText(QString::number(row.spotSeed, 16).toUpper());
+        generatorTemporaryPlates = row.platesBefore;
+        generatorInitialTemporaryPlates = row.platesBefore;
+        currentFrame->setValue(0);
+        miningFieldHistory.clear();
+        miningPlateHistory.clear();
+        targetRoute.clear();
+        targetPlateRoute.clear();
+        for (int next = selected + 1; next < chainerModel->rowCount(); next++)
+        {
+            const UndergroundChainerRow &nextRow = chainerModel->getRow(next);
+            targetRoute.push_back(nextRow.actualAdvance - row.actualAdvance);
+            targetPlateRoute.push_back(nextRow.platesBefore);
+        }
+        advanceCacheValid = false;
+        backButton->setEnabled(false);
+        resetButton->setEnabled(false);
+        tabs->setCurrentIndex(0);
+        generate();
+    });
+    connect(chainerSeed, &QLineEdit::textEdited, this, [this] { chainerTemporaryPlates = 0; });
+    connect(seed, &QLineEdit::textEdited, this, [this] {
+        generatorTemporaryPlates = 0;
+        generatorInitialTemporaryPlates = 0;
+    });
     connect(minedPlates, &ComboMenu::checkedDataChanged, this, &Underground4::platesChanged);
     connect(advances->selectionModel(), &QItemSelectionModel::currentChanged, this,
             [this](const QModelIndex &current, const QModelIndex &) {
@@ -1792,9 +2253,23 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         const QModelIndex index = advances->currentIndex();
         if (!index.isValid()) return;
         const u32 selectedAdvance = advanceModel->getActualAdvance(index.row());
-        if (!targetRoute.empty() && selectedAdvance == targetRoute.front()) targetRoute.erase(targetRoute.begin());
-        else targetRoute.clear();
+        const u16 previousPlates = generatorTemporaryPlates;
+        if (!targetRoute.empty() && selectedAdvance == targetRoute.front())
+        {
+            targetRoute.erase(targetRoute.begin());
+            if (!targetPlateRoute.empty())
+            {
+                generatorTemporaryPlates = targetPlateRoute.front();
+                targetPlateRoute.erase(targetPlateRoute.begin());
+            }
+        }
+        else
+        {
+            targetRoute.clear();
+            targetPlateRoute.clear();
+        }
         miningFieldHistory.push_back(static_cast<u32>(currentFrame->value()));
+        miningPlateHistory.push_back(previousPlates);
         currentFrame->setValue(static_cast<int>(selectedAdvance));
         advanceCacheValid = false;
         generate();
@@ -1809,6 +2284,8 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     store.beginGroup(settingPrefix);
     store.remove(QStringLiteral("seed"));
     store.remove(QStringLiteral("finderItemCount"));
+    store.remove(QStringLiteral("onlyTargetAdvances"));
+    store.remove(QStringLiteral("chainerMaxSpots"));
     seed->setText(QStringLiteral("0"));
     finderTargetDelay->setText(store.value(QStringLiteral("finderTargetDelay"), finderTargetDelay->text()).toString());
     finderDelayRange->setText(store.value(QStringLiteral("finderDelayRange"), finderDelayRange->text()).toString());
@@ -1820,6 +2297,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherMaxDelay->setText(store.value(QStringLiteral("searcherMaxDelay"), searcherMaxDelay->text()).toString());
     searcherMaxWalls->setValue(store.value(QStringLiteral("searcherMaxWalls"), 1).toInt());
     searcherRecoverAllPlates->setChecked(store.value(QStringLiteral("searcherRecoverAllPlates"), false).toBool());
+    chainerRecoverAllPlates->setChecked(store.value(QStringLiteral("chainerRecoverAllPlates"), false).toBool());
     if (store.contains(QStringLiteral("geometry"))) restoreGeometry(store.value(QStringLiteral("geometry")).toByteArray());
     else resize(1600, 900);
     store.endGroup();
@@ -1838,6 +2316,7 @@ Underground4::~Underground4()
     store.setValue(QStringLiteral("searcherMaxDelay"), searcherMaxDelay->text());
     store.setValue(QStringLiteral("searcherMaxWalls"), searcherMaxWalls->value());
     store.setValue(QStringLiteral("searcherRecoverAllPlates"), searcherRecoverAllPlates->isChecked());
+    store.setValue(QStringLiteral("chainerRecoverAllPlates"), chainerRecoverAllPlates->isChecked());
     store.setValue(QStringLiteral("geometry"), saveGeometry());
     store.endGroup();
 }
@@ -1846,8 +2325,13 @@ void Underground4::updateProfiles() { profileDisplay->updateProfiles(); }
 void Underground4::profileChanged(const Profile4 &profile)
 {
     currentProfile = &profile;
+    chainerTemporaryPlates = 0;
+    generatorTemporaryPlates = 0;
+    generatorInitialTemporaryPlates = 0;
+    miningPlateHistory.clear();
     advanceCacheValid = false;
     targetRoute.clear();
+    targetPlateRoute.clear();
     advances->clearTargetAdvance();
     std::vector<int> plates;
     const auto mined = profile.getMinedPlates();
@@ -1860,10 +2344,15 @@ void Underground4::profileChanged(const Profile4 &profile)
     updatePlateText();
     updateItemFilters();
     updateSearcherItemFilters();
+    updateChainerItems();
 }
 
 void Underground4::platesChanged()
 {
+    chainerTemporaryPlates = 0;
+    generatorTemporaryPlates = 0;
+    generatorInitialTemporaryPlates = 0;
+    miningPlateHistory.clear();
     updatePlateText();
     if (!currentProfile || !minedPlates->isEnabled()) return;
 
@@ -1978,6 +2467,55 @@ void Underground4::search()
     timer->start(250);
 }
 
+void Underground4::chain()
+{
+    chainerModel->setRows({});
+    chainerPreview->setResult({});
+    updateItemNames(chainerItemNames, {});
+    chainerRecovered->setText(QStringLiteral("0"));
+    if (!currentProfile || chainerItem->currentIndex() < 0) return;
+
+    const u64 startSeed = chainerSeed->getULong();
+    const u8 target = static_cast<u8>(chainerItem->currentData().toInt());
+    const u8 spots = static_cast<u8>(chainerMaxSpots->value());
+    chainerSearchButton->setEnabled(false);
+    chainerCancelButton->setEnabled(true);
+    chainerProgress->setRange(0, 10000);
+    chainerProgress->setValue(0);
+
+    auto *searcher = new UndergroundChainerSearcher(startSeed, target, spots, chainerRecoverAllPlates->isChecked(),
+                                                    chainerTemporaryPlates, getGenerator());
+    auto *timer = new QTimer(this);
+    connect(chainerCancelButton, &QPushButton::clicked, timer, [this, searcher] {
+        searcher->cancelSearch();
+        chainerCancelButton->setEnabled(false);
+    });
+    connect(timer, &QTimer::timeout, this, [this, searcher, timer] {
+        chainerProgress->setValue(searcher->getDetailedProgress());
+        if (!searcher->isSearching())
+        {
+            timer->stop();
+            const auto results = searcher->getResults();
+            if (!results.empty())
+            {
+                chainerModel->setRows(results.front().rows);
+                chainerRecovered->setText(QString::number(results.front().recovered));
+                if (chainerModel->rowCount() > 0)
+                {
+                    chainerTable->selectRow(0);
+                    chainerProgress->setValue(chainerProgress->maximum());
+                }
+            }
+            chainerSearchButton->setEnabled(true);
+            chainerCancelButton->setEnabled(false);
+            delete searcher;
+            timer->deleteLater();
+        }
+    });
+    searcher->start();
+    timer->start(100);
+}
+
 void Underground4::generateTimes()
 {
     std::vector<UndergroundTimeRow> rows;
@@ -2019,13 +2557,16 @@ void Underground4::generateTimes()
     searcherTimeModel->setRows(std::move(rows));
 }
 
-UndergroundGenerator Underground4::getGenerator() const
+UndergroundGenerator Underground4::getGenerator(bool includeTemporaryPlates) const
 {
     std::array<bool, 16> plates = {};
     for (int plate : minedPlates->getRawCheckedData())
     {
         if (plate >= 0 && plate < static_cast<int>(plates.size())) plates[plate] = true;
     }
+    if (includeTemporaryPlates)
+        for (u8 plate = 0; plate < 16; plate++)
+            if (generatorTemporaryPlates & (1 << plate)) plates[plate] = true;
     return UndergroundGenerator(currentProfile->getVersion(), currentProfile->getTID(), currentProfile->getNationalDex(), plates,
                                 currentProfile->getUndergroundOrb());
 }
@@ -2100,8 +2641,31 @@ void Underground4::updateSearcherItemFilters()
         const int index = filter->findData(selected);
         filter->setCurrentIndex(index >= 0 ? index : 0);
         filter->blockSignals(false);
-        updateUndergroundFilterCount(filter, searcherItemFilterCounts[filterIndex], 20);
+        updateUndergroundFilterCount(filter, searcherItemFilterCounts[filterIndex], 4 * searcherMaxWalls->value());
     }
+}
+
+void Underground4::updateChainerItems()
+{
+    if (!currentProfile) return;
+    const int selected = chainerItem->currentData().toInt();
+    const auto available = getGenerator().getAvailableItems();
+    std::vector<std::pair<QString, u8>> namedItems;
+    for (u8 item : available)
+    {
+        if (item == 11) continue;
+        namedItems.emplace_back(QString::fromStdString(UndergroundGenerator::getItemName(item)), item);
+    }
+    std::ranges::sort(namedItems, [](const auto &left, const auto &right) {
+        return QString::localeAwareCompare(left.first, right.first) < 0;
+    });
+    chainerItem->blockSignals(true);
+    chainerItem->clear();
+    chainerItem->addItem(tr("Any Plate"), filterAnyPlate);
+    for (const auto &[name, item] : namedItems) chainerItem->addItem(name, item);
+    const int index = chainerItem->findData(selected);
+    chainerItem->setCurrentIndex(index >= 0 ? index : 0);
+    chainerItem->blockSignals(false);
 }
 
 void Underground4::applyItemFilters()
@@ -2113,7 +2677,8 @@ void Underground4::applyItemFilters()
         filters[index] = { static_cast<u8>(itemFilters[index]->currentData().toInt()),
                            static_cast<u8>(itemFilterCounts[index]->value()) };
     }
-    advanceModel->applyFilters(filters);
+    advanceModel->applyFilters(filters, onlyTargetAdvances->isChecked() && !targetRoute.empty(),
+                               targetRoute.empty() ? 0 : targetRoute.front());
     updateTargetAdvance();
 }
 
@@ -2132,7 +2697,7 @@ void Underground4::updateTargetAdvance()
 void Underground4::generateFrame(bool current)
 {
     if (!currentProfile) return;
-    UndergroundGenerator generator = getGenerator();
+    UndergroundGenerator generator = getGenerator(true);
     QSpinBox *frame = current ? currentFrame : nextFrame;
     const UndergroundResult result = generator.generate(UndergroundGenerator::advanceSeed(seed->getULong(), frame->value()));
     MiningField4 *field = current ? currentField : nextField;
@@ -2261,7 +2826,7 @@ void Underground4::populateAdvances(const UndergroundGenerator &generator)
         const u32 actualAdvance = currentAdvance + first.advances + betweenAdvance;
         const UndergroundResult result = generator.generate(UndergroundGenerator::advanceSeed(seed->getULong(), actualAdvance));
         UndergroundAdvanceRow value { 0, actualAdvance, guide.sequence, guide.recovered,
-            guide.collapsed ? tr("Wall Collapsed") : tr("All Items Recovered"), guide.collapsed, {}, result.items, result.itemCount };
+            guide.collapsed ? tr("Wall Collapsed") : tr("All Item Recovered"), guide.collapsed, {}, result.items, result.itemCount };
         for (int item = 0; item < 4; item++)
         {
             value.items[item] = item < result.itemCount ? QString::fromStdString(UndergroundGenerator::getItemName(result.items[item]))
@@ -2282,7 +2847,7 @@ void Underground4::generate()
         applyItemFilters();
         return;
     }
-    UndergroundGenerator generator = getGenerator();
+    UndergroundGenerator generator = getGenerator(true);
     const u32 currentAdvance = static_cast<u32>(currentFrame->value());
     const UndergroundResult current = generator.generate(UndergroundGenerator::advanceSeed(seed->getULong(), currentAdvance));
     currentItemCount = current.itemCount;
