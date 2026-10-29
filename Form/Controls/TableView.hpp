@@ -59,6 +59,11 @@ public:
     void setRemoveTargetAction(QAction *action);
 
     /**
+     * @brief Sets the model column whose value is compared against target marks
+     */
+    void setTargetColumn(int column);
+
+    /**
      * @brief Highlights rows whose Advances value matches the target
      */
     void setTargetAdvance(u32 advance);
@@ -82,6 +87,7 @@ private:
     QAction *outputTXT;
     QAction *outputCSV;
     bool sortContextMenuAlphabetically;
+    int targetColumn;
     std::vector<u32> targetAdvances;
 
     /**
