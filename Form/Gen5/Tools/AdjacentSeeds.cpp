@@ -73,17 +73,25 @@ AdjacentSeeds::AdjacentSeeds(QWidget *parent) : QWidget(parent), ui(new Ui::Adja
 
     ui->textBoxMinIVAdvance->setValues(InputType::Advance32Bit);
     ui->textBoxMaxIVAdvance->setValues(InputType::Advance32Bit);
+    ui->textBoxOtherVCount->setValues(0, 0xff, 2, 16);
 
     ui->ivFilter->setOrientation(Qt::Horizontal);
 
     QSettings setting;
     setting.beginGroup(settingPrefix);
     ui->spinBoxSeconds->setValue(setting.value("seconds", ui->spinBoxSeconds->value()).toInt());
+    ui->checkBoxTwoVCounts->setChecked(setting.value("useTwoVCounts", false).toBool());
+    ui->textBoxOtherVCount->setText(setting.value("otherVCount", ui->textBoxOtherVCount->text()).toString());
     setting.endGroup();
+
+    ui->labelOtherVCount->setEnabled(ui->checkBoxTwoVCounts->isChecked());
+    ui->textBoxOtherVCount->setEnabled(ui->checkBoxTwoVCounts->isChecked());
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &AdjacentSeeds::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &AdjacentSeeds::profilesChanged);
     connect(ui->pushButtonGenerate, &QPushButton::clicked, this, &AdjacentSeeds::generate);
+    connect(ui->checkBoxTwoVCounts, &QCheckBox::toggled, ui->labelOtherVCount, &QLabel::setEnabled);
+    connect(ui->checkBoxTwoVCounts, &QCheckBox::toggled, ui->textBoxOtherVCount, &TextBox::setEnabled);
     connect(ui->comboBoxPreviewMode, &QComboBox::currentIndexChanged, this, &AdjacentSeeds::updatePreview);
     connect(ui->tableView->selectionModel(), &QItemSelectionModel::currentRowChanged, this, &AdjacentSeeds::updatePreview);
 
@@ -109,6 +117,8 @@ AdjacentSeeds::~AdjacentSeeds()
     setting.setValue("seconds", ui->spinBoxSeconds->value());
     setting.setValue("minIVAdvance", ui->textBoxMinIVAdvance->text());
     setting.setValue("maxIVAdvance", ui->textBoxMaxIVAdvance->text());
+    setting.setValue("useTwoVCounts", ui->checkBoxTwoVCounts->isChecked());
+    setting.setValue("otherVCount", ui->textBoxOtherVCount->text());
     setting.endGroup();
 
     delete ui;
@@ -143,8 +153,18 @@ void AdjacentSeeds::generate()
     auto buttons = ui->checkListKeypresses->getEnum<Buttons>();
     DateTime dateTime = ui->dateTimeEdit->getDateTime();
 
+    std::vector<u8> vcounts { currentProfile->getVCount() };
+    if (ui->checkBoxTwoVCounts->isChecked())
+    {
+        u8 otherVCount = ui->textBoxOtherVCount->getUChar();
+        if (otherVCount != currentProfile->getVCount())
+        {
+            vcounts.emplace_back(otherVCount);
+        }
+    }
+
     auto states = AdjacentSeedsCalculator::generate(initialIVAdvance, maxIVAdvance, seconds, roamer, buttons, dateTime, minIVs, maxIVs,
-                                                    *currentProfile);
+                                                    vcounts, *currentProfile);
     model->addItems(states);
 
     if (model->rowCount() > 0)

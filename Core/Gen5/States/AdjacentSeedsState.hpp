@@ -29,12 +29,13 @@ enum class Buttons : u16;
 class AdjacentSeedsState
 {
 public:
-    AdjacentSeedsState(u64 seed, const DateTime &dateTime, Buttons buttons, u16 timer0, u32 ivAdvance, const std::array<u8, 6> &ivs,
-                      u32 pidAdvance, bool target) :
+    AdjacentSeedsState(u64 seed, const DateTime &dateTime, Buttons buttons, u16 timer0, u8 vcount, u32 ivAdvance,
+                      const std::array<u8, 6> &ivs, u32 pidAdvance, bool target) :
         seed(seed),
         dateTime(dateTime),
         buttons(buttons),
         timer0(timer0),
+        vcount(vcount),
         ivAdvance(ivAdvance),
         ivs(ivs),
         pidAdvance(pidAdvance),
@@ -77,6 +78,11 @@ public:
         return timer0;
     }
 
+    u8 getVCount() const
+    {
+        return vcount;
+    }
+
     bool isTarget() const
     {
         return target;
@@ -87,6 +93,7 @@ private:
     DateTime dateTime;
     Buttons buttons;
     u16 timer0;
+    u8 vcount;
     u32 ivAdvance;
     std::array<u8, 6> ivs;
     u32 pidAdvance;

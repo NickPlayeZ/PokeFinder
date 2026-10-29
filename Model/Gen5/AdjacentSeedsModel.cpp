@@ -25,7 +25,7 @@ AdjacentSeedsModel::AdjacentSeedsModel(QObject *parent) : TableModel(parent)
 
 int AdjacentSeedsModel::columnCount(const QModelIndex &parent) const
 {
-    return 10;
+    return 11;
 }
 
 QVariant AdjacentSeedsModel::data(const QModelIndex &index, int role) const
@@ -42,14 +42,16 @@ QVariant AdjacentSeedsModel::data(const QModelIndex &index, int role) const
         case 2:
             return QString::number(state.getTimer0(), 16).toUpper();
         case 3:
-            return state.getIVAdvance();
+            return QString::number(state.getVCount(), 16).toUpper();
         case 4:
+            return state.getIVAdvance();
         case 5:
         case 6:
         case 7:
         case 8:
         case 9:
-            return state.getIV(index.column() - 4);
+        case 10:
+            return state.getIV(index.column() - 5);
         }
     }
     else if (role == Qt::UserRole)

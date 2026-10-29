@@ -110,21 +110,48 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="6" rowspan="2">
+      <item row="0" column="6" colspan="2">
+       <widget class="QCheckBox" name="checkBoxTwoVCounts">
+        <property name="text">
+         <string>Use 2 VCounts</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="6">
+       <widget class="QLabel" name="labelOtherVCount">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Other VCount</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="7">
+       <widget class="TextBox" name="textBoxOtherVCount">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string notr="true">0</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="8" rowspan="2">
        <widget class="QPushButton" name="pushButtonGenerate">
         <property name="text">
          <string>Generate</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0" colspan="7">
+      <item row="2" column="0" colspan="9">
        <widget class="Line" name="lineIVSeparator">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>
        </widget>
       </item>
-      <item row="3" column="0" colspan="7">
+      <item row="3" column="0" colspan="9">
        <widget class="IVFilter" name="ivFilter" native="true"/>
       </item>
      </layout>
@@ -201,6 +228,8 @@
   <tabstop>comboBoxMethod</tabstop>
   <tabstop>textBoxMinIVAdvance</tabstop>
   <tabstop>textBoxMaxIVAdvance</tabstop>
+  <tabstop>checkBoxTwoVCounts</tabstop>
+  <tabstop>textBoxOtherVCount</tabstop>
   <tabstop>pushButtonGenerate</tabstop>
   <tabstop>tableView</tabstop>
   <tabstop>comboBoxPreviewMode</tabstop>

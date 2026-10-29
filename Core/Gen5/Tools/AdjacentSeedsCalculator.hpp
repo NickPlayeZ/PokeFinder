@@ -41,11 +41,12 @@ namespace AdjacentSeedsCalculator
      * @param dateTime Starting date/time
      * @param minIVs Minimum IVs
      * @param maxIVs Maximum IVs
+     * @param vcounts VCounts to search
      * @param profile Profile information
      */
     std::vector<AdjacentSeedsState> generate(u32 minIVAdvance, u32 maxIVAdvance, int seconds, bool roamer, Buttons buttons,
                                              const DateTime &dateTime, const std::array<u8, 6> &minIVs, const std::array<u8, 6> &maxIVs,
-                                             const Profile5 &profile);
+                                             const std::vector<u8> &vcounts, const Profile5 &profile);
 
     /**
      * @brief Computes chatot/needle string for seed verification purposes

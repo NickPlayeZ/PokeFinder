@@ -68,8 +68,8 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 private:
-    QStringList header
-        = { tr("Seed"), tr("Date/Time"), tr("Timer0"), tr("IV Advance"), tr("HP"), tr("Atk"), tr("Def"), tr("SpA"), tr("SpD"), tr("Spe") };
+    QStringList header = { tr("Seed"), tr("Date/Time"), tr("Timer0"), tr("VCount"), tr("IV Advance"), tr("HP"),
+                           tr("Atk"),  tr("Def"),       tr("SpA"),    tr("SpD"),    tr("Spe") };
 };
 
 #endif // ADJACENTSEEDSMODEL_HPP

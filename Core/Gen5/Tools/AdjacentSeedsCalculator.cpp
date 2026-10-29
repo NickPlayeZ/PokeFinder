@@ -38,7 +38,7 @@ namespace AdjacentSeedsCalculator
 {
     std::vector<AdjacentSeedsState> generate(u32 minIVAdvance, u32 maxIVAdvance, int seconds, bool roamer, Buttons buttons,
                                              const DateTime &dateTime, const std::array<u8, 6> &minIVs, const std::array<u8, 6> &maxIVs,
-                                             const Profile5 &profile)
+                                             const std::vector<u8> &vcounts, const Profile5 &profile)
     {
         u32 timer0Min = profile.getTimer0Min() == 0 ? 0 : profile.getTimer0Min() - 1;
         u32 timer0Max = profile.getTimer0Max() + 1;
@@ -66,40 +66,44 @@ namespace AdjacentSeedsCalculator
 
             for (u32 timer0 = timer0Min; timer0 <= timer0Max; timer0++)
             {
-                sha.setTimer0(timer0, profile.getVCount());
-                auto alpha = sha.precompute();
-                u64 seed = sha.hashSeed(alpha);
-
-                RNGList<u8, MT, 8, gen> rngList(seed >> 32, initial);
-                for (u32 ivAdvance = minIVAdvance; ivAdvance <= maxIVAdvance; ivAdvance++, rngList.advanceState())
+                for (u8 vcount : vcounts)
                 {
-                    std::array<u8, 6> ivs;
-                    ivs[0] = rngList.next();
-                    ivs[1] = rngList.next();
-                    ivs[2] = rngList.next();
+                    sha.setTimer0(timer0, vcount);
+                    auto alpha = sha.precompute();
+                    u64 seed = sha.hashSeed(alpha);
 
-                    if (roamer)
+                    RNGList<u8, MT, 8, gen> rngList(seed >> 32, initial);
+                    for (u32 ivAdvance = minIVAdvance; ivAdvance <= maxIVAdvance; ivAdvance++, rngList.advanceState())
                     {
-                        ivs[4] = rngList.next();
-                        ivs[5] = rngList.next();
-                        ivs[3] = rngList.next();
-                    }
-                    else
-                    {
-                        ivs[3] = rngList.next();
-                        ivs[4] = rngList.next();
-                        ivs[5] = rngList.next();
-                    }
+                        std::array<u8, 6> ivs;
+                        ivs[0] = rngList.next();
+                        ivs[1] = rngList.next();
+                        ivs[2] = rngList.next();
 
-                    bool flag = std::ranges::all_of(std::views::zip(ivs, minIVs, maxIVs), [](const auto &tuple) {
-                        const auto &[iv, minIV, maxIV] = tuple;
-                        return iv >= minIV && iv <= maxIV;
-                    });
-                    if (flag)
-                    {
-                        states.emplace_back(seed, offset, buttons, static_cast<u16>(timer0), ivAdvance, ivs,
-                                            Utilities5::initialAdvances(seed, profile),
-                                            offset == dateTime && timer0 == profile.getTimer0Min() && ivAdvance == minIVAdvance);
+                        if (roamer)
+                        {
+                            ivs[4] = rngList.next();
+                            ivs[5] = rngList.next();
+                            ivs[3] = rngList.next();
+                        }
+                        else
+                        {
+                            ivs[3] = rngList.next();
+                            ivs[4] = rngList.next();
+                            ivs[5] = rngList.next();
+                        }
+
+                        bool flag = std::ranges::all_of(std::views::zip(ivs, minIVs, maxIVs), [](const auto &tuple) {
+                            const auto &[iv, minIV, maxIV] = tuple;
+                            return iv >= minIV && iv <= maxIV;
+                        });
+                        if (flag)
+                        {
+                            states.emplace_back(seed, offset, buttons, static_cast<u16>(timer0), vcount, ivAdvance, ivs,
+                                                Utilities5::initialAdvances(seed, profile),
+                                                offset == dateTime && timer0 == profile.getTimer0Min()
+                                                    && vcount == profile.getVCount() && ivAdvance == minIVAdvance);
+                        }
                     }
                 }
             }
