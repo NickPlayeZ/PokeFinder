@@ -275,6 +275,7 @@
     <property name="title">
      <string>Gen 4 Tools</string>
     </property>
+    <addaction name="actionHoneyTrees"/>
     <addaction name="actionIVstoPID4"/>
     <addaction name="actionProfileManager4"/>
     <addaction name="actionRockSmashItems"/>
@@ -428,6 +429,11 @@
   <action name="actionRockSmashItems">
    <property name="text">
     <string>Rock Smash Items</string>
+   </property>
+  </action>
+  <action name="actionHoneyTrees">
+   <property name="text">
+    <string>Honey Trees</string>
    </property>
   </action>
   <action name="actionUnderground">

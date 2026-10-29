@@ -184,6 +184,8 @@ set(PROJECT_SOURCES
     Gen4/Static4.hpp
     Gen4/Tools/ChainedSID.cpp
     Gen4/Tools/ChainedSID.hpp
+    Gen4/Tools/HoneyTrees.cpp
+    Gen4/Tools/HoneyTrees.hpp
     Gen4/Tools/RoamerMap.cpp
     Gen4/Tools/RoamerMap.hpp
     Gen4/Tools/RockSmashItem.cpp

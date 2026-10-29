@@ -39,6 +39,7 @@
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
 #include <Form/Gen4/Static4.hpp>
 #include <Form/Gen4/Tools/ChainedSID.hpp>
+#include <Form/Gen4/Tools/HoneyTrees.hpp>
 #include <Form/Gen4/Tools/RockSmashItem.hpp>
 #include <Form/Gen4/Tools/SeedToTime4.hpp>
 #include <Form/Gen4/Tools/Underground.hpp>
@@ -107,6 +108,7 @@ MainWindow::MainWindow(bool profile, QWidget *parent) : QMainWindow(parent), ui(
     connect(ui->pushButtonPokeRadar, &QPushButton::clicked, this, &MainWindow::openPokeRadar);
     connect(ui->pushButtonStatic4, &QPushButton::clicked, this, &MainWindow::openStatic4);
     connect(ui->pushButtonWild4, &QPushButton::clicked, this, &MainWindow::openWild4);
+    connect(ui->actionHoneyTrees, &QAction::triggered, this, &MainWindow::openHoneyTrees);
     connect(ui->actionIVstoPID4, &QAction::triggered, this, &MainWindow::openIVToPID);
     connect(ui->actionProfileManager4, &QAction::triggered, this, &MainWindow::openProfileManager4);
     connect(ui->actionRockSmashItems, &QAction::triggered, this, &MainWindow::openRockSmashItem);
@@ -436,6 +438,18 @@ void MainWindow::openRockSmashItem()
     if (!window->hasProfiles())
     {
         QMessageBox::warning(this, tr("No profiles found"), tr("Please create a HeartGold or SoulSilver profile first"));
+    }
+    window->show();
+}
+
+void MainWindow::openHoneyTrees()
+{
+    auto *window = new HoneyTrees();
+    connect(window, &HoneyTrees::profilesChanged, this, &MainWindow::updateProfiles);
+    connect(this, &MainWindow::profilesChanged4, window, &HoneyTrees::updateProfiles);
+    if (!window->hasProfiles())
+    {
+        QMessageBox::warning(this, tr("No profiles found"), tr("Please create a Diamond, Pearl, or Platinum profile first"));
     }
     window->show();
 }

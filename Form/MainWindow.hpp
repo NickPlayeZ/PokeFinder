@@ -33,6 +33,7 @@ class Event4;
 class IDs4;
 class Static4;
 class Wild4;
+class HoneyTrees;
 class Eggs5;
 class Event5;
 class DreamRadar;
@@ -237,6 +238,8 @@ private slots:
      * @brief Opens the Gen 4 Poke Radar window
      */
     void openPokeRadar();
+
+    void openHoneyTrees();
 
     void openRockSmashItem();
 
