@@ -2522,7 +2522,6 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     store.remove(QStringLiteral("finderItemCount"));
     store.remove(QStringLiteral("onlyTargetAdvances"));
     store.remove(QStringLiteral("chainerMaxSpots"));
-    seed->setText(QStringLiteral("0"));
     finderTargetDelay->setText(store.value(QStringLiteral("finderTargetDelay"), finderTargetDelay->text()).toString());
     finderDelayRange->setText(store.value(QStringLiteral("finderDelayRange"), finderDelayRange->text()).toString());
     finderItemCount->setCurrentIndex(finderItemCount->findData(0));

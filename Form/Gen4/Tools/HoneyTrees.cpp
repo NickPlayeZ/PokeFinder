@@ -561,7 +561,6 @@ HoneyTrees::HoneyTrees(QWidget *parent) : QWidget(parent), currentProfile(nullpt
     auto *rng = new QFormLayout(rngGroup);
     seed = new TextBox(rngGroup);
     seed->setValues(InputType::Seed32Bit);
-    seed->setText(QStringLiteral("0"));
     initialAdvances = new TextBox(rngGroup);
     initialAdvances->setValues(InputType::Advance32Bit);
     initialAdvances->setText(QStringLiteral("0"));
