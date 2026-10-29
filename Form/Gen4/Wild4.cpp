@@ -49,6 +49,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QSizePolicy>
+#include <QStandardItemModel>
 #include <QTimer>
 #include <algorithm>
 #include <bit>
@@ -121,6 +122,10 @@ static void updateMysteriousTransmission(QComboBox *comboBox, const EncounterAre
     if (!visible && comboBox->currentIndex() == 2)
     {
         comboBox->setCurrentIndex(0);
+    }
+    if (auto *model = qobject_cast<QStandardItemModel *>(comboBox->model()))
+    {
+        model->item(2)->setEnabled(visible);
     }
     if (auto *view = qobject_cast<QListView *>(comboBox->view()))
     {
