@@ -2147,7 +2147,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     auto *searcherFiltersGroup = new QGroupBox(tr("Filters"), searcherPage);
     auto *searcherFiltersLayout = new QGridLayout(searcherFiltersGroup);
     searcherRecoverAllPlates = new QCheckBox(
-        tr("Consider a Plate Recovered for subsequent spots, even if that Plate is not the target"), searcherFiltersGroup);
+        tr("Consider a Plate recovered for subsequent spots, even if that Plate is not the target"), searcherFiltersGroup);
     searcherFiltersLayout->addWidget(searcherRecoverAllPlates, 0, 0, 1, 2);
     for (int i = 0; i < 4; i++)
     {
@@ -2193,10 +2193,8 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherTable->setSelectionMode(QAbstractItemView::SingleSelection);
     searcherTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     searcherTable->horizontalHeader()->setStretchLastSection(false);
-    auto *searcherGoToFinder = searcherTable->addAction(tr("Go to Finder"));
     auto *searcherGoToGenerator = searcherTable->addAction(tr("Go to Generator"));
     searcherTable->setPrimaryAction(searcherGoToGenerator);
-    searcherTable->setSecondaryAction(searcherGoToFinder);
     searcherLeft->addWidget(searcherTable, 1);
     searcherLayout->addLayout(searcherLeft, 1);
 
@@ -2304,7 +2302,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     connect(searcherSearchButton, &QPushButton::clicked, this, &Underground4::search);
     connect(chainerSearchButton, &QPushButton::clicked, this, &Underground4::chain);
     connect(generateTimesButton, &QPushButton::clicked, this, &Underground4::generateTimes);
-    connect(goToFinder, &QAction::triggered, this, [this, tabs, timesTable] {
+    connect(goToFinder, &QAction::triggered, this, [this, tabs, timesTable, searcherProxy] {
         const QModelIndex index = timesTable->currentIndex();
         if (!index.isValid()) return;
         const QDate date = QDate::fromString(index.siblingAtColumn(0).data().toString(), QStringLiteral("yyyy-MM-dd"));
@@ -2313,15 +2311,41 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         finderDate->setDate(date);
         finderTime->setTime(time);
         finderTargetDelay->setText(index.siblingAtColumn(2).data().toString());
+        finderTargetRoute.clear();
+        finderTargetPlateRoute.clear();
+        const QModelIndex searcherIndex = searcherTable->currentIndex();
+        const QModelIndex sourceIndex = searcherProxy->mapToSource(searcherIndex);
+        if (sourceIndex.isValid())
+        {
+            const UndergroundSearcherRow &row = searcherModel->getRow(sourceIndex.row());
+            if (row.seed == searcherSeed->getULong())
+            {
+                finderRouteSeed = row.seed;
+                finderTargetRoute = row.routeAdvances;
+                finderTargetPlateRoute = row.routePlateMasks;
+            }
+        }
         tabs->setCurrentIndex(1);
     });
     connect(goToGenerator, &QAction::triggered, this, [this, tabs, finderTable, backButton, resetButton] {
         const QModelIndex index = finderTable->currentIndex();
         if (!index.isValid()) return;
-        seed->setText(index.siblingAtColumn(0).data().toString());
+        const QString seedText = index.siblingAtColumn(0).data().toString();
+        bool validSeed = false;
+        const u64 selectedSeed = seedText.toULongLong(&validSeed, 16);
+        seed->setText(seedText);
         generatorTemporaryPlates = 0;
         generatorInitialTemporaryPlates = 0;
-        targetPlateRoute.clear();
+        if (validSeed && selectedSeed == finderRouteSeed)
+        {
+            targetRoute = finderTargetRoute;
+            targetPlateRoute = finderTargetPlateRoute;
+        }
+        else
+        {
+            targetRoute.clear();
+            targetPlateRoute.clear();
+        }
         currentFrame->setValue(0);
         miningFieldHistory.clear();
         miningPlateHistory.clear();
@@ -2329,37 +2353,6 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         resetButton->setEnabled(false);
         tabs->setCurrentIndex(0);
         generate();
-    });
-    connect(searcherGoToFinder, &QAction::triggered, this, [this, tabs, searcherProxy] {
-        const QModelIndex index = searcherTable->currentIndex();
-        if (!index.isValid()) return;
-        const QModelIndex sourceIndex = searcherProxy->mapToSource(index);
-        if (!sourceIndex.isValid()) return;
-        const UndergroundSearcherRow &row = searcherModel->getRow(sourceIndex.row());
-        if (row.seed < row.delay) return;
-        u64 value = row.seed - row.delay;
-        const int second = value % 64; value /= 64;
-        const int minute = value % 64; value /= 64;
-        const int hour = value % 32; value /= 32;
-        const int day = value % 32; value /= 32;
-        const int month = value % 16; value /= 16;
-        if (value >= 100 || second >= 60 || minute >= 60 || hour >= 24) return;
-        QDate date;
-        for (int year = searcherStartDate->date().year(); year <= searcherEndDate->date().year(); year++)
-        {
-            const QDate candidate(year, month, day);
-            if (year % 100 == static_cast<int>(value) && candidate.isValid()
-                && candidate >= searcherStartDate->date() && candidate <= searcherEndDate->date())
-            {
-                date = candidate;
-                break;
-            }
-        }
-        if (!date.isValid()) return;
-        finderDate->setDate(date);
-        finderTime->setTime(QTime(hour, minute, second));
-        finderTargetDelay->setText(QString::number(row.delay));
-        tabs->setCurrentIndex(1);
     });
     connect(searcherGoToGenerator, &QAction::triggered, this, [this, tabs, backButton, resetButton, searcherProxy] {
         const QModelIndex index = searcherTable->currentIndex();

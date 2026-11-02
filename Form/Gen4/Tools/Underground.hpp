@@ -160,6 +160,9 @@ private:
     std::vector<u16> miningPlateHistory;
     std::vector<u32> targetRoute;
     std::vector<u16> targetPlateRoute;
+    u64 finderRouteSeed = 0;
+    std::vector<u32> finderTargetRoute;
+    std::vector<u16> finderTargetPlateRoute;
     u16 generatorTemporaryPlates = 0;
     u16 generatorInitialTemporaryPlates = 0;
     u8 currentItemCount;
