@@ -56,7 +56,8 @@ std::vector<WildGeneratorState> WildGenerator3::generate(u32 seed) const
         rate += rate / 2;
     }
 
-    bool feebas = area.feebasLocation(profile.getVersion()) && feebasTile;
+    bool feebas = area.feebasLocation(profile.getVersion())
+        && isAnyOf(area.getEncounter(), Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod);
     bool safari = area.safariZone(profile.getVersion());
     bool tanoby = area.tanobyChamber(profile.getVersion());
 
@@ -84,13 +85,14 @@ std::vector<WildGeneratorState> WildGenerator3::generate(u32 seed) const
         }
 
         u8 encounterSlot;
-        if (feebas && go.nextUShort(100) < 50)
+        // Feebas check happens regardless of being on a tile. Just need to be fishing on Route 119
+        if (feebas && go.nextUShort(100) < 50 && feebasTile)
         {
             encounterSlot = feebasSlot[toInt(area.getEncounter() - Encounter::OldRod)];
         }
         else
         {
-            if ((lead == Lead::MagnetPull || lead == Lead::Static) && go.nextUShort(2) == 0 && !modifiedSlots.empty())
+            if (isAnyOf(lead, Lead::MagnetPull, Lead::Static) && go.nextUShort(2) == 0 && !modifiedSlots.empty())
             {
                 encounterSlot = modifiedSlots[go.nextUShort(modifiedSlots.count)];
             }
@@ -111,7 +113,7 @@ std::vector<WildGeneratorState> WildGenerator3::generate(u32 seed) const
         const Slot &slot = area.getPokemon(encounterSlot);
         const PersonalInfo *info = slot.getInfo();
         bool cuteCharm = false;
-        if ((lead == Lead::CuteCharmM || lead == Lead::CuteCharmF) && !info->getFixedGender())
+        if (isAnyOf(lead, Lead::CuteCharmM, Lead::CuteCharmF) && !info->getFixedGender())
         {
             cuteCharm = go.nextUShort(3) != 0;
         }

@@ -235,7 +235,7 @@ void Wild3::generatorEncounterIndexChanged(int index)
         u16 currentLocation = ui->comboBoxGeneratorLocation->getCurrentUShort();
 
         bool magnetPullOption = encounter == Encounter::Grass;
-        bool staticOption = encounter == Encounter::Grass || encounter == Encounter::Surfing;
+        bool staticOption = isAnyOf(encounter, Encounter::Grass, Encounter::Surfing);
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::MagnetPull), !magnetPullOption);
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::Static), !staticOption);
 
@@ -268,7 +268,7 @@ void Wild3::generatorLocationIndexChanged(int index)
 
         auto encounter = ui->comboBoxGeneratorEncounter->getEnum<Encounter>();
         if (area.feebasLocation(currentProfile->getVersion())
-            && (encounter == Encounter::OldRod || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod))
+            && isAnyOf(encounter, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod))
         {
             ui->checkBoxGeneratorFeebasTile->show();
         }
@@ -418,7 +418,7 @@ void Wild3::searcherEncounterIndexChanged(int index)
         u16 currentLocation = ui->comboBoxSearcherLocation->getCurrentUShort();
 
         bool magnetPullOption = encounter == Encounter::Grass;
-        bool staticOption = encounter == Encounter::Grass || encounter == Encounter::Surfing;
+        bool staticOption = isAnyOf(encounter, Encounter::Grass, Encounter::Surfing);
         ui->comboMenuSearcherLead->hideAction(toInt(Lead::MagnetPull), !magnetPullOption);
         ui->comboMenuSearcherLead->hideAction(toInt(Lead::Static), !staticOption);
 
@@ -451,7 +451,7 @@ void Wild3::searcherLocationIndexChanged(int index)
 
         auto encounter = ui->comboBoxSearcherEncounter->getEnum<Encounter>();
         if (area.feebasLocation(currentProfile->getVersion())
-            && (encounter == Encounter::OldRod || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod))
+            && isAnyOf(encounter, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod))
         {
             ui->checkBoxSearcherFeebasTile->show();
         }
