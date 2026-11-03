@@ -96,6 +96,11 @@ public:
     void addControl(const QString &label, QWidget *widget);
 
     /**
+     * @brief Adds a tool-specific control and a second-row control to the profile section
+     */
+    void addControl(const QString &label, QWidget *widget, QWidget *lowerWidget);
+
+    /**
      * @brief Sets the profile section title
      */
     void setTitle(const QString &title);

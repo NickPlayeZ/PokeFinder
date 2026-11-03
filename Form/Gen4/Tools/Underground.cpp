@@ -29,6 +29,7 @@
 #include <QCheckBox>
 #include <QButtonGroup>
 #include <QComboBox>
+#include <QDialog>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QGridLayout>
@@ -53,6 +54,7 @@
 #include <QStyleHints>
 #include <QTabBar>
 #include <QTabWidget>
+#include <QTableWidget>
 #include <QTimer>
 #include <QTimeEdit>
 #include <QToolButton>
@@ -70,6 +72,19 @@ constexpr u8 filterAnyPlate = 252;
 constexpr u8 filterAnyFossil = 253;
 constexpr u8 filterAnyShard = 254;
 constexpr u8 filterAnyValuable = 255;
+
+class NumericTableWidgetItem final : public QTableWidgetItem
+{
+public:
+    NumericTableWidgetItem(double value, const QString &text) : QTableWidgetItem(text), value(value) {}
+    bool operator<(const QTableWidgetItem &other) const override
+    {
+        const auto *item = dynamic_cast<const NumericTableWidgetItem *>(&other);
+        return item ? value < item->value : QTableWidgetItem::operator<(other);
+    }
+private:
+    double value;
+};
 
 class CompactTabBar final : public QTabBar
 {
@@ -934,15 +949,14 @@ public:
     {
         if (!index.isValid() || role != Qt::DisplayRole) return {};
         const auto &row = rows[index.row()];
-        if (index.row() == static_cast<int>(rows.size()) - 1 && index.column() >= 1 && index.column() <= 4)
-            return QStringLiteral("-");
+        if (index.row() == 0 && index.column() >= 1 && index.column() <= 4) return QStringLiteral("-");
         switch (index.column())
         {
         case 0: return row.spot;
         case 1: return row.targetAdvance;
-        case 2: return row.sequence;
-        case 3: return row.recovered;
-        case 4: return row.outcome;
+        case 2: return rows[index.row() - 1].sequence;
+        case 3: return rows[index.row() - 1].recovered;
+        case 4: return rows[index.row() - 1].outcome;
         default: return row.items[index.column() - 5];
         }
     }
@@ -969,7 +983,8 @@ class UndergroundChainerSearcher final : public SearcherBase<UndergroundChainerR
 public:
     UndergroundChainerSearcher(u64 seed, u8 target, u8 spots, bool recoverAllPlates, u16 startingPlates,
                                UndergroundGenerator generator) :
-        seed(seed), target(target), spots(spots), recoverAllPlates(recoverAllPlates), startingPlates(startingPlates),
+        seed(seed), target(target), spots(static_cast<u8>(spots + 1)), recoverAllPlates(recoverAllPlates),
+        startingPlates(startingPlates),
         generator(std::move(generator))
     {
     }
@@ -1055,7 +1070,7 @@ private:
                         if (!(transition.recoveredMask & (1 << item))) continue;
                         recoveredItems.append(QString::number(item + 1));
                         const u8 itemID = result.items[item];
-                        if (matchesUndergroundFilter(target, itemID)) candidate.recovered++;
+                        if (spot != 0 && matchesUndergroundFilter(target, itemID)) candidate.recovered++;
                         if (itemID >= 44 && itemID <= 59
                             && (recoverAllPlates || target == filterAnyPlate || target == itemID))
                             candidate.plates |= static_cast<u16>(1 << (itemID - 44));
@@ -1780,11 +1795,40 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     for (int i = 0; i < 16; i++) minedPlates->addAction(tr(plateNames[i]), i);
     minedPlates->setCheckedData({});
     minedPlates->setText(tr("None"));
-    profileDisplay->addControl(tr("Plates"), minedPlates);
+    auto *checkItemOdds = new QPushButton(tr("Check Item Odds"), profileDisplay);
+    profileDisplay->addControl(tr("Plates"), minedPlates, checkItemOdds);
     root->insertWidget(0, profileDisplay);
     QTimer::singleShot(0, this, [this] {
         minedPlates->setFixedWidth(minedPlates->width());
         updatePlateText();
+    });
+    connect(checkItemOdds, &QPushButton::clicked, this, [this] {
+        if (!currentProfile) return;
+        const auto odds = getGenerator().getItemOdds();
+        auto *dialog = new QDialog(this);
+        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->setWindowTitle(tr("Underground Item Odds"));
+        auto *layout = new QVBoxLayout(dialog);
+        auto *table = new QTableWidget(static_cast<int>(odds.size()), 3, dialog);
+        table->setHorizontalHeaderLabels({ tr("Item ID"), tr("Item"), tr("Appearance Odds") });
+        table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        table->setSelectionBehavior(QAbstractItemView::SelectRows);
+        table->setSortingEnabled(false);
+        for (int row = 0; row < static_cast<int>(odds.size()); row++)
+        {
+            const auto [item, percentage] = odds[row];
+            table->setItem(row, 0, new NumericTableWidgetItem(item, QString::number(item)));
+            table->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(UndergroundGenerator::getItemName(item))));
+            table->setItem(row, 2,
+                           new NumericTableWidgetItem(percentage, QStringLiteral("%1%").arg(percentage, 0, 'f', 2)));
+        }
+        table->setSortingEnabled(true);
+        table->sortItems(0, Qt::AscendingOrder);
+        table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+        table->horizontalHeader()->setStretchLastSection(true);
+        layout->addWidget(table);
+        dialog->resize(420, 500);
+        dialog->show();
     });
 
     auto *rngInfo = new QGroupBox(tr("RNG Info"), this);
@@ -1902,7 +1946,7 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     advances->setSelectionMode(QAbstractItemView::SingleSelection);
     advances->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     advances->horizontalHeader()->setStretchLastSection(false);
-    auto *setAsCurrent = advances->addAction(tr("Set as Current Mining Spot"));
+    auto *setAsCurrent = advances->addAction(tr("Set as current Mining Spot"));
     advances->setSortContextMenuAlphabetically(true);
     generatorLayout->addWidget(advances, 1);
 
@@ -2193,8 +2237,6 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
     searcherTable->setSelectionMode(QAbstractItemView::SingleSelection);
     searcherTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     searcherTable->horizontalHeader()->setStretchLastSection(false);
-    auto *searcherGoToGenerator = searcherTable->addAction(tr("Go to Generator"));
-    searcherTable->setPrimaryAction(searcherGoToGenerator);
     searcherLeft->addWidget(searcherTable, 1);
     searcherLayout->addLayout(searcherLeft, 1);
 
@@ -2349,25 +2391,6 @@ Underground4::Underground4(QWidget *parent) : QWidget(parent), currentProfile(nu
         currentFrame->setValue(0);
         miningFieldHistory.clear();
         miningPlateHistory.clear();
-        backButton->setEnabled(false);
-        resetButton->setEnabled(false);
-        tabs->setCurrentIndex(0);
-        generate();
-    });
-    connect(searcherGoToGenerator, &QAction::triggered, this, [this, tabs, backButton, resetButton, searcherProxy] {
-        const QModelIndex index = searcherTable->currentIndex();
-        if (!index.isValid()) return;
-        const QModelIndex sourceIndex = searcherProxy->mapToSource(index);
-        if (!sourceIndex.isValid()) return;
-        const UndergroundSearcherRow &row = searcherModel->getRow(sourceIndex.row());
-        seed->setText(index.siblingAtColumn(0).data().toString());
-        generatorTemporaryPlates = 0;
-        generatorInitialTemporaryPlates = 0;
-        currentFrame->setValue(0);
-        miningFieldHistory.clear();
-        miningPlateHistory.clear();
-        targetRoute = row.routeAdvances;
-        targetPlateRoute = row.routePlateMasks;
         backButton->setEnabled(false);
         resetButton->setEnabled(false);
         tabs->setCurrentIndex(0);

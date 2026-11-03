@@ -246,6 +246,31 @@ std::vector<u8> UndergroundGenerator::getAvailableItems() const
     return items;
 }
 
+std::vector<std::pair<u8, double>> UndergroundGenerator::getItemOdds() const
+{
+    constexpr size_t treasureCount = 71;
+    std::array<u32, 60> itemWeights = {};
+    u32 availableWeight = 0;
+    for (size_t index = 0; index < treasureCount; index++)
+    {
+        const u8 item = platinumObjects[index].item;
+        const bool minedPlate = item >= 44 && item <= 59 && minedPlates[item - 44];
+        if (minedPlate) continue;
+        itemWeights[item] += activeWeights[index];
+        availableWeight += activeWeights[index];
+    }
+
+    std::vector<std::pair<u8, double>> odds;
+    for (u8 item = 1; item < itemWeights.size(); item++)
+    {
+        if (itemWeights[item] == 0 && (item < 44 || item > 59)) continue;
+        const double percentage
+            = availableWeight == 0 ? 0.0 : 100.0 * static_cast<double>(itemWeights[item]) / availableWeight;
+        odds.emplace_back(item, percentage);
+    }
+    return odds;
+}
+
 u64 UndergroundGenerator::advanceSeed(u64 seed, u32 advances)
 {
     return advanceMiningState(seed, advances);

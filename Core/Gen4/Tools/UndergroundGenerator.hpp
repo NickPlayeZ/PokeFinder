@@ -5,6 +5,7 @@
 #include <Core/Global.hpp>
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct UndergroundObject
@@ -47,6 +48,7 @@ public:
                                    const std::array<bool, 4> &uncovered, const std::vector<u8> &tools, u32 &advances);
     static std::string getItemName(u8 item);
     std::vector<u8> getAvailableItems() const;
+    std::vector<std::pair<u8, double>> getItemOdds() const;
     void setMinedPlate(u8 item);
 
 private:

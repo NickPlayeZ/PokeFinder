@@ -18,7 +18,7 @@ Gen 3 Emerald
 
 Gen 4
 - added full DPPt Poké Radar RNG support
-- added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)#
+- added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)
 - added DPPt Underground Item RNG Support
 - added DPPt Honey Tree species tool
 - added HGSS Rock Smash item searcher tool
