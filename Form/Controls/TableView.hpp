@@ -64,6 +64,11 @@ public:
     void setTargetColumn(int column);
 
     /**
+     * @brief Sets the numeric base used to read target values from the model
+     */
+    void setTargetBase(int base);
+
+    /**
      * @brief Highlights rows whose Advances value matches the target
      */
     void setTargetAdvance(u32 advance);
@@ -87,6 +92,7 @@ private:
     QAction *outputTXT;
     QAction *outputCSV;
     bool sortContextMenuAlphabetically;
+    int targetBase;
     int targetColumn;
     std::vector<u32> targetAdvances;
 

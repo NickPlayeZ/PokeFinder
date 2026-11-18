@@ -75,7 +75,7 @@ namespace
 
 TableView::TableView(QWidget *parent) :
     QTableView(parent), primaryAction(nullptr), secondaryAction(nullptr), removeTargetAction(nullptr), sortContextMenuAlphabetically(false),
-    targetColumn(0)
+    targetBase(10), targetColumn(0)
 {
     setItemDelegate(new TargetMarkDelegate(this));
     outputTXT = addAction(tr("Output Results to TXT"));
@@ -115,7 +115,8 @@ void TableView::clearTargetAdvance()
 
 bool TableView::isTargetIndex(const QModelIndex &index) const
 {
-    return index.isValid() && std::ranges::contains(targetAdvances, index.model()->index(index.row(), targetColumn).data().toUInt());
+    return index.isValid()
+        && std::ranges::contains(targetAdvances, index.model()->index(index.row(), targetColumn).data().toString().toUInt(nullptr, targetBase));
 }
 
 void TableView::setPrimaryAction(QAction *action)
@@ -141,6 +142,12 @@ void TableView::setRemoveTargetAction(QAction *action)
 void TableView::setTargetColumn(int column)
 {
     targetColumn = column;
+    viewport()->update();
+}
+
+void TableView::setTargetBase(int base)
+{
+    targetBase = base;
     viewport()->update();
 }
 

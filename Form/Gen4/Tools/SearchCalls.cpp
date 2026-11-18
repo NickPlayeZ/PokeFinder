@@ -101,6 +101,13 @@ SearchCalls::~SearchCalls()
 
 QModelIndexList SearchCalls::getIndexes() const
 {
+    const QModelIndex current = ui->tableViewPreview->currentIndex();
+    if (current.isValid() && ui->tableViewPreview->selectionModel()->isSelected(current))
+    {
+        const QModelIndex source = previewModel->mapToSource(current);
+        return { model->index(source.row(), 0) };
+    }
+
     return indexes;
 }
 
@@ -121,6 +128,8 @@ void SearchCalls::setResults(const QModelIndexList &results, int count)
     indexes = results;
     ui->labelPossibleResults->setText(tr("Possible Results: %1").arg(count));
     updatePreview();
+    ui->tableViewPreview->clearSelection();
+    ui->tableViewPreview->setCurrentIndex(QModelIndex());
 }
 
 void SearchCalls::callsTextChanged(const QString &text)
