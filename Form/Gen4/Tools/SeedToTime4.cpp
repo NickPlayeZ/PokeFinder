@@ -27,6 +27,7 @@
 #include <Form/Gen4/Tools/SearchCalls.hpp>
 #include <Form/Gen4/Tools/SearchCoinFlips.hpp>
 #include <Model/Gen4/SeedToTimeModel4.hpp>
+#include <QAction>
 #include <QMessageBox>
 #include <QSettings>
 
@@ -62,6 +63,16 @@ SeedToTime4::SeedToTime4(QWidget *parent) : QWidget(parent), ui(new Ui::SeedToTi
 
     ui->tableViewHGSSSearch->setModel(hgssModel);
     ui->tableViewHGSSCalibrate->setModel(hgssCalibrateModel);
+
+    ui->tableViewDPPtCalibrate->setTargetColumn(2);
+    auto *removeDPPtTargetMark = ui->tableViewDPPtCalibrate->addAction(tr("Remove target Mark"));
+    ui->tableViewDPPtCalibrate->setRemoveTargetAction(removeDPPtTargetMark);
+    connect(removeDPPtTargetMark, &QAction::triggered, ui->tableViewDPPtCalibrate, &TableView::clearTargetAdvance);
+
+    ui->tableViewHGSSCalibrate->setTargetColumn(2);
+    auto *removeHGSSTargetMark = ui->tableViewHGSSCalibrate->addAction(tr("Remove target Mark"));
+    ui->tableViewHGSSCalibrate->setRemoveTargetAction(removeHGSSTargetMark);
+    connect(removeHGSSTargetMark, &QAction::triggered, ui->tableViewHGSSCalibrate, &TableView::clearTargetAdvance);
 
     connect(ui->pushButtonDPPtGenerate, &QPushButton::clicked, this, &SeedToTime4::dpptGenerate);
     connect(ui->pushButtonDPPtCalibrate, &QPushButton::clicked, this, &SeedToTime4::dpptCalibrate);
@@ -166,6 +177,7 @@ void SeedToTime4::dpptCalibrate()
     dpptCalibrateModel->clearModel();
     auto results = SeedToTimeCalculator4::calibrate(delayCalibration, secondCalibration, target);
     dpptCalibrateModel->addItems(results);
+    ui->tableViewDPPtCalibrate->setTargetAdvance(target.getDelay());
 
     int count = (results.size() - 1) / 2;
     QModelIndex scroll = dpptCalibrateModel->index(count, 0);
@@ -212,6 +224,7 @@ void SeedToTime4::hgssCalibrate()
     hgssCalibrateModel->clearModel();
     auto results = SeedToTimeCalculator4::calibrate(delayCalibration, secondCalibration, playerLocation, roamers, routes, target);
     hgssCalibrateModel->addItems(results);
+    ui->tableViewHGSSCalibrate->setTargetAdvance(target.getDelay());
 
     int count = (results.size() - 1) / 2;
     QModelIndex scroll = hgssCalibrateModel->index(count, 0);

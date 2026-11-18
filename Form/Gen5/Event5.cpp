@@ -32,6 +32,7 @@
 #include <Core/Util/Utilities.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <Form/Gen5/ResultToGenerator.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/EventModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
@@ -76,7 +77,13 @@ Event5::Event5(QWidget *parent) : QWidget(parent), ui(new Ui::Event5)
     ui->comboBoxSearcherShiny->setup({ toInt(Shiny::Never), toInt(Shiny::Random), toInt(Shiny::Always) });
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Event5::openAdvanceFinder);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setPrimaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Event5::goToGenerator);
 
     ui->filterGenerator->disableControls(Controls::Height | Controls::Weight | Controls::Wild);
     ui->filterSearcher->disableControls(Controls::Height | Controls::Searcher | Controls::Weight | Controls::Wild);
@@ -197,6 +204,21 @@ void Event5::generate()
 
     auto states = generator.generate(seed);
     generatorModel->addItems(states);
+}
+
+void Event5::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &result = searcherModel->getItem(index.row());
+    const auto &state = result.getState();
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 10, *currentProfile)));
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    generate();
 }
 
 void Event5::generatorImportEvent()
@@ -451,7 +473,7 @@ void Event5::transferSettings(int index)
     }
     else
     {
-        ui->comboBoxGeneratorSpecies->setCurrentIndex(ui->comboBoxGeneratorSpecies->currentIndex());
+        ui->comboBoxGeneratorSpecies->setCurrentIndex(ui->comboBoxSearcherSpecies->currentIndex());
 
         ui->checkBoxGeneratorHP->setCheckState(ui->checkBoxSearcherHP->checkState());
         ui->checkBoxGeneratorAtk->setCheckState(ui->checkBoxSearcherAtk->checkState());

@@ -36,6 +36,7 @@
 #include <Core/Util/Translator.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <Form/Gen5/ResultToGenerator.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/WildModel5.hpp>
@@ -120,10 +121,17 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
         { toInt(PassPower::None), toInt(PassPower::Level1), toInt(PassPower::Level2), toInt(PassPower::Level3) });
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Wild5::openAdvanceFinder);
 
     auto *adjacentSeeds = ui->tableViewSearcher->addAction(tr("Adjacent Seeds"));
+    ui->tableViewSearcher->setPrimaryAction(adjacentSeeds);
     connect(adjacentSeeds, &QAction::triggered, this, &Wild5::openAdjacentSeeds);
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setSecondaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Wild5::goToGenerator);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &Wild5::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &Wild5::profilesChanged);
@@ -242,6 +250,29 @@ void Wild5::generate()
     auto states = generator.generate(seed, ivAdvances, 0);
     generatorModel->setPhenomenon(area.getPhenomenonType() != PhenomenonType::None);
     generatorModel->addItems(states);
+}
+
+void Wild5::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &result = searcherModel->getItem(index.row());
+    const auto &state = result.getState();
+
+    ui->comboBoxGeneratorEncounter->setCurrentIndex(ui->comboBoxSearcherEncounter->currentIndex());
+    ui->comboBoxGeneratorSeason->setCurrentIndex(ui->comboBoxSearcherSeason->currentIndex());
+    ui->comboBoxGeneratorLocation->setCurrentIndex(ui->comboBoxSearcherLocation->currentIndex());
+    ui->checkBoxGeneratorMovingTrigger->setChecked(ui->checkBoxSearcherMovingTrigger->isChecked());
+    ui->checkBoxGeneratorSwarm->setChecked(ui->checkBoxSearcherSwarm->isChecked());
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
+    ui->textBoxGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 50, *currentProfile)));
+    ui->comboMenuGeneratorLead->setCheckedData({ toInt(ui->comboMenuSearcherLead->getEnum<Lead>()) });
+    ui->comboBoxGeneratorLuckyPower->setCurrentIndex(ui->comboBoxSearcherLuckyPower->currentIndex());
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    generate();
 }
 
 void Wild5::generatorEncounterIndexChanged(int index)

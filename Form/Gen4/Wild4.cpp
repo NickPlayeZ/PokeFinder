@@ -135,9 +135,15 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     auto *seedToTime = new QAction(tr("Generate times for seed"), ui->tableViewSearcher);
     connect(seedToTime, &QAction::triggered, this, &Wild4::seedToTime);
     ui->tableViewSearcher->addAction(seedToTime);
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setSecondaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Wild4::goToGenerator);
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Wild4::openAdvanceFinder);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay4::profileChanged, this, &Wild4::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay4::profilesChanged, this, &Wild4::profilesChanged);
@@ -399,6 +405,24 @@ void Wild4::generate()
 
     auto states = generator.generate(seed, fixedSlot);
     generatorModel->addItems(states);
+}
+
+void Wild4::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid())
+    {
+        return;
+    }
+
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &state = searcherModel->getItem(index.row());
+
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(state.getSeed(), 16).toUpper());
+    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 50));
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    ui->comboMenuGeneratorLead->setCheckedData({ toInt(ui->comboMenuSearcherLead->getEnum<Lead>()) });
 }
 
 void Wild4::generatorEncounterIndexChanged(int index)

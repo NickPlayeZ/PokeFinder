@@ -20,7 +20,11 @@
 #ifndef TABLEVIEW_HPP
 #define TABLEVIEW_HPP
 
+#include <Core/Global.hpp>
 #include <QTableView>
+#include <optional>
+
+class QAction;
 
 /**
  * @brief Provides automatic horizontal header sizing and action handling
@@ -46,7 +50,38 @@ public:
      */
     void setModel(QAbstractItemModel *model) override;
 
+    void setPrimaryAction(QAction *action);
+
+    void setSecondaryAction(QAction *action);
+
+    void setRemoveTargetAction(QAction *action);
+
+    /**
+     * @brief Sets the model column whose value is compared against target marks
+     */
+    void setTargetColumn(int column);
+
+    /**
+     * @brief Highlights rows whose Advances value matches the target
+     */
+    void setTargetAdvance(u32 advance);
+
+    /**
+     * @brief Removes the target advance highlight
+     */
+    void clearTargetAdvance();
+
+    bool isTargetIndex(const QModelIndex &index) const;
+
 private:
+    QAction *primaryAction;
+    QAction *secondaryAction;
+    QAction *removeTargetAction;
+    QAction *outputTXT;
+    QAction *outputCSV;
+    int targetColumn;
+    std::optional<u32> targetAdvance;
+
     /**
      * @brief Handles when the context menu is requested. Only displays if the model isn't empty.
      *

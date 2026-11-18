@@ -35,6 +35,7 @@
 #include <Form/Controls/Controls.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
+#include <Form/Gen5/ResultToGenerator.hpp>
 #include <Form/Util/AdvanceFinder.hpp>
 #include <Model/Gen5/StaticModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
@@ -91,10 +92,17 @@ Static5::Static5(QWidget *parent) : QWidget(parent), ui(new Ui::Static5), ivCach
     ui->comboBoxSearcherShiny->setup({ toInt(Shiny::Never), toInt(Shiny::Random), toInt(Shiny::Always) });
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Static5::openAdvanceFinder);
 
     auto *adjacentSeeds = ui->tableViewSearcher->addAction(tr("Adjacent Seeds"));
+    ui->tableViewSearcher->setPrimaryAction(adjacentSeeds);
     connect(adjacentSeeds, &QAction::triggered, this, &Static5::openAdjacentSeeds);
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setSecondaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Static5::goToGenerator);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &Static5::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &Static5::profilesChanged);
@@ -218,6 +226,24 @@ void Static5::generate()
 
     auto states = generator.generate(seed, ivAdvances, 0);
     generatorModel->addItems(states);
+}
+
+void Static5::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid()) return;
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &result = searcherModel->getItem(index.row());
+    const auto &state = result.getState();
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(result.getInitialSeed(), 16).toUpper());
+    ui->textBoxGeneratorIVAdvances->setText(QString::number(state.getIVAdvances()));
+    ui->textBoxGeneratorMaxAdvances->setText(
+        QString::number(ResultToGenerator5::getMaxAdvances(result.getInitialSeed(), state.getAdvances(), 10, *currentProfile)));
+    ui->comboMenuGeneratorLead->setCheckedData({ toInt(ui->comboMenuSearcherLead->getEnum<Lead>()) });
+    ui->comboBoxGeneratorLuckyPower->setCurrentIndex(ui->comboBoxSearcherLuckyPower->currentIndex());
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    generate();
 }
 
 void Static5::generatorCategoryIndexChanged(int index)

@@ -74,6 +74,20 @@ void ComboMenu::clearSelection()
     actionChanged(action);
 }
 
+void ComboMenu::setCheckedData(const std::vector<int> &data)
+{
+    for (QAction *action : actionGroup->actions())
+    {
+        action->setChecked(std::ranges::contains(data, action->data().toInt()));
+    }
+
+    QAction *action = actionGroup->checkedAction();
+    if (action != nullptr)
+    {
+        actionChanged(action);
+    }
+}
+
 void ComboMenu::hideAction(const QVariant &data, bool hide)
 {
     auto actions = actionGroup->actions();

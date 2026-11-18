@@ -81,12 +81,18 @@ Static4::Static4(QWidget *parent) : QWidget(parent), ui(new Ui::Static4)
     auto *seedToTime = new QAction(tr("Generate times for seed"), ui->tableViewSearcher);
     connect(seedToTime, &QAction::triggered, this, &Static4::seedToTime);
     ui->tableViewSearcher->addAction(seedToTime);
+    auto *goToGenerator = ui->tableViewSearcher->addAction(tr("Go to Generator"));
+    ui->tableViewSearcher->setSecondaryAction(goToGenerator);
+    connect(goToGenerator, &QAction::triggered, this, &Static4::goToGenerator);
 
     ui->comboBoxGeneratorShiny->setup({ toInt(Shiny::Never), toInt(Shiny::Random) });
     ui->comboBoxSearcherShiny->setup({ toInt(Shiny::Never), toInt(Shiny::Random) });
 
     auto *advanceFinder = ui->tableViewGenerator->addAction(tr("Advance Finder"));
+    ui->tableViewGenerator->setPrimaryAction(advanceFinder);
     connect(advanceFinder, &QAction::triggered, this, &Static4::openAdvanceFinder);
+    auto *removeTargetMark = ui->tableViewGenerator->addAction(tr("Remove target Mark"));
+    connect(removeTargetMark, &QAction::triggered, ui->tableViewGenerator, &TableView::clearTargetAdvance);
 
     connect(ui->profileDisplay, &ProfileDisplay4::profileChanged, this, &Static4::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay4::profilesChanged, this, &Static4::profilesChanged);
@@ -174,6 +180,24 @@ void Static4::generate()
 
     auto states = generator.generate(seed);
     generatorModel->addItems(states);
+}
+
+void Static4::goToGenerator()
+{
+    if (!ui->tableViewSearcher->currentIndex().isValid())
+    {
+        return;
+    }
+
+    QModelIndex index = proxyModel->mapToSource(ui->tableViewSearcher->currentIndex());
+    const auto &state = searcherModel->getItem(index.row());
+
+    transferSettings(1);
+    ui->tabRNGSelector->setCurrentIndex(0);
+    ui->textBoxGeneratorSeed->setText(QString::number(state.getSeed(), 16).toUpper());
+    ui->textBoxGeneratorMaxAdvances->setText(QString::number(static_cast<u64>(state.getAdvances()) + 10));
+    ui->tableViewGenerator->setTargetAdvance(state.getAdvances());
+    ui->comboMenuGeneratorLead->setCheckedData({ toInt(ui->comboMenuSearcherLead->getEnum<Lead>()) });
 }
 
 void Static4::generatorCategoryIndexChanged(int index)

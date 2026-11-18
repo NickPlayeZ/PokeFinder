@@ -20,7 +20,9 @@
 #include "Settings.hpp"
 #include "ui_Settings.h"
 #include <Core/Parents/ProfileLoader.hpp>
+#include <Form/Controls/TableView.hpp>
 #include <QApplication>
+#include <QColorDialog>
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QMessageBox>
@@ -91,6 +93,17 @@ Settings::Settings(QWidget *parent) : QWidget(parent), ui(new Ui::Settings)
         }
     }
 
+    // Target mark
+    ui->comboBoxTargetMarkEnabled->setItemData(0, true);
+    ui->comboBoxTargetMarkEnabled->setItemData(1, false);
+    bool targetMarkEnabled = setting.value("targetMarkEnabled", true).toBool();
+    ui->comboBoxTargetMarkEnabled->setCurrentIndex(targetMarkEnabled ? 0 : 1);
+    int targetMarkAlpha = setting.value("targetMarkAlpha", 128).toInt();
+    ui->spinBoxTargetMarkTransparency->setValue(qRound((255 - targetMarkAlpha) * 100.0 / 255.0));
+    ui->pushButtonTargetMarkColor->setEnabled(targetMarkEnabled);
+    ui->spinBoxTargetMarkTransparency->setEnabled(targetMarkEnabled);
+    updateTargetMarkButton();
+
     setting.endGroup();
 
     connect(ui->comboBoxLanguage, &QComboBox::currentIndexChanged, this, &Settings::languageIndexChanged);
@@ -98,11 +111,63 @@ Settings::Settings(QWidget *parent) : QWidget(parent), ui(new Ui::Settings)
     connect(ui->comboBoxStyle, &QComboBox::currentIndexChanged, this, &Settings::styleIndexChanged);
     connect(ui->comboBoxTableHeaderSize, &QComboBox::currentIndexChanged, this, &Settings::tableHeaderSizeIndexChanged);
     connect(ui->comboBoxThreads, &QComboBox::currentIndexChanged, this, &Settings::threadsIndexChanged);
+    connect(ui->pushButtonTargetMarkColor, &QPushButton::clicked, this, &Settings::changeTargetMarkColor);
+    connect(ui->comboBoxTargetMarkEnabled, &QComboBox::currentIndexChanged, this, &Settings::targetMarkEnabledChanged);
+    connect(ui->spinBoxTargetMarkTransparency, &QSpinBox::valueChanged, this, &Settings::targetMarkTransparencyChanged);
 
     if (setting.contains("settingsForm/geometry"))
     {
         this->restoreGeometry(setting.value("settingsForm/geometry").toByteArray());
     }
+}
+
+void Settings::updateTargetMarkButton()
+{
+    QSettings setting;
+    QColor color = setting.value("settings/targetMarkColor", QColor(Qt::red)).value<QColor>();
+    ui->pushButtonTargetMarkColor->setStyleSheet(
+        QStringLiteral("QPushButton { background-color: %1; }").arg(color.name(QColor::HexRgb)));
+}
+
+void Settings::updateTargetMarkTables()
+{
+    for (QWidget *widget : QApplication::allWidgets())
+    {
+        if (auto *tableView = qobject_cast<TableView *>(widget))
+        {
+            tableView->viewport()->update();
+        }
+    }
+}
+
+void Settings::changeTargetMarkColor()
+{
+    QSettings setting;
+    QColor current = setting.value("settings/targetMarkColor", QColor(Qt::red)).value<QColor>();
+    QColor color = QColorDialog::getColor(current, this, tr("Change Mark Color"));
+    if (color.isValid())
+    {
+        setting.setValue("settings/targetMarkColor", color);
+        updateTargetMarkButton();
+        updateTargetMarkTables();
+    }
+}
+
+void Settings::targetMarkEnabledChanged(int index)
+{
+    bool enabled = ui->comboBoxTargetMarkEnabled->itemData(index).toBool();
+    QSettings setting;
+    setting.setValue("settings/targetMarkEnabled", enabled);
+    ui->pushButtonTargetMarkColor->setEnabled(enabled);
+    ui->spinBoxTargetMarkTransparency->setEnabled(enabled);
+    updateTargetMarkTables();
+}
+
+void Settings::targetMarkTransparencyChanged(int transparency)
+{
+    QSettings setting;
+    setting.setValue("settings/targetMarkAlpha", qRound((100 - transparency) * 255.0 / 100.0));
+    updateTargetMarkTables();
 }
 
 Settings::~Settings()

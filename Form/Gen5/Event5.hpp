@@ -99,6 +99,7 @@ private slots:
      * @brief Generates static encounters from a starting seed
      */
     void generate();
+    void goToGenerator();
 
     /**
      * @brief Reads in settings from a imported wondercard file

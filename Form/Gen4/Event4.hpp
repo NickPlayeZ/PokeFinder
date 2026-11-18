@@ -78,6 +78,11 @@ private slots:
     void generate();
 
     /**
+     * @brief Opens the selected searcher result in the generator
+     */
+    void goToGenerator();
+
+    /**
      * @brief Opens the advance finder dialog
      */
     void openAdvanceFinder();

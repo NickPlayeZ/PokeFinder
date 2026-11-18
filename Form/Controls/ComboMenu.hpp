@@ -23,6 +23,7 @@
 #include <Core/Global.hpp>
 #include <QActionGroup>
 #include <QToolButton>
+#include <vector>
 
 /**
  * @brief Provides exclusion item selection via menu selection where sub menus can act as combo boxes
@@ -67,6 +68,13 @@ public:
      * @brief Defaults selected action to first one of the menu
      */
     void clearSelection();
+
+    /**
+     * @brief Selects the action whose associated data is present in the provided values
+     *
+     * @param data Action data values to select
+     */
+    void setCheckedData(const std::vector<int> &data);
 
     /**
      * @brief Gets current selected index data as templated enum type

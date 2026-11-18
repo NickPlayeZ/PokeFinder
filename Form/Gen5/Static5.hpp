@@ -95,6 +95,7 @@ private slots:
      * @brief Generates wild encounters from a starting seed
      */
     void generate();
+    void goToGenerator();
 
     /**
      * @brief Updates the locations listed. Also toggles what controls are displayed based on relevance to the current settings.
