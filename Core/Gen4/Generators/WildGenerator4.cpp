@@ -47,8 +47,9 @@ static u32 getBattleAdvances(const EncounterArea4 &area, Game version)
         advances += 4;
     }
 
-    // Advance used to determine the random ball position when thrown out
-    if (!area.greatMarsh(version) && !area.safariZone(version))
+    // Normal wild battles use an advance for the post-battle roaming Pokemon check.
+    // Great Marsh, Safari Zone, and Bug Catching Contest battles skip that processing.
+    if (area.getEncounter() != Encounter::BugCatchingContest && !area.greatMarsh(version) && !area.safariZone(version))
     {
         advances += 1;
     }
