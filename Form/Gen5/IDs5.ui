@@ -153,53 +153,48 @@
        <widget class="DateEdit" name="dateEdit"/>
       </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="labelHour">
+       <widget class="QLabel" name="labelTime">
         <property name="text">
-         <string>Hour</string>
+         <string>Time</string>
         </property>
        </widget>
       </item>
       <item row="2" column="1" colspan="2">
-       <widget class="QSpinBox" name="spinBoxHour">
-        <property name="maximum">
-         <number>23</number>
+       <widget class="QTimeEdit" name="timeEdit">
+        <property name="displayFormat">
+         <string notr="true">HH:mm:ss</string>
         </property>
        </widget>
       </item>
       <item row="3" column="0">
-       <widget class="QLabel" name="labelMinute">
+       <widget class="QLabel" name="labelSeconds">
         <property name="text">
-         <string>Minute</string>
+         <string>Seconds +/-</string>
         </property>
        </widget>
       </item>
       <item row="3" column="1" colspan="2">
-       <widget class="QSpinBox" name="spinBoxMinute">
+       <widget class="QSpinBox" name="spinBoxSeconds">
         <property name="maximum">
-         <number>59</number>
+         <number>86400</number>
+        </property>
+        <property name="value">
+         <number>1</number>
         </property>
        </widget>
       </item>
       <item row="4" column="0">
-       <widget class="QLabel" name="labelSecondRange">
+       <widget class="QLabel" name="labelTimer0Range">
         <property name="text">
-         <string>Second Range</string>
+         <string>Timer0 range</string>
         </property>
        </widget>
       </item>
       <item row="4" column="1">
-       <widget class="QSpinBox" name="spinBoxMinSecond">
-        <property name="maximum">
-         <number>59</number>
-        </property>
-       </widget>
+       <widget class="TextBox" name="textBoxTimer0Min"/>
       </item>
       <item row="4" column="2">
-       <widget class="QSpinBox" name="spinBoxMaxSecond">
-        <property name="maximum">
-         <number>59</number>
-        </property>
-       </widget>
+       <widget class="TextBox" name="textBoxTimer0Max"/>
       </item>
       <item row="5" column="0">
        <widget class="QLabel" name="labelAdvanceRange">
@@ -271,10 +266,10 @@
   <tabstop>pushButtonCancel</tabstop>
   <tabstop>textBoxSeedFinderTID</tabstop>
   <tabstop>dateEdit</tabstop>
-  <tabstop>spinBoxHour</tabstop>
-  <tabstop>spinBoxMinute</tabstop>
-  <tabstop>spinBoxMinSecond</tabstop>
-  <tabstop>spinBoxMaxSecond</tabstop>
+  <tabstop>timeEdit</tabstop>
+  <tabstop>spinBoxSeconds</tabstop>
+  <tabstop>textBoxTimer0Min</tabstop>
+  <tabstop>textBoxTimer0Max</tabstop>
   <tabstop>textBoxSeedFinderMaxAdvances</tabstop>
   <tabstop>pushButtonFind</tabstop>
   <tabstop>tableView</tabstop>

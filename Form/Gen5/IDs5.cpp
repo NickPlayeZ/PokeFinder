@@ -30,8 +30,11 @@
 #include <Core/Util/Utilities.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <Model/Gen5/IDModel5.hpp>
+#include <QAction>
+#include <QDate>
 #include <QMessageBox>
 #include <QSettings>
+#include <QTime>
 #include <QTimer>
 
 static const QString settingPrefix = QStringLiteral("ids5");
@@ -47,6 +50,10 @@ IDs5::IDs5(QWidget *parent) : QWidget(parent), ui(new Ui::IDs5)
     model = new IDModel5(ui->tableView);
     ui->tableView->setModel(model);
 
+    auto *fillSeedFinder = ui->tableView->addAction(tr("Fill out Seed Finder"));
+    ui->tableView->setPrimaryAction(fillSeedFinder);
+    connect(fillSeedFinder, &QAction::triggered, this, &IDs5::fillSeedFinder);
+
     ui->textBoxPID->setValues(InputType::Seed32Bit);
     ui->textBoxTID->setValues(InputType::TIDSID);
     ui->textBoxSID->setValues(InputType::TIDSID);
@@ -55,6 +62,8 @@ IDs5::IDs5(QWidget *parent) : QWidget(parent), ui(new Ui::IDs5)
 
     ui->textBoxSeedFinderTID->setValues(InputType::TIDSID);
     ui->textBoxSeedFinderMaxAdvances->setValues(InputType::Advance32Bit);
+    ui->textBoxTimer0Min->setValues(InputType::Seed16Bit);
+    ui->textBoxTimer0Max->setValues(InputType::Seed16Bit);
 
     connect(ui->profileDisplay, &ProfileDisplay5::profileChanged, this, &IDs5::profileChanged);
     connect(ui->profileDisplay, &ProfileDisplay5::profilesChanged, this, &IDs5::profilesChanged);
@@ -103,6 +112,26 @@ void IDs5::updateProfiles()
     ui->profileDisplay->updateProfiles();
 }
 
+void IDs5::fillSeedFinder()
+{
+    int row = ui->tableView->currentIndex().row();
+    if (row < 0)
+    {
+        return;
+    }
+
+    const auto &result = model->getItem(row);
+    DateTime dateTime = result.getDateTime();
+    DateParts date = dateTime.getDate().getParts();
+    Time time = dateTime.getTime();
+    ui->dateEdit->setDate(QDate(date.year, date.month, date.day));
+    ui->timeEdit->setTime(QTime(time.hour(), time.minute(), time.second()));
+
+    u32 initialAdvances = Utilities5::initialAdvancesID(result.getInitialSeed(), currentProfile->getVersion());
+    u32 advances = result.getState().getAdvances();
+    ui->textBoxSeedFinderMaxAdvances->setText(QString::number(advances - initialAdvances + 2));
+}
+
 void IDs5::find()
 {
     model->clearModel();
@@ -110,17 +139,25 @@ void IDs5::find()
 
     u16 tid = ui->textBoxSeedFinderTID->getUShort();
     Date date = ui->dateEdit->getDate();
-    u8 hour = ui->spinBoxHour->value();
-    u8 minute = ui->spinBoxMinute->value();
-    u8 minSecond = ui->spinBoxMinSecond->value();
-    u8 maxSecond = ui->spinBoxMaxSecond->value();
+    QTime time = ui->timeEdit->time();
+    DateTime dateTime(date, Time(time.hour(), time.minute(), time.second()));
+    int seconds = ui->spinBoxSeconds->value();
+    u16 timer0Min = ui->textBoxTimer0Min->getUShort();
+    u16 timer0Max = ui->textBoxTimer0Max->getUShort();
     u32 maxAdvance = ui->textBoxSeedFinderMaxAdvances->getUInt();
+
+    if (timer0Min > timer0Max)
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("Invalid Timer0 range"), tr("Minimum Timer0 is greater than maximum Timer0"));
+        msg.exec();
+        return;
+    }
 
     IDFilter filter({ tid }, { }, { }, { }, { }, { });
     IDGenerator5 generator(0, maxAdvance, 0, false, false, *currentProfile, filter);
     IDSearcher5 searcher(generator, *currentProfile);
 
-    auto states = searcher.search(generator, date, hour, minute, minSecond, maxSecond);
+    auto states = searcher.search(generator, dateTime, seconds, timer0Min, timer0Max);
     model->addItems(states);
 }
 
@@ -205,4 +242,6 @@ void IDs5::setXOR(bool checked)
 void IDs5::profileChanged(const Profile5 &profile)
 {
     currentProfile = &profile;
+    ui->textBoxTimer0Min->setText(QString::number(profile.getTimer0Min(), 16));
+    ui->textBoxTimer0Max->setText(QString::number(profile.getTimer0Max(), 16));
 }

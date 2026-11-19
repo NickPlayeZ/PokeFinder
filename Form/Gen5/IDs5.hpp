@@ -77,6 +77,11 @@ private:
 
 private slots:
     /**
+     * @brief Fills the Seed Finder date and time from the selected result
+     */
+    void fillSeedFinder();
+
+    /**
      * @brief Lists possible candidates for the TID obtained
      */
     void find();

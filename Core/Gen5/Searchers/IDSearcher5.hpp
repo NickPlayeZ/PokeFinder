@@ -45,16 +45,15 @@ public:
      * @brief Searches specified date/time range for filtered matches
      *
      * @param generator State generator
-     * @param date Date to search
-     * @param hour Hour to search
-     * @param minute Minute to search
-     * @param minSecond Minimum second
-     * @param maxSecond Maximum second
+     * @param dateTime Target date/time
+     * @param seconds Seconds to search before and after the target
+     * @param timer0Min Minimum Timer0
+     * @param timer0Max Maximum Timer0
      *
      * @return Vector of computed states
      */
-    std::vector<SearcherState5<IDState>> search(const IDGenerator5 &generator, const Date &date, u8 hour, u8 minute, u8 minSecond,
-                                                u8 maxSecond);
+    std::vector<SearcherState5<IDState>> search(const IDGenerator5 &generator, const DateTime &dateTime, int seconds, u16 timer0Min,
+                                                u16 timer0Max);
 };
 
 #endif // IDSEARCHER5_HPP

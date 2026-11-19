@@ -20,36 +20,36 @@
 #include "IDSearcher5.hpp"
 #include <Core/RNG/SHA1.hpp>
 
-std::vector<SearcherState5<IDState>> IDSearcher5::search(const IDGenerator5 &generator, const Date &date, u8 hour, u8 minute, u8 minSecond,
-                                                         u8 maxSecond)
+std::vector<SearcherState5<IDState>> IDSearcher5::search(const IDGenerator5 &generator, const DateTime &dateTime, int seconds, u16 timer0Min,
+                                                         u16 timer0Max)
 {
 #ifdef ENABLE_SIMD
     if (hasSHA())
     {
         SHA1SIMD sha(profile);
-        sha.setDate(date);
-
-        for (u16 timer0 = profile.getTimer0Min(); timer0 <= profile.getTimer0Max(); timer0++)
+        for (int offset = -seconds; offset <= seconds; offset++)
         {
-            sha.setTimer0(timer0, profile.getVCount());
-            for (const auto &keypress : keypresses)
-            {
-                sha.setButton(keypress.value);
+            DateTime dt = dateTime.addSeconds(offset);
+            const Date &date = dt.getDate();
+            const Time &time = dt.getTime();
+            sha.setDate(date);
 
-                for (u8 second = minSecond; second <= maxSecond; second++)
+            for (u32 timer0 = timer0Min; timer0 <= timer0Max; timer0++)
+            {
+                sha.setTimer0(static_cast<u16>(timer0), profile.getVCount());
+                for (const auto &keypress : keypresses)
                 {
-                    sha.setTime(hour, minute, second, profile.getDSType());
+                    sha.setButton(keypress.value);
+                    sha.setTime(time.hour(), time.minute(), time.second(), profile.getDSType());
                     u64 seed = sha.hashSeed();
 
                     auto states = generator.generate(seed);
                     if (!states.empty())
                     {
-                        DateTime dt(date, Time(hour, minute, second));
-
                         results.reserve(results.capacity() + states.size());
                         for (const auto &state : states)
                         {
-                            results.emplace_back(dt, seed, keypress.button, timer0, state);
+                            results.emplace_back(dt, seed, keypress.button, static_cast<u16>(timer0), state);
                         }
                     }
                 }
@@ -60,30 +60,30 @@ std::vector<SearcherState5<IDState>> IDSearcher5::search(const IDGenerator5 &gen
 #endif
     {
         SHA1 sha(profile);
-        sha.setDate(date);
-
-        for (u16 timer0 = profile.getTimer0Min(); timer0 <= profile.getTimer0Max(); timer0++)
+        for (int offset = -seconds; offset <= seconds; offset++)
         {
-            sha.setTimer0(timer0, profile.getVCount());
-            auto beta = sha.precompute();
-            for (const auto &keypress : keypresses)
-            {
-                sha.setButton(keypress.value);
+            DateTime dt = dateTime.addSeconds(offset);
+            const Date &date = dt.getDate();
+            const Time &time = dt.getTime();
+            sha.setDate(date);
 
-                for (u8 second = minSecond; second <= maxSecond; second++)
+            for (u32 timer0 = timer0Min; timer0 <= timer0Max; timer0++)
+            {
+                sha.setTimer0(static_cast<u16>(timer0), profile.getVCount());
+                auto beta = sha.precompute();
+                for (const auto &keypress : keypresses)
                 {
-                    sha.setTime(hour, minute, second, profile.getDSType());
+                    sha.setButton(keypress.value);
+                    sha.setTime(time.hour(), time.minute(), time.second(), profile.getDSType());
                     u64 seed = sha.hashSeed(beta);
 
                     auto states = generator.generate(seed);
                     if (!states.empty())
                     {
-                        DateTime dt(date, Time(hour, minute, second));
-
                         results.reserve(results.capacity() + states.size());
                         for (const auto &state : states)
                         {
-                            results.emplace_back(dt, seed, keypress.button, timer0, state);
+                            results.emplace_back(dt, seed, keypress.button, static_cast<u16>(timer0), state);
                         }
                     }
                 }
