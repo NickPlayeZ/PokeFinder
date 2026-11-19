@@ -35,6 +35,8 @@ namespace
     constexpr int generatorPhenomenonColumn = 4;
     constexpr int searcherPassPowerColumn = 1;
     constexpr int searcherDataPassPowerColumn = -1;
+    constexpr int searcherDataDoubleBattleColumn = -2;
+    constexpr int searcherDataTargetPokemonColumn = -3;
     constexpr int searcherDataAdvancesColumn = 1;
     constexpr int searcherDataStepsColumn = 3;
     constexpr int searcherDataPhenomenonColumn = 4;
@@ -172,7 +174,7 @@ namespace
         return powers.join(QStringLiteral(" & "));
     }
 
-    int mapGeneratorColumn(int column, bool showMovingTrigger, bool showPhenomenon)
+    int mapGeneratorColumn(int column, bool showMovingTrigger, bool showPhenomenon, bool showDoubleBattle)
     {
         if (!showMovingTrigger && column >= generatorStepsColumn)
         {
@@ -184,10 +186,15 @@ namespace
             column += 2;
         }
 
+        if (!showDoubleBattle && column >= 6)
+        {
+            column++;
+        }
+
         return column;
     }
 
-    std::vector<int> getSearcherColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
+    std::vector<int> getSearcherColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon, bool showDarkGrass)
     {
         std::vector<int> columns { 0 };
         if (showPassPower)
@@ -205,6 +212,12 @@ namespace
             columns.emplace_back(searcherDataPhenomenonColumn);
         }
 
+        if (showDarkGrass)
+        {
+            columns.emplace_back(searcherDataDoubleBattleColumn);
+            columns.emplace_back(searcherDataTargetPokemonColumn);
+        }
+
         for (int column = searcherDataFirstPayloadColumn; column <= searcherDataLastColumn; column++)
         {
             columns.emplace_back(column);
@@ -213,7 +226,7 @@ namespace
         return columns;
     }
 
-    std::vector<int> getSearcherHeaderColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon)
+    std::vector<int> getSearcherHeaderColumns(bool showPassPower, bool showMovingTrigger, bool showPhenomenon, bool showDarkGrass)
     {
         std::vector<int> columns { 0 };
         if (showPassPower)
@@ -231,6 +244,12 @@ namespace
             columns.emplace_back(searcherHeaderPhenomenonColumn);
         }
 
+        if (showDarkGrass)
+        {
+            columns.emplace_back(searcherDataDoubleBattleColumn);
+            columns.emplace_back(searcherDataTargetPokemonColumn);
+        }
+
         for (int column = searcherHeaderFirstPayloadColumn; column <= searcherHeaderLastColumn; column++)
         {
             columns.emplace_back(column);
@@ -241,13 +260,13 @@ namespace
 }
 
 WildGeneratorModel5::WildGeneratorModel5(QObject *parent) :
-    TableModel(parent), showStats(false), showMovingTrigger(false), showPhenomenon(false)
+    TableModel(parent), showStats(false), showMovingTrigger(false), showPhenomenon(false), showDoubleBattle(false)
 {
 }
 
 int WildGeneratorModel5::columnCount(const QModelIndex &parent) const
 {
-    return header.size() - (showMovingTrigger ? 0 : 1) - (showPhenomenon ? 0 : 2);
+    return header.size() - (showMovingTrigger ? 0 : 1) - (showPhenomenon ? 0 : 2) - (showDoubleBattle ? 0 : 1);
 }
 
 QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
@@ -269,10 +288,10 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
 
     if (role == Qt::DisplayRole)
     {
-        int column = mapGeneratorColumn(index.column(), showMovingTrigger, showPhenomenon);
+        int column = mapGeneratorColumn(index.column(), showMovingTrigger, showPhenomenon, showDoubleBattle);
         bool item = state.getPhenomenonItem();
 
-        if (!state.isValid() && column > 2)
+        if (!state.isValid() && column > 2 && column != 6)
         {
             return "-";
         }
@@ -308,8 +327,10 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             }
             return QString("%1%2").arg(QChar('A' + state.getPhenomenonRelativeX() + 5)).arg(state.getPhenomenonRelativeZ() + 5);
         case 6:
-            return QString::fromStdString(Translator::getItem(state.getItem()));
+            return state.getDoubleBattle() ? tr("Yes") : tr("No");
         case 7:
+            return QString::fromStdString(Translator::getItem(state.getItem()));
+        case 8:
             if (item)
             {
                 return "-";
@@ -317,19 +338,19 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             return QString("%1: %2")
                 .arg(state.getEncounterSlot() == 12 ? tr("S") : QString::number(state.getEncounterSlot()))
                 .arg(QString::fromStdString(Translator::getSpecie(state.getSpecie(), state.getForm())));
-        case 8:
-            if (item)
-            {
-                return "-";
-            }
-            return state.getLevel();
         case 9:
             if (item)
             {
                 return "-";
             }
-            return QString::number(state.getPID(), 16).toUpper().rightJustified(8, '0');
+            return state.getLevel();
         case 10:
+            if (item)
+            {
+                return "-";
+            }
+            return QString::number(state.getPID(), 16).toUpper().rightJustified(8, '0');
+        case 11:
         {
             if (item)
             {
@@ -338,13 +359,13 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             u8 shiny = state.getShiny();
             return shiny == 2 ? tr("Square") : shiny == 1 ? tr("Star") : tr("No");
         }
-        case 11:
+        case 12:
             if (item)
             {
                 return "-";
             }
             return QString::fromStdString(Translator::getNature(state.getNature()));
-        case 12:
+        case 13:
             if (item)
             {
                 return "-";
@@ -359,36 +380,36 @@ QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
             {
                 return QString("H (%2)").arg(QString::fromStdString(Translator::getAbility(state.getAbilityIndex())));
             }
-        case 13:
         case 14:
         case 15:
         case 16:
         case 17:
         case 18:
-            if (item)
-            {
-                return "-";
-            }
-            return showStats ? state.getStat(column - 13) : state.getIV(column - 13);
         case 19:
             if (item)
             {
                 return "-";
             }
-            return QString::fromStdString(Translator::getHiddenPower(state.getHiddenPower()));
+            return showStats ? state.getStat(column - 14) : state.getIV(column - 14);
         case 20:
             if (item)
             {
                 return "-";
             }
-            return state.getHiddenPowerStrength();
+            return QString::fromStdString(Translator::getHiddenPower(state.getHiddenPower()));
         case 21:
             if (item)
             {
                 return "-";
             }
-            return QString::fromStdString(Translator::getGender(state.getGender()));
+            return state.getHiddenPowerStrength();
         case 22:
+            if (item)
+            {
+                return "-";
+            }
+            return QString::fromStdString(Translator::getGender(state.getGender()));
+        case 23:
             if (item)
             {
                 return "-";
@@ -404,7 +425,7 @@ QVariant WildGeneratorModel5::headerData(int section, Qt::Orientation orientatio
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
-        return header[mapGeneratorColumn(section, showMovingTrigger, showPhenomenon)];
+        return header[mapGeneratorColumn(section, showMovingTrigger, showPhenomenon, showDoubleBattle)];
     }
     return QVariant();
 }
@@ -425,14 +446,24 @@ void WildGeneratorModel5::setShowMovingTrigger(bool flag)
     }
 }
 
+void WildGeneratorModel5::setShowDoubleBattle(bool flag)
+{
+    if (showDoubleBattle != flag)
+    {
+        beginResetModel();
+        showDoubleBattle = flag;
+        endResetModel();
+    }
+}
+
 WildSearcherModel5::WildSearcherModel5(QObject *parent) :
-    TableModel(parent), showStats(false), showMovingTrigger(false), showPhenomenon(false), showPassPower(false)
+    TableModel(parent), showStats(false), showMovingTrigger(false), showPhenomenon(false), showPassPower(false), showDarkGrass(false)
 {
 }
 
 int WildSearcherModel5::columnCount(const QModelIndex &parent) const
 {
-    return static_cast<int>(getSearcherColumns(showPassPower, showMovingTrigger, showPhenomenon).size()) + 1;
+    return static_cast<int>(getSearcherColumns(showPassPower, showMovingTrigger, showPhenomenon, showDarkGrass).size()) + 1;
 }
 
 QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
@@ -446,11 +477,21 @@ QVariant WildSearcherModel5::data(const QModelIndex &index, int role) const
             return LeadDisplay::getLeadName(state.getLeadMask(), false);
         }
 
-        auto columns = getSearcherColumns(showPassPower, showMovingTrigger, showPhenomenon);
+        auto columns = getSearcherColumns(showPassPower, showMovingTrigger, showPhenomenon, showDarkGrass);
         int column = columns[index.column() > 1 ? index.column() - 1 : index.column()];
         if (column == searcherDataPassPowerColumn)
         {
             return getLuckyPowerText(state.getPassPower());
+        }
+        if (column == searcherDataDoubleBattleColumn)
+        {
+            return state.getDoubleBattle() ? tr("Yes") : tr("No");
+        }
+        if (column == searcherDataTargetPokemonColumn)
+        {
+            return state.getTargetPokemon() == WildState5::TargetRight ? tr("Right")
+                : state.getTargetPokemon() == WildState5::TargetLeft   ? tr("Left")
+                                                                       : QStringLiteral("-");
         }
         bool item = state.getPhenomenonItem();
 
@@ -584,8 +625,17 @@ QVariant WildSearcherModel5::headerData(int section, Qt::Orientation orientation
             return tr("Lead");
         }
 
-        auto columns = getSearcherHeaderColumns(showPassPower, showMovingTrigger, showPhenomenon);
-        return header[columns[section > 1 ? section - 1 : section]];
+        auto columns = getSearcherHeaderColumns(showPassPower, showMovingTrigger, showPhenomenon, showDarkGrass);
+        int column = columns[section > 1 ? section - 1 : section];
+        if (column == searcherDataDoubleBattleColumn)
+        {
+            return tr("Double Battle");
+        }
+        if (column == searcherDataTargetPokemonColumn)
+        {
+            return tr("Target Pkmn");
+        }
+        return header[column];
     }
     return QVariant();
 }
@@ -612,6 +662,16 @@ void WildSearcherModel5::setShowPassPower(bool flag)
     {
         beginResetModel();
         showPassPower = flag;
+        endResetModel();
+    }
+}
+
+void WildSearcherModel5::setShowDarkGrass(bool flag)
+{
+    if (showDarkGrass != flag)
+    {
+        beginResetModel();
+        showDarkGrass = flag;
         endResetModel();
     }
 }

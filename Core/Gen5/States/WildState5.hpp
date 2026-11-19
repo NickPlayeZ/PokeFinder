@@ -29,6 +29,10 @@
 class WildState5 : public WildGeneratorState
 {
 public:
+    static constexpr u8 TargetNone = 0;
+    static constexpr u8 TargetRight = 1;
+    static constexpr u8 TargetLeft = 2;
+
     /**
      * @brief Construct a new State5 object
      *
@@ -50,7 +54,7 @@ public:
     WildState5(u32 prng, u8 movingTrigger, u8 movingSteps, bool phenomenon, bool phenomenonItem, u32 advances, u32 ivAdvances, u32 pid,
                const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level, u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie,
                u8 form, const PersonalInfo *info, bool valid = true, u8 passPower = 0, Lead lead = Lead::None, bool variableNature = false,
-               bool leadRequired = true) :
+               bool leadRequired = true, bool doubleBattle = false) :
         WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info, valid, lead),
         ivAdvances(ivAdvances),
         passPower(passPower),
@@ -62,7 +66,8 @@ public:
         chatot(static_cast<u8>(((static_cast<u64>(prng) * 0x1fff) >> 32) / 82)),
         needle(static_cast<u8>((static_cast<u64>(prng) * 8) >> 32)),
         variableNature(variableNature),
-        leadRequired(leadRequired)
+        leadRequired(leadRequired),
+        doubleBattle(doubleBattle)
     {
     }
 
@@ -177,6 +182,21 @@ public:
         return leadRequired;
     }
 
+    bool getDoubleBattle() const
+    {
+        return doubleBattle;
+    }
+
+    u8 getTargetPokemon() const
+    {
+        return targetPokemon;
+    }
+
+    void setTargetPokemon(u8 target)
+    {
+        targetPokemon = target;
+    }
+
 private:
     u32 ivAdvances;
     u8 passPower;
@@ -189,6 +209,8 @@ private:
     u8 needle;
     bool variableNature;
     bool leadRequired;
+    bool doubleBattle;
+    u8 targetPokemon = TargetNone;
     s8 phenomenonRegion = -1;
     s8 phenomenonX = -1;
     s8 phenomenonZ = -1;

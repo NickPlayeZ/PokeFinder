@@ -36,6 +36,8 @@
 #include <unordered_map>
 #include <variant>
 
+static u8 gen(MT &rng);
+
 void WildGenerator5::setPhenomenonPosition(const std::array<bool, 1024> &tiles, const std::array<bool, 1024> &npcTiles,
                                            const std::array<PhenomenonTileType, 1024> &tileTypes, u8 playerX, u8 playerZ)
 {
@@ -45,6 +47,14 @@ void WildGenerator5::setPhenomenonPosition(const std::array<bool, 1024> &tiles, 
     phenomenonPlayerX = std::min<u8>(playerX, 31);
     phenomenonPlayerZ = std::min<u8>(playerZ, 31);
     predictPhenomenonPosition = true;
+}
+
+static std::array<u8, 6> getNormalIVs(u64 seed, u32 advance, bool bw)
+{
+    RNGList<u8, MT, 8, gen> rng(seed >> 32, advance + (bw ? 0 : 2));
+    std::array<u8, 6> ivs;
+    std::ranges::generate(ivs, [&rng] { return rng.next(); });
+    return ivs;
 }
 
 struct WildTargetKey
@@ -120,7 +130,8 @@ static bool matches(const WildState5 &left, const WildState5 &right)
         && left.getLevel() == right.getLevel() && sameNature && left.getShiny() == right.getShiny() && left.getItem() == right.getItem()
         && left.getSpecie() == right.getSpecie() && left.getForm() == right.getForm() && left.getEncounterSlot() == right.getEncounterSlot()
         && left.getPhenomenon() == right.getPhenomenon() && left.getPhenomenonItem() == right.getPhenomenonItem()
-        && left.isValid() == right.isValid() && left.getVariableNature() == right.getVariableNature() && left.getIVs() == right.getIVs();
+        && left.isValid() == right.isValid() && left.getVariableNature() == right.getVariableNature()
+        && left.getDoubleBattle() == right.getDoubleBattle() && left.getIVs() == right.getIVs();
 }
 
 static void addState(std::vector<WildState5> &states, const WildState5 &state, Lead lead)
@@ -439,6 +450,23 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, 
 {
     bool bw = (profile.getVersion() & Game::BW) != Game::None;
 
+    if (searchBothDarkGrassEncounters)
+    {
+        std::vector<std::pair<u32, std::array<u8, 6>>> ivs;
+        for (u32 cnt = 0; cnt <= maxAdvances; cnt++)
+        {
+            u32 advance = initialAdvances + cnt;
+            auto firstIVs = getNormalIVs(seed, advance, bw);
+            auto secondIVs = getNormalIVs(seed, advance + 6, bw);
+            if ((filter.compareIV(firstIVs) && filter.compareHiddenPower(firstIVs))
+                || (filter.compareIV(secondIVs) && filter.compareHiddenPower(secondIVs)))
+            {
+                ivs.emplace_back(advance, firstIVs);
+            }
+        }
+        return ivs.empty() ? std::vector<WildState5>() : generate(seed, ivs);
+    }
+
     u32 initial = initialAdvances + (bw ? 0 : 2);
     using RNGVariant = std::variant<RNGList<u8, MTFast, 8>, RNGList<u8, MT, 8, gen>>;
     RNGVariant rngList = [&]() {
@@ -477,6 +505,51 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, u32 initialAdvances, 
 
 std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std::pair<u32, std::array<u8, 6>>> &ivs) const
 {
+    if (searchBothDarkGrassEncounters)
+    {
+        bool bw = (profile.getVersion() & Game::BW) != Game::None;
+        std::vector<std::pair<u32, std::array<u8, 6>>> firstIVs;
+        std::vector<std::pair<u32, std::array<u8, 6>>> secondIVs;
+        firstIVs.reserve(ivs.size());
+        secondIVs.reserve(ivs.size());
+        for (const auto &iv : ivs)
+        {
+            auto first = getNormalIVs(seed, iv.first, bw);
+            auto second = getNormalIVs(seed, iv.first + 6, bw);
+            if (filter.compareIV(first) && filter.compareHiddenPower(first))
+            {
+                firstIVs.emplace_back(iv.first, first);
+            }
+            if (filter.compareIV(second) && filter.compareHiddenPower(second))
+            {
+                secondIVs.emplace_back(iv.first, first);
+            }
+        }
+
+        WildGenerator5 firstGenerator(*this);
+        firstGenerator.searchBothDarkGrassEncounters = false;
+        firstGenerator.showSecondEncounter = false;
+        auto states = firstIVs.empty() ? std::vector<WildState5>() : firstGenerator.generate(seed, firstIVs);
+        for (auto &state : states)
+        {
+            state.setTargetPokemon(state.getDoubleBattle() ? WildState5::TargetRight : WildState5::TargetNone);
+        }
+
+        WildGenerator5 secondGenerator(*this);
+        secondGenerator.searchBothDarkGrassEncounters = false;
+        secondGenerator.showSecondEncounter = true;
+        auto leftStates = secondIVs.empty() ? std::vector<WildState5>() : secondGenerator.generate(seed, secondIVs);
+        for (auto &state : leftStates)
+        {
+            if (state.isValid())
+            {
+                state.setTargetPokemon(WildState5::TargetLeft);
+                states.emplace_back(state);
+            }
+        }
+        return states;
+    }
+
     std::vector<WildState5> states;
     for (u8 activePassPower : passPowers)
     {
@@ -709,6 +782,7 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             {
                 doubleBattle = true;
             }
+            valid &= !showSecondEncounter || doubleBattle;
 
             if (!phenomenonItem && area.getEncounter() == Encounter::SuperRod && getPercentRand(go, bw) > rate)
             {
@@ -734,6 +808,8 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
             u8 encounterSlot = 0;
             u8 level = 0;
+            u8 secondEncounterSlot = 0;
+            u8 secondLevel = 0;
             u16 item = 0;
 
             if (phenomenonItem)
@@ -759,15 +835,23 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
                 level = area.calculateLevel(encounterSlot, getPercentRand(go, bw), pressure);
 
-                // RNG calls for left encounter slot and level
                 if (doubleBattle)
                 {
-                    go.advance(2);
+                    if (magnetStatic && !modifiedSlots.empty())
+                    {
+                        secondEncounterSlot = modifiedSlots[getEncounterRand(go, modifiedSlots.count, bw)];
+                    }
+                    else
+                    {
+                        secondEncounterSlot
+                            = EncounterSlot::bwSlot(getPercentRand(go, bw), area.getEncounter(), static_cast<PassPower>(luckyPower));
+                    }
+                    secondLevel = area.calculateLevel(secondEncounterSlot, getPercentRand(go, bw), pressure);
                 }
             }
 
-            const Slot &slot = area.getPokemon(encounterSlot);
-            const PersonalInfo *info = slot.getInfo();
+            const Slot *slot = &area.getPokemon(encounterSlot);
+            const PersonalInfo *info = slot->getInfo();
 
             u32 pid = 0;
             for (u8 i = 0; i < shinyRolls; i++)
@@ -800,6 +884,34 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
             if (!phenomenonItem)
             {
+                item = getItem(go, bw, currentLead, area.getEncounter(), info);
+            }
+
+            if (showSecondEncounter && doubleBattle)
+            {
+                encounterSlot = secondEncounterSlot;
+                level = secondLevel;
+                slot = &area.getPokemon(encounterSlot);
+                info = slot->getInfo();
+
+                for (u8 i = 0; i < shinyRolls; i++)
+                {
+                    u8 requestedGender = cuteCharm && !info->getFixedGender() ? (currentLead == Lead::CuteCharmF ? 0 : 1) : 255;
+                    pid = Utilities5::createPID(tsv, 2, requestedGender, Shiny::Random, true, info->getGender(), go);
+                    if (Utilities::isShiny<true>(pid, tsv))
+                    {
+                        break;
+                    }
+                }
+
+                ability = (pid >> 16) & 1;
+                gender = Utilities::getGender(pid, info);
+                shiny = Utilities::getShiny<true>(pid, tsv);
+                nature = go.nextUInt(25);
+                if (sync)
+                {
+                    nature = toInt(currentLead);
+                }
                 item = getItem(go, bw, currentLead, area.getEncounter(), info);
             }
 
@@ -878,9 +990,15 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
             for (const auto &iv : ivs)
             {
+                std::array<u8, 6> displayIVs = iv.second;
+                if (showSecondEncounter && doubleBattle)
+                {
+                    RNGList<u8, MT, 8, gen> secondIVRng(seed >> 32, iv.first + (bw ? 0 : 2) + 6);
+                    std::ranges::generate(displayIVs, [&secondIVRng] { return secondIVRng.next(); });
+                }
                 WildState5 state(prng, movingTrigger, movingSteps, phenomenon, phenomenonItem, advances + initialAdvances + cnt, iv.first,
-                                 pid, iv.second, ability, gender, level, nature, shiny, encounterSlot, item, slot.getSpecie(),
-                                 slot.getForm(), info, valid, passPower, currentLead, variableNature, leadRequired);
+                                 pid, displayIVs, ability, gender, level, nature, shiny, encounterSlot, item, slot->getSpecie(),
+                                 slot->getForm(), info, valid, passPower, currentLead, variableNature, leadRequired, doubleBattle);
                 if (phenomenonRegion >= 0)
                 {
                     state.setPhenomenonPosition(

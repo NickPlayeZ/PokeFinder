@@ -105,6 +105,11 @@ public slots:
     void setShowMovingTrigger(bool flag);
 
     /**
+     * @brief Sets whether the model displays the dark grass double battle column
+     */
+    void setShowDoubleBattle(bool flag);
+
+    /**
      * @brief Sets flag that controls whether the model displays the phenomenon column
      *
      * @param flag Whether to show the phenomenon column or not
@@ -121,12 +126,13 @@ public slots:
 
 private:
     QStringList header = { tr("Advances"), tr("Chatot"), tr("Needle"), tr("Steps"), tr("Phenomenon"), tr("Tile"),
-                           tr("Item"),     tr("Slot"),   tr("Level"),  tr("PID"),   tr("Shiny"),      tr("Nature"),
+                           tr("Double Battle"), tr("Item"), tr("Slot"), tr("Level"), tr("PID"), tr("Shiny"), tr("Nature"),
                            tr("Ability"),  tr("HP"),     tr("Atk"),    tr("Def"),   tr("SpA"),        tr("SpD"),
                            tr("Spe"),      tr("Hidden"), tr("Power"),  tr("Gender"), tr("Characteristic") };
     bool showStats;
     bool showMovingTrigger;
     bool showPhenomenon;
+    bool showDoubleBattle;
 };
 
 /**
@@ -205,6 +211,11 @@ public slots:
 
     void setShowPassPower(bool flag);
 
+    /**
+     * @brief Sets whether dark grass search result columns are displayed
+     */
+    void setShowDarkGrass(bool flag);
+
 private:
     QStringList header = { tr("Seed"),          tr("Pass Power"), tr("Advances"), tr("Trigger"),      tr("Steps"),
                            tr("Phenomenon"),    tr("IV Advances"), tr("Item"),    tr("Slot"),         tr("Level"),
@@ -216,6 +227,7 @@ private:
     bool showMovingTrigger;
     bool showPhenomenon;
     bool showPassPower;
+    bool showDarkGrass;
 };
 
 #endif // WILDMODEL5_HPP

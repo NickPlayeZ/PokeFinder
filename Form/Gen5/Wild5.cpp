@@ -429,7 +429,12 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     connect(ui->comboBoxSearcherPokemon, &QComboBox::currentIndexChanged, this, &Wild5::searcherPokemonIndexChanged);
     connect(ui->comboBoxGeneratorSeason, &QComboBox::currentIndexChanged, this, &Wild5::generatorSeasonIndexChanged);
     connect(ui->comboBoxSearcherSeason, &QComboBox::currentIndexChanged, this, &Wild5::searcherSeasonIndexChanged);
-    connect(ui->checkBoxGeneratorSwarm, &QCheckBox::checkStateChanged, this, [=] { generatorEncounterIndexChanged(0); });
+    connect(ui->checkBoxGeneratorSwarm, &QCheckBox::checkStateChanged, this, [=] {
+        if (ui->comboBoxGeneratorEncounter->getEnum<Encounter>() == Encounter::Grass)
+        {
+            generatorEncounterIndexChanged(ui->comboBoxGeneratorEncounter->currentIndex());
+        }
+    });
     connect(ui->checkBoxSearcherSwarm, &QCheckBox::checkStateChanged, this, [=] { searcherEncounterIndexChanged(0); });
     connect(ui->filterGenerator, &Filter::showStatsChanged, generatorModel, &WildGeneratorModel5::setShowStats);
     connect(ui->filterSearcher, &Filter::showStatsChanged, searcherModel, &WildSearcherModel5::setShowStats);
@@ -546,6 +551,8 @@ void Wild5::generate()
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
     WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, passPower, searchMovingTrigger, false,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
+    generator.setShowSecondEncounter(ui->comboBoxGeneratorEncounter->getEnum<Encounter>() == Encounter::GrassDark
+                                     && ui->checkBoxGeneratorSwarm->isChecked());
 
     auto states = generator.generate(seed, ivAdvances, 0);
     if (ui->filterGenerator->hasActiveFilters(encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount()))
@@ -593,17 +600,25 @@ void Wild5::generatorEncounterIndexChanged(int index)
         }
 
         bool grass = encounter == Encounter::Grass;
+        bool darkGrass = encounter == Encounter::GrassDark;
         bool fish = encounter == Encounter::SuperRod;
 
+        generatorModel->setShowDoubleBattle(darkGrass);
+
         ui->comboMenuGeneratorLead->hideAction(toInt(Lead::SuctionCups), !fish);
-        ui->checkBoxGeneratorSwarm->setVisible(grass);
-        if (!grass && ui->checkBoxGeneratorSwarm->isChecked())
+        if (sender() == ui->comboBoxGeneratorEncounter && ui->checkBoxGeneratorSwarm->isChecked())
+        {
+            ui->checkBoxGeneratorSwarm->setChecked(false);
+        }
+        ui->checkBoxGeneratorSwarm->setText(darkGrass ? tr("Show second encounter") : tr("Swarm"));
+        ui->checkBoxGeneratorSwarm->setVisible(grass || darkGrass);
+        if (!grass && !darkGrass && ui->checkBoxGeneratorSwarm->isChecked())
         {
             ui->checkBoxGeneratorSwarm->setChecked(false);
         }
 
         EncounterSettings5 settings = { };
-        settings.swarm = ui->checkBoxGeneratorSwarm->isChecked();
+        settings.swarm = grass && ui->checkBoxGeneratorSwarm->isChecked();
         settings.season = ui->comboBoxGeneratorSeason->currentIndex();
 
         encounterGenerator = Encounters5::getEncounters(encounter, settings, currentProfile);
@@ -780,11 +795,22 @@ void Wild5::search()
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
     WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, leads, passPowers, searchMovingTrigger, searchMovingTrigger,
                              encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter, true);
+    bool darkGrass = ui->comboBoxSearcherEncounter->getEnum<Encounter>() == Encounter::GrassDark;
+    generator.setSearchBothDarkGrassEncounters(darkGrass);
 
     SearcherBase5<WildGenerator5, WildState5> *searcher;
     if (fastSearchEnabled())
     {
         auto ivMap = ivCache->getCache(initialIVAdvances, maxIVAdvances, currentProfile->getVersion(), CacheType::Normal, filter);
+        if (darkGrass)
+        {
+            auto secondIVMap
+                = ivCache->getCache(initialIVAdvances, maxIVAdvances, currentProfile->getVersion(), CacheType::Normal, filter, 6);
+            for (const auto &[key, value] : secondIVMap)
+            {
+                ivMap.emplace(key, value);
+            }
+        }
         if (shaCache && shaCache->isValid(*currentProfile))
         {
             auto shaMap = shaCache->getCache(initialIVAdvances, maxIVAdvances, start, end, ivMap, CacheType::Normal, *currentProfile);
@@ -850,6 +876,9 @@ void Wild5::searcherEncounterIndexChanged(int index)
             ui->checkBoxSearcherMovingTrigger->setChecked(false);
         }
         bool grass = encounter == Encounter::Grass;
+        bool darkGrass = encounter == Encounter::GrassDark;
+
+        searcherModel->setShowDarkGrass(darkGrass);
 
         ui->checkBoxSearcherSwarm->setVisible(grass);
         if (!grass && ui->checkBoxSearcherSwarm->isChecked())
@@ -977,7 +1006,8 @@ void Wild5::transferSettings(int index)
         ui->comboBoxSearcherPokemon->setCurrentIndex(ui->comboBoxGeneratorPokemon->currentIndex());
         ui->comboBoxSearcherSeason->setCurrentIndex(ui->comboBoxGeneratorSeason->currentIndex());
         ui->checkBoxSearcherMovingTrigger->setChecked(ui->checkBoxGeneratorMovingTrigger->isChecked());
-        ui->checkBoxSearcherSwarm->setChecked(ui->checkBoxGeneratorSwarm->isChecked());
+        ui->checkBoxSearcherSwarm->setChecked(ui->comboBoxGeneratorEncounter->getEnum<Encounter>() == Encounter::Grass
+                                              && ui->checkBoxGeneratorSwarm->isChecked());
         ui->comboBoxSearcherLuckyPower->setCheckedData(getPassPowerMenuOptions(getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower)));
     }
     else
@@ -987,7 +1017,8 @@ void Wild5::transferSettings(int index)
         ui->comboBoxGeneratorPokemon->setCurrentIndex(ui->comboBoxSearcherPokemon->currentIndex());
         ui->comboBoxGeneratorSeason->setCurrentIndex(ui->comboBoxSearcherSeason->currentIndex());
         ui->checkBoxGeneratorMovingTrigger->setChecked(ui->checkBoxSearcherMovingTrigger->isChecked());
-        ui->checkBoxGeneratorSwarm->setChecked(ui->checkBoxSearcherSwarm->isChecked());
+        ui->checkBoxGeneratorSwarm->setChecked(ui->comboBoxGeneratorEncounter->getEnum<Encounter>() == Encounter::Grass
+                                               && ui->checkBoxSearcherSwarm->isChecked());
         auto passPowers = (currentProfile->getVersion() & Game::BW2) != Game::None
             ? getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), ui->checkBoxSearcherMovingTrigger->isChecked(),
                             (currentProfile->getVersion() & Game::BW) != Game::None)

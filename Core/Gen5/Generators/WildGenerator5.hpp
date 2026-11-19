@@ -150,6 +150,22 @@ public:
     void setPhenomenonPosition(const std::array<bool, 1024> &tiles, const std::array<bool, 1024> &npcTiles,
                                const std::array<PhenomenonTileType, 1024> &tileTypes, u8 playerX, u8 playerZ);
 
+    /**
+     * @brief Controls whether dark grass results display the second encounter
+     */
+    void setShowSecondEncounter(bool flag)
+    {
+        showSecondEncounter = flag;
+    }
+
+    /**
+     * @brief Makes dark grass searches evaluate both encountered Pokemon
+     */
+    void setSearchBothDarkGrassEncounters(bool flag)
+    {
+        searchBothDarkGrassEncounters = flag;
+    }
+
 private:
     std::vector<u8> passPowers;
     std::vector<Lead> leads;
@@ -158,6 +174,8 @@ private:
     bool requirePassPowerIVAdvance;
     bool filterNonRequiredLeads;
     bool useExploringPower;
+    bool showSecondEncounter = false;
+    bool searchBothDarkGrassEncounters = false;
     bool predictPhenomenonPosition = false;
     std::array<bool, 1024> phenomenonTiles { };
     std::array<bool, 1024> phenomenonNpcTiles { };
