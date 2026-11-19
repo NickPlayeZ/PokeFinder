@@ -25,15 +25,37 @@
 #include <Core/Util/Translator.hpp>
 #include <Form/Gen3/Profile/ProfileManager3.hpp>
 #include <QSettings>
+#include <QSpinBox>
 
 static const QString settingKey = QStringLiteral("%1/profile");
 
-ProfileDisplay3::ProfileDisplay3(QWidget *parent) : QWidget(parent), ui(new Ui::ProfileDisplay3)
+ProfileDisplay3::ProfileDisplay3(QWidget *parent) :
+    QWidget(parent), ui(new Ui::ProfileDisplay3), tidInput(nullptr), sidInput(nullptr), idsEditable(true)
 {
     ui->setupUi(this);
 
+    tidInput = new QSpinBox(this);
+    sidInput = new QSpinBox(this);
+
+    for (QSpinBox *input : { tidInput, sidInput })
+    {
+        input->setRange(0, 65535);
+        input->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        input->setFocusPolicy(Qt::StrongFocus);
+    }
+    ui->gridLayout->addWidget(tidInput, 0, 3);
+    ui->gridLayout->addWidget(sidInput, 1, 3);
+    ui->labelTIDValue->hide();
+    ui->labelSIDValue->hide();
+    setFocusProxy(ui->comboBoxProfiles);
+    setTabOrder(ui->comboBoxProfiles, tidInput);
+    setTabOrder(tidInput, sidInput);
+    setTabOrder(sidInput, ui->pushButtonProfileManager);
+
     connect(ui->comboBoxProfiles, &QComboBox::currentIndexChanged, this, &ProfileDisplay3::profileIndexChanged);
     connect(ui->pushButtonProfileManager, &QPushButton::clicked, this, &ProfileDisplay3::profileManager);
+    connect(tidInput, &QSpinBox::editingFinished, this, &ProfileDisplay3::updateIDs);
+    connect(sidInput, &QSpinBox::editingFinished, this, &ProfileDisplay3::updateIDs);
 }
 
 ProfileDisplay3::~ProfileDisplay3()
@@ -50,6 +72,15 @@ void ProfileDisplay3::setup(const QString &prefix, Game filter)
     this->filter = filter;
 }
 
+void ProfileDisplay3::setIDsEditable(bool enabled)
+{
+    idsEditable = enabled;
+    tidInput->setVisible(enabled);
+    sidInput->setVisible(enabled);
+    ui->labelTIDValue->setVisible(!enabled);
+    ui->labelSIDValue->setVisible(!enabled);
+}
+
 void ProfileDisplay3::updateProfiles()
 {
     Game version = Game::Emerald;
@@ -59,7 +90,9 @@ void ProfileDisplay3::updateProfiles()
     }
 
     profiles = ProfileLoader3::getProfiles(filter);
+    savedProfiles.assign(profiles.size(), true);
     profiles.insert(profiles.begin(), Profile3("-", version, 12345, 54321, false));
+    savedProfiles.insert(savedProfiles.begin(), false);
 
     ui->comboBoxProfiles->clear();
     for (const auto &profile : profiles)
@@ -83,10 +116,34 @@ void ProfileDisplay3::profileIndexChanged(int index)
 
         ui->labelTIDValue->setText(QString::number(profile.getTID()));
         ui->labelSIDValue->setText(QString::number(profile.getSID()));
+        tidInput->setValue(profile.getTID());
+        sidInput->setValue(profile.getSID());
+        const bool canEdit = idsEditable && savedProfiles[index];
+        tidInput->setEnabled(canEdit);
+        sidInput->setEnabled(canEdit);
         ui->labelGameValue->setText(QString::fromStdString(Translator::getGame(profile.getVersion())));
 
         emit profileChanged(profile);
     }
+}
+
+void ProfileDisplay3::updateIDs()
+{
+    const int index = ui->comboBoxProfiles->currentIndex();
+    if (!idsEditable || index < 0 || !savedProfiles[index]) return;
+
+    const Profile3 original = profiles[index];
+    const u16 tid = static_cast<u16>(tidInput->value());
+    const u16 sid = static_cast<u16>(sidInput->value());
+    if (tid == original.getTID() && sid == original.getSID()) return;
+
+    const Profile3 update(original.getName(), original.getVersion(), tid, sid, original.getDeadBattery());
+    ProfileLoader3::updateProfile(update, original);
+    profiles[index] = update;
+    QSettings setting;
+    setting.setValue(settingKey.arg(prefix), index);
+    emit profileChanged(profiles[index]);
+    emit profilesChanged(3);
 }
 
 void ProfileDisplay3::profileManager()

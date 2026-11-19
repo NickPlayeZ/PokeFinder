@@ -135,6 +135,7 @@ HiddenGrotto::HiddenGrotto(QWidget *parent) :
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::BW2);
+    ui->profileDisplay->setIDsEditable(false);
 
     grottoGeneratorModel = new HiddenGrottoSlotGeneratorModel5(ui->tableViewGrottoGenerator);
     ui->tableViewGrottoGenerator->setModel(grottoGeneratorModel);

@@ -26,16 +26,38 @@
 #include <Form/Gen4/Profile/ProfileManager4.hpp>
 #include <QSettings>
 #include <QLabel>
+#include <QSpinBox>
 #include <algorithm>
 
 static const QString settingKey = QStringLiteral("%1/profile");
 
-ProfileDisplay4::ProfileDisplay4(QWidget *parent) : QWidget(parent), ui(new Ui::ProfileDisplay4)
+ProfileDisplay4::ProfileDisplay4(QWidget *parent) :
+    QWidget(parent), ui(new Ui::ProfileDisplay4), tidInput(nullptr), sidInput(nullptr), idsEditable(true)
 {
     ui->setupUi(this);
 
+    tidInput = new QSpinBox(this);
+    sidInput = new QSpinBox(this);
+
+    for (QSpinBox *input : { tidInput, sidInput })
+    {
+        input->setRange(0, 65535);
+        input->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        input->setFocusPolicy(Qt::StrongFocus);
+    }
+    ui->gridLayout->addWidget(tidInput, 0, 3);
+    ui->gridLayout->addWidget(sidInput, 1, 3);
+    ui->labelTIDValue->hide();
+    ui->labelSIDValue->hide();
+    setFocusProxy(ui->comboBoxProfiles);
+    setTabOrder(ui->comboBoxProfiles, tidInput);
+    setTabOrder(tidInput, sidInput);
+    setTabOrder(sidInput, ui->pushButtonProfileManager);
+
     connect(ui->comboBoxProfiles, &QComboBox::currentIndexChanged, this, &ProfileDisplay4::profileIndexChanged);
     connect(ui->pushButtonProfileManager, &QPushButton::clicked, this, &ProfileDisplay4::profileManager);
+    connect(tidInput, &QSpinBox::editingFinished, this, &ProfileDisplay4::updateIDs);
+    connect(sidInput, &QSpinBox::editingFinished, this, &ProfileDisplay4::updateIDs);
 }
 
 ProfileDisplay4::~ProfileDisplay4()
@@ -64,12 +86,23 @@ void ProfileDisplay4::setup(const QString &prefix, Game filter, Game defaultProf
     this->defaultOnlyWhenEmpty = defaultOnlyWhenEmpty;
 }
 
+void ProfileDisplay4::setIDsEditable(bool enabled)
+{
+    idsEditable = enabled;
+    tidInput->setVisible(enabled);
+    sidInput->setVisible(enabled);
+    ui->labelTIDValue->setVisible(!enabled);
+    ui->labelSIDValue->setVisible(!enabled);
+}
+
 void ProfileDisplay4::updateProfiles()
 {
     profiles = ProfileLoader4::getProfiles(filter);
+    savedProfiles.assign(profiles.size(), true);
     if (includeDefaultProfile && (!defaultOnlyWhenEmpty || profiles.empty()))
     {
         profiles.insert(profiles.begin(), Profile4("-", defaultProfileVersion, 12345, 54321, false));
+        savedProfiles.insert(savedProfiles.begin(), false);
     }
 
     ui->comboBoxProfiles->clear();
@@ -92,6 +125,7 @@ void ProfileDisplay4::setProfile(const Profile4 &profile)
     if (it == profiles.end())
     {
         profiles.emplace_back(profile);
+        savedProfiles.push_back(false);
         ui->comboBoxProfiles->addItem(QString::fromStdString(profile.getName()));
         it = std::prev(profiles.end());
     }
@@ -123,11 +157,36 @@ void ProfileDisplay4::profileIndexChanged(int index)
 
         ui->labelTIDValue->setText(QString::number(profile.getTID()));
         ui->labelSIDValue->setText(QString::number(profile.getSID()));
+        tidInput->setValue(profile.getTID());
+        sidInput->setValue(profile.getSID());
+        const bool canEdit = idsEditable && savedProfiles[index];
+        tidInput->setEnabled(canEdit);
+        sidInput->setEnabled(canEdit);
         ui->labelGameValue->setText(QString::fromStdString(Translator::getGame(profile.getVersion())));
         ui->labelNationalDexValue->setText(profile.getNationalDex() ? tr("Yes") : tr("No"));
 
         emit profileChanged(profile);
     }
+}
+
+void ProfileDisplay4::updateIDs()
+{
+    const int index = ui->comboBoxProfiles->currentIndex();
+    if (!idsEditable || index < 0 || !savedProfiles[index]) return;
+
+    const Profile4 original = profiles[index];
+    const u16 tid = static_cast<u16>(tidInput->value());
+    const u16 sid = static_cast<u16>(sidInput->value());
+    if (tid == original.getTID() && sid == original.getSID()) return;
+
+    const Profile4 update(original.getName(), original.getVersion(), tid, sid, original.getNationalDex(), original.getUnownDiscovered(),
+                          original.getUnownPuzzle(), original.getMinedPlates(), original.getUndergroundOrb());
+    ProfileLoader4::updateProfile(update, original);
+    profiles[index] = update;
+    QSettings setting;
+    setting.setValue(settingKey.arg(prefix), index);
+    emit profileChanged(profiles[index]);
+    emit profilesChanged(4);
 }
 
 void ProfileDisplay4::profileManager()

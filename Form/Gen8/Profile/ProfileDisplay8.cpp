@@ -25,15 +25,37 @@
 #include <Core/Util/Translator.hpp>
 #include <Form/Gen8/Profile/ProfileManager8.hpp>
 #include <QSettings>
+#include <QSpinBox>
 
 static const QString settingKey = QStringLiteral("%1/profile");
 
-ProfileDisplay8::ProfileDisplay8(QWidget *parent) : QWidget(parent), ui(new Ui::ProfileDisplay8)
+ProfileDisplay8::ProfileDisplay8(QWidget *parent) :
+    QWidget(parent), ui(new Ui::ProfileDisplay8), tidInput(nullptr), sidInput(nullptr), idsEditable(true)
 {
     ui->setupUi(this);
 
+    tidInput = new QSpinBox(this);
+    sidInput = new QSpinBox(this);
+
+    for (QSpinBox *input : { tidInput, sidInput })
+    {
+        input->setRange(0, 65535);
+        input->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        input->setFocusPolicy(Qt::StrongFocus);
+    }
+    ui->gridLayout->addWidget(tidInput, 0, 3);
+    ui->gridLayout->addWidget(sidInput, 1, 3);
+    ui->labelTIDValue->hide();
+    ui->labelSIDValue->hide();
+    setFocusProxy(ui->comboBoxProfiles);
+    setTabOrder(ui->comboBoxProfiles, tidInput);
+    setTabOrder(tidInput, sidInput);
+    setTabOrder(sidInput, ui->pushButtonProfileManager);
+
     connect(ui->comboBoxProfiles, &QComboBox::currentIndexChanged, this, &ProfileDisplay8::profileIndexChanged);
     connect(ui->pushButtonProfileManager, &QPushButton::clicked, this, &ProfileDisplay8::profileManager);
+    connect(tidInput, &QSpinBox::editingFinished, this, &ProfileDisplay8::updateIDs);
+    connect(sidInput, &QSpinBox::editingFinished, this, &ProfileDisplay8::updateIDs);
 }
 
 ProfileDisplay8::~ProfileDisplay8()
@@ -50,6 +72,15 @@ void ProfileDisplay8::setup(const QString &prefix, Game filter)
     this->filter = filter;
 }
 
+void ProfileDisplay8::setIDsEditable(bool enabled)
+{
+    idsEditable = enabled;
+    tidInput->setVisible(enabled);
+    sidInput->setVisible(enabled);
+    ui->labelTIDValue->setVisible(!enabled);
+    ui->labelSIDValue->setVisible(!enabled);
+}
+
 void ProfileDisplay8::updateProfiles()
 {
     Game version = Game::BD;
@@ -59,7 +90,9 @@ void ProfileDisplay8::updateProfiles()
     }
 
     profiles = ProfileLoader8::getProfiles(filter);
+    savedProfiles.assign(profiles.size(), true);
     profiles.insert(profiles.begin(), Profile8("-", version, 12345, 54321, false, false, false));
+    savedProfiles.insert(savedProfiles.begin(), false);
 
     ui->comboBoxProfiles->clear();
     for (const auto &profile : profiles)
@@ -83,6 +116,11 @@ void ProfileDisplay8::profileIndexChanged(int index)
 
         ui->labelTIDValue->setText(QString::number(profile.getTID()));
         ui->labelSIDValue->setText(QString::number(profile.getSID()));
+        tidInput->setValue(profile.getTID());
+        sidInput->setValue(profile.getSID());
+        const bool canEdit = idsEditable && savedProfiles[index];
+        tidInput->setEnabled(canEdit);
+        sidInput->setEnabled(canEdit);
         ui->labelGameValue->setText(QString::fromStdString(Translator::getGame(profile.getVersion())));
         ui->labelNationalDexValue->setText(profile.getNationalDex() ? tr("Yes") : tr("No"));
         ui->labelOvalCharmValue->setText(profile.getOvalCharm() ? tr("Yes") : tr("No"));
@@ -90,6 +128,26 @@ void ProfileDisplay8::profileIndexChanged(int index)
 
         emit profileChanged(profile);
     }
+}
+
+void ProfileDisplay8::updateIDs()
+{
+    const int index = ui->comboBoxProfiles->currentIndex();
+    if (!idsEditable || index < 0 || !savedProfiles[index]) return;
+
+    const Profile8 original = profiles[index];
+    const u16 tid = static_cast<u16>(tidInput->value());
+    const u16 sid = static_cast<u16>(sidInput->value());
+    if (tid == original.getTID() && sid == original.getSID()) return;
+
+    const Profile8 update(original.getName(), original.getVersion(), tid, sid, original.getNationalDex(), original.getOvalCharm(),
+                          original.getShinyCharm());
+    ProfileLoader8::updateProfile(update, original);
+    profiles[index] = update;
+    QSettings setting;
+    setting.setValue(settingKey.arg(prefix), index);
+    emit profileChanged(profiles[index]);
+    emit profilesChanged(8);
 }
 
 void ProfileDisplay8::profileManager()

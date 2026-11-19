@@ -25,15 +25,37 @@
 #include <Core/Util/Translator.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
 #include <QSettings>
+#include <QSpinBox>
 
 static const QString settingKey = QStringLiteral("%1/profile");
 
-ProfileDisplay5::ProfileDisplay5(QWidget *parent) : QWidget(parent), ui(new Ui::ProfileDisplay5)
+ProfileDisplay5::ProfileDisplay5(QWidget *parent) :
+    QWidget(parent), ui(new Ui::ProfileDisplay5), tidInput(nullptr), sidInput(nullptr), idsEditable(true)
 {
     ui->setupUi(this);
 
+    tidInput = new QSpinBox(this);
+    sidInput = new QSpinBox(this);
+
+    for (QSpinBox *input : { tidInput, sidInput })
+    {
+        input->setRange(0, 65535);
+        input->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        input->setFocusPolicy(Qt::StrongFocus);
+    }
+    ui->gridLayout->addWidget(tidInput, 0, 3);
+    ui->gridLayout->addWidget(sidInput, 1, 3);
+    ui->labelTIDValue->hide();
+    ui->labelSIDValue->hide();
+    setFocusProxy(ui->comboBoxProfiles);
+    setTabOrder(ui->comboBoxProfiles, tidInput);
+    setTabOrder(tidInput, sidInput);
+    setTabOrder(sidInput, ui->pushButtonProfileManager);
+
     connect(ui->comboBoxProfiles, &QComboBox::currentIndexChanged, this, &ProfileDisplay5::profileIndexChanged);
     connect(ui->pushButtonProfileManager, &QPushButton::clicked, this, &ProfileDisplay5::profileManager);
+    connect(tidInput, &QSpinBox::editingFinished, this, &ProfileDisplay5::updateIDs);
+    connect(sidInput, &QSpinBox::editingFinished, this, &ProfileDisplay5::updateIDs);
 }
 
 ProfileDisplay5::~ProfileDisplay5()
@@ -67,6 +89,15 @@ void ProfileDisplay5::setup(const QString &prefix, Game filter)
     this->filter = filter;
 }
 
+void ProfileDisplay5::setIDsEditable(bool enabled)
+{
+    idsEditable = enabled;
+    tidInput->setVisible(enabled);
+    sidInput->setVisible(enabled);
+    ui->labelTIDValue->setVisible(!enabled);
+    ui->labelSIDValue->setVisible(!enabled);
+}
+
 void ProfileDisplay5::updateProfiles()
 {
     profiles = ProfileLoader5::getProfiles(filter);
@@ -93,6 +124,10 @@ void ProfileDisplay5::profileIndexChanged(int index)
 
         ui->labelTIDValue->setText(QString::number(profile.getTID()));
         ui->labelSIDValue->setText(QString::number(profile.getSID()));
+        tidInput->setValue(profile.getTID());
+        sidInput->setValue(profile.getSID());
+        tidInput->setEnabled(idsEditable);
+        sidInput->setEnabled(idsEditable);
         ui->labelMACAddressValue->setText(QString::number(profile.getMac(), 16));
         ui->labelDSTypeValue->setText(QString::fromStdString(profile.getDSTypeString()));
         ui->labelVCountValue->setText(QString::number(profile.getVCount(), 16));
@@ -105,6 +140,29 @@ void ProfileDisplay5::profileIndexChanged(int index)
 
         emit profileChanged(profile);
     }
+}
+
+void ProfileDisplay5::updateIDs()
+{
+    const int index = ui->comboBoxProfiles->currentIndex();
+    if (!idsEditable || index < 0) return;
+
+    const Profile5 original = profiles[index];
+    const u16 tid = static_cast<u16>(tidInput->value());
+    const u16 sid = static_cast<u16>(sidInput->value());
+    if (tid == original.getTID() && sid == original.getSID()) return;
+
+    const Profile5 update(original.getName(), original.getVersion(), tid, sid, original.getIVCache(), original.getSHACache(),
+                          original.getMac(), original.getKeypresses(), original.getVCount(), original.getGxStat(), original.getVFrame(),
+                          original.getSkipLR(), original.getTimer0Min(), original.getTimer0Max(), original.getMemoryLink(),
+                          original.getShinyCharm(), original.getDSType(), original.getLanguage(), original.getNsPokemonReleased(),
+                          original.getOvalCharm());
+    ProfileLoader5::updateProfile(update, original);
+    profiles[index] = update;
+    QSettings setting;
+    setting.setValue(settingKey.arg(prefix), index);
+    emit profileChanged(profiles[index]);
+    emit profilesChanged(5);
 }
 
 void ProfileDisplay5::profileManager()

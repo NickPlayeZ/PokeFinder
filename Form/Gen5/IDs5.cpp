@@ -42,6 +42,7 @@ IDs5::IDs5(QWidget *parent) : QWidget(parent), ui(new Ui::IDs5)
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::Gen5);
+    ui->profileDisplay->setIDsEditable(false);
 
     model = new IDModel5(ui->tableView);
     ui->tableView->setModel(model);

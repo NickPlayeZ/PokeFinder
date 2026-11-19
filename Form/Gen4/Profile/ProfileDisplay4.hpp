@@ -24,6 +24,7 @@
 #include <QWidget>
 
 class Profile4;
+class QSpinBox;
 class QWidget;
 enum class Game : u32;
 
@@ -81,6 +82,11 @@ public:
     void setup(const QString &prefix, Game filter, Game defaultProfileVersion, bool defaultOnlyWhenEmpty);
 
     /**
+     * @brief Enables or disables editing TID and SID from the profile display
+     */
+    void setIDsEditable(bool enabled);
+
+    /**
      * @brief Reloads profiles
      */
     void updateProfiles();
@@ -110,10 +116,16 @@ private:
 
     QString prefix;
     std::vector<Profile4> profiles;
+    std::vector<bool> savedProfiles;
     Game filter;
+    QSpinBox *tidInput;
+    QSpinBox *sidInput;
+    bool idsEditable;
     bool includeDefaultProfile = true;
     Game defaultProfileVersion;
     bool defaultOnlyWhenEmpty = false;
+
+    void updateIDs();
 
 private slots:
     /**

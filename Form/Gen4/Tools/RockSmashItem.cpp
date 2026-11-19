@@ -195,6 +195,7 @@ RockSmashItem::RockSmashItem(QWidget *parent) : QWidget(parent), currentProfile(
     auto *root = new QVBoxLayout(this);
     profileDisplay = new ProfileDisplay4(this);
     profileDisplay->setup(settingPrefix, Game::HGSS, Game::HeartGold, true);
+    profileDisplay->setIDsEditable(false);
     root->addWidget(profileDisplay);
 
     auto *top = new QHBoxLayout;

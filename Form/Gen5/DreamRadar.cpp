@@ -82,6 +82,7 @@ DreamRadar::DreamRadar(QWidget *parent) : QWidget(parent), ui(new Ui::DreamRadar
     setAttribute(Qt::WA_QuitOnClose, false);
 
     ui->profileDisplay->setup(settingPrefix, Game::BW2);
+    ui->profileDisplay->setIDsEditable(false);
 
     generatorModel = new DreamRadarGeneratorModel5(ui->tableViewGenerator);
     ui->tableViewGenerator->setModel(generatorModel);
