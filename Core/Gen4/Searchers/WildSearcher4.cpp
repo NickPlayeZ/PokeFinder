@@ -549,8 +549,7 @@ WildSearcher4::WildSearcher4(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 m
     minDelay(minDelay),
     thresh(area.getRate()),
     feebas(area.feebasLocation(profile.getVersion())
-           && (area.getEncounter() == Encounter::OldRod || area.getEncounter() == Encounter::GoodRod
-               || area.getEncounter() == Encounter::SuperRod)),
+           && isAnyOf(area.getEncounter(), Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod)),
     feebasTile(feebasTile),
     safari(area.safariZone(profile.getVersion())),
     searchStepEncounter(searchStepEncounter),
@@ -561,8 +560,7 @@ WildSearcher4::WildSearcher4(u32 minAdvance, u32 maxAdvance, u32 minDelay, u32 m
 {
     if ((profile.getVersion() & Game::HGSS) != Game::None)
     {
-        if (area.getEncounter() == Encounter::OldRod || area.getEncounter() == Encounter::GoodRod
-            || area.getEncounter() == Encounter::SuperRod)
+        if (isAnyOf(area.getEncounter(), Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod))
         {
             thresh += happiness;
             if (lead == Lead::SuctionCups)
@@ -710,8 +708,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
 
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
     bool grass = area.getEncounter() == Encounter::Grass;
-    bool nibble = area.getEncounter() == Encounter::OldRod || area.getEncounter() == Encounter::GoodRod
-        || area.getEncounter() == Encounter::SuperRod;
+    bool nibble = isAnyOf(area.getEncounter(), Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod);
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
     for (u32 origin : seeds)
@@ -722,7 +719,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
         u8 itemRand = forward.nextUShort(100);
         u8 unownForm = area.unownForm(forward.nextUShort());
 
-        if (lead == Lead::CuteCharmF || lead == Lead::CuteCharmM)
+        if (isAnyOf(lead, Lead::CuteCharmF, Lead::CuteCharmM))
         {
             u8 nature = rng.nextUShort<false>(25);
             if (!filter.compareNature(nature))
@@ -1106,8 +1103,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
 
     std::array<u8, 6> ivs = { hp, atk, def, spa, spd, spe };
     bool grass = area.getEncounter() == Encounter::Grass;
-    bool nibble = area.getEncounter() == Encounter::RockSmash || area.getEncounter() == Encounter::OldRod
-        || area.getEncounter() == Encounter::GoodRod || area.getEncounter() == Encounter::SuperRod;
+    bool nibble = isAnyOf(area.getEncounter(), Encounter::RockSmash, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod);
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
     for (u32 origin : seeds)
@@ -1134,7 +1130,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
             }
         }
 
-        if (lead == Lead::CuteCharmF || lead == Lead::CuteCharmM)
+        if (isAnyOf(lead, Lead::CuteCharmF, Lead::CuteCharmM))
         {
             u8 nature = rng.nextUShort(25);
             if (!filter.compareNature(nature))
@@ -1392,7 +1388,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchHoneyTree(u8 hp, u8 atk, u8
 
     bool cuteCharm = false;
     u8 buffer = 0;
-    if ((lead == Lead::CuteCharmF || lead == Lead::CuteCharmM) && !info->getFixedGender())
+    if (isAnyOf(lead, Lead::CuteCharmF, Lead::CuteCharmM) && !info->getFixedGender())
     {
         cuteCharm = true;
         if (lead == Lead::CuteCharmF)
@@ -1402,7 +1398,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchHoneyTree(u8 hp, u8 atk, u8
     }
 
     auto seeds = LCRNGReverse::recoverPokeRNGIV(hp, atk, def, spa, spd, spe, Method::Method1);
-    for (u32 seed:seeds)
+    for (u32 seed : seeds)
     {
         PokeRNGR rng(seed);
         u16 item = getItem((PokeRNG(seed).advance(2) >> 16) % 100, lead, info);
@@ -1517,7 +1513,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchPokeRadar(u8 hp, u8 atk, u8
 
     u8 buffer = 0;
     bool cuteCharm = false;
-    if ((lead == Lead::CuteCharmF || lead == Lead::CuteCharmM) && !info->getFixedGender())
+    if (isAnyOf(lead, Lead::CuteCharmF, Lead::CuteCharmM) && !info->getFixedGender())
     {
         cuteCharm = true;
         if (lead == Lead::CuteCharmF)
@@ -1626,7 +1622,7 @@ std::vector<WildSearcherState4> WildSearcher4::searchPokeRadarShiny(u8 hp, u8 at
     const Slot &slot = area.getPokemon(index);
     const PersonalInfo *info = slot.getInfo();
 
-    bool cuteCharm = (lead == Lead::CuteCharmF || lead == Lead::CuteCharmM) && !info->getFixedGender();
+    bool cuteCharm = isAnyOf(lead, Lead::CuteCharmF, Lead::CuteCharmM) && !info->getFixedGender();
 
     auto cuteCharmCheck = [this](const PersonalInfo *info, u32 pid) {
         if (lead == Lead::CuteCharmF)

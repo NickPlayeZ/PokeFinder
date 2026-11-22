@@ -774,13 +774,12 @@ void Wild4::generatorEncounterIndexChanged(int index)
         u16 currentLocation = ui->comboBoxGeneratorLocation->getCurrentUShort();
 
         bool bug = encounter == Encounter::BugCatchingContest;
-        bool fish = encounter == Encounter::OldRod || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod;
+        bool fish = isAnyOf(encounter, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod);
         bool grass = encounter == Encounter::Grass;
         bool hgss = (currentProfile->getVersion() & Game::HGSS) != Game::None;
         generatorModel->setMethod(hgss ? Method::MethodK : Method::MethodJ);
         bool stepEncounter = encounter == Encounter::Grass || encounter == Encounter::Surfing || encounter == Encounter::BugCatchingContest;
-        bool swarm = encounter == Encounter::Grass || encounter == Encounter::Surfing || encounter == Encounter::OldRod
-            || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod;
+        bool swarm = isAnyOf(encounter, Encounter::Grass, Encounter::Surfing, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod);
         bool honey = encounter == Encounter::HoneyTree;
 
         ui->gridLayout_3->removeWidget(ui->checkBoxGeneratorSwarm);
@@ -963,13 +962,13 @@ void Wild4::generatorLocationIndexChanged(int index)
         {
             if ((currentProfile->getVersion() & Game::HGSS) != Game::None)
             {
-                bool time = encounter == Encounter::Grass || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod;
+                bool time = isAnyOf(encounter, Encounter::Grass, Encounter::GoodRod, Encounter::SuperRod);
                 ui->labelGeneratorTime->setVisible(time);
                 ui->comboBoxGeneratorTime->setVisible(time);
             }
         }
 
-        if (feebas && (encounter == Encounter::OldRod || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod))
+        if (feebas && isAnyOf(encounter, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod))
         {
             ui->checkBoxGeneratorFeebasTile->show();
         }
@@ -1184,14 +1183,13 @@ void Wild4::searcherEncounterIndexChanged(int index)
         u16 currentLocation = ui->comboBoxSearcherLocation->getCurrentUShort();
 
         bool bug = encounter == Encounter::BugCatchingContest;
-        bool fish = encounter == Encounter::OldRod || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod;
+        bool fish = isAnyOf(encounter, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod);
         bool grass = encounter == Encounter::Grass;
         bool hgss = (currentProfile->getVersion() & Game::HGSS) != Game::None;
         searcherModel->setMethod(hgss ? Method::MethodK : Method::MethodJ);
         searcherModel->setShowStepMovement(encounter != Encounter::Surfing);
         bool stepEncounter = encounter == Encounter::Grass || encounter == Encounter::Surfing || encounter == Encounter::BugCatchingContest;
-        bool swarm = encounter == Encounter::Grass || encounter == Encounter::Surfing || encounter == Encounter::OldRod
-            || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod;
+        bool swarm = isAnyOf(encounter, Encounter::Grass, Encounter::Surfing, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod);
         bool honey = encounter == Encounter::HoneyTree;
 
         ui->labelSearcherHappiness->setVisible(hgss && fish);
@@ -1352,12 +1350,12 @@ void Wild4::searcherLocationIndexChanged(int index)
         }
         else if ((currentProfile->getVersion() & Game::HGSS) == Game::None)
         {
-            bool time = encounter == Encounter::Grass || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod;
+            bool time = isAnyOf(encounter, Encounter::Grass, Encounter::GoodRod, Encounter::SuperRod);
             ui->labelSearcherTime->setVisible(time);
             ui->comboBoxSearcherTime->setVisible(time);
         }
 
-        if (feebas && (encounter == Encounter::OldRod || encounter == Encounter::GoodRod || encounter == Encounter::SuperRod))
+        if (feebas && isAnyOf(encounter, Encounter::OldRod, Encounter::GoodRod, Encounter::SuperRod))
         {
             ui->checkBoxSearcherFeebasTile->show();
         }
