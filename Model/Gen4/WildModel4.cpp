@@ -192,7 +192,11 @@ QVariant WildGeneratorModel4::data(const QModelIndex &index, int role) const
         case 3:
             return QString::fromStdString(Utilities4::getChatot(state.getChatot()));
         case 4:
-            return state.getStepEncounter() ? QVariant(static_cast<int>(state.getMovements())) : QVariant("-");
+            if (!state.getStepEncounter())
+            {
+                return "-";
+            }
+            return state.getStepCollision() ? QString("%1 !").arg(state.getMovements()) : QString::number(state.getMovements());
         case 5:
             return QString::fromStdString(Translator::getItem(state.getItem()));
         case 6:

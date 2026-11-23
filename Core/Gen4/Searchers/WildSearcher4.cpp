@@ -95,7 +95,7 @@ enum HGSSStepModifier : u8
 };
 
 static u16 modifyHGSSStepEncounterRate(u16 encounterRate, Lead lead, bool whiteFlute);
-static u16 getHGSSMovementRate(Encounter encounter, u8 movement, u8 radio);
+static u8 getHGSSMovementRate(Encounter encounter, u8 movement, u8 radio, u8 turnModifier);
 static u8 getStepMovements(u8 graceRatio, u16 encounterRate, Lead lead, bool whiteFlute);
 
 static bool getStepEncounter(u32 seed, u32 targetAdvance, u16 encounterRate, Lead lead, bool whiteFlute, bool fastMovement,
@@ -138,23 +138,22 @@ static bool getHGSSStepEncounter(u32 seed, u32 targetAdvance, u16 encounterRate,
         return false;
     }
 
-    u16 movementRate = getHGSSMovementRate(encounter, movement, radio);
-    if (movementRatio < movementRate)
+    if (movementRatio < getHGSSMovementRate(encounter, movement, radio, 0))
     {
         *movements = 3;
         return true;
     }
-    if (movementRatio < std::min<u16>(movementRate + 30, 100))
+    if (movementRatio < getHGSSMovementRate(encounter, movement, radio, 30))
     {
         *movements = 4;
         return true;
     }
-    if (movementRatio < std::min<u16>(movementRate + 40, 100))
+    if (movementRatio < getHGSSMovementRate(encounter, movement, radio, 40))
     {
         *movements = 5;
         return true;
     }
-    if (movementRatio < std::min<u16>(movementRate + 60, 100))
+    if (movementRatio < getHGSSMovementRate(encounter, movement, radio, 60))
     {
         *movements = 6;
         return true;
@@ -508,9 +507,9 @@ static u16 modifyHGSSStepEncounterRate(u16 encounterRate, Lead lead, bool whiteF
     return std::min<u16>(encounterRate, 100);
 }
 
-static u16 getHGSSMovementRate(Encounter encounter, u8 movement, u8 radio)
+static u8 getHGSSMovementRate(Encounter encounter, u8 movement, u8 radio, u8 turnModifier)
 {
-    u16 movementRate;
+    u8 movementRate;
     switch (movement)
     {
     case 1:
@@ -534,16 +533,17 @@ static u16 getHGSSMovementRate(Encounter encounter, u8 movement, u8 radio)
         break;
     }
 
+    movementRate = static_cast<u8>(movementRate + turnModifier);
     if (radio == 4)
     {
-        movementRate += 25;
+        movementRate = static_cast<u8>(movementRate + 25);
     }
     else if (radio == 5)
     {
-        movementRate -= 25;
+        movementRate = static_cast<u8>(movementRate - 25);
     }
 
-    return std::min<u16>(movementRate, 100);
+    return std::min<u8>(movementRate, 100);
 }
 
 static constexpr bool isSynchronizeLead(Lead lead)

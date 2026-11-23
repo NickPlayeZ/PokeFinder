@@ -457,6 +457,7 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     connect(ui->checkBoxGeneratorStepEncounter, &QCheckBox::checkStateChanged, this, [=](Qt::CheckState state) {
         generatorModel->setShowStepEncounter(state == Qt::Checked);
         ui->checkBoxGeneratorWhiteFlute->setEnabled(state == Qt::Checked);
+        ui->checkBoxGeneratorSwitch->setEnabled(state == Qt::Checked);
         ui->labelGeneratorMovement->setEnabled(state == Qt::Checked);
         ui->comboBoxGeneratorMovement->setEnabled(state == Qt::Checked);
         ui->labelGeneratorDateModifier->setEnabled(state == Qt::Checked);
@@ -464,7 +465,14 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
         if (state != Qt::Checked)
         {
             ui->checkBoxGeneratorWhiteFlute->setChecked(false);
+            ui->checkBoxGeneratorSwitch->setChecked(false);
         }
+        if (generatorModel->rowCount() > 0)
+        {
+            generate();
+        }
+    });
+    connect(ui->checkBoxGeneratorSwitch, &QCheckBox::checkStateChanged, this, [=] {
         if (generatorModel->rowCount() > 0)
         {
             generate();
@@ -846,6 +854,7 @@ void Wild4::generate()
     u8 happiness = ui->comboBoxGeneratorHappiness->getCurrentUChar();
     bool searchStepEncounter = ui->checkBoxGeneratorStepEncounter->isChecked();
     bool whiteFlute = ui->checkBoxGeneratorWhiteFlute->isChecked();
+    bool switchStepEncounter = ui->checkBoxGeneratorSwitch->isChecked();
     u8 movement = ui->comboBoxGeneratorMovement->getCurrentUChar();
     bool fastMovement = movement == Biking || movement == WalkingLongGrass || movement == RunningLongGrass;
     s8 dateModifier = static_cast<s8>(ui->comboBoxGeneratorDateModifier->getCurrentInt());
@@ -855,8 +864,9 @@ void Wild4::generate()
 
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
     WildGenerator4 generator(initialAdvances, maxAdvances, offset, method, lead, feebasTile, chained, unownRadio, happiness,
-                             searchStepEncounter, whiteFlute, fastMovement, dateModifier, movement, radio, rockSmashPokemon, leadLevel,
-                             encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
+                             searchStepEncounter, whiteFlute, switchStepEncounter, fastMovement, dateModifier, movement, radio,
+                             rockSmashPokemon, leadLevel, encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()],
+                             *currentProfile, filter);
 
     auto states = generator.generate(seed, fixedSlot);
     if (ui->filterGenerator->hasActiveFilters(encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount()))
@@ -978,6 +988,8 @@ void Wild4::generatorEncounterIndexChanged(int index)
         ui->checkBoxGeneratorStepEncounter->setVisible(stepEncounter);
         ui->checkBoxGeneratorWhiteFlute->setVisible(stepEncounter);
         ui->checkBoxGeneratorWhiteFlute->setEnabled(ui->checkBoxGeneratorStepEncounter->isChecked());
+        ui->checkBoxGeneratorSwitch->setVisible(!hgss && stepEncounter);
+        ui->checkBoxGeneratorSwitch->setEnabled(ui->checkBoxGeneratorStepEncounter->isChecked());
         ui->labelGeneratorMovement->setVisible(stepEncounter && encounter != Encounter::Surfing);
         ui->comboBoxGeneratorMovement->setVisible(stepEncounter && encounter != Encounter::Surfing);
         ui->labelGeneratorMovement->setEnabled(ui->checkBoxGeneratorStepEncounter->isChecked() && ui->labelGeneratorMovement->isVisible());
@@ -993,6 +1005,8 @@ void Wild4::generatorEncounterIndexChanged(int index)
             ui->checkBoxGeneratorStepEncounter->setChecked(false);
             ui->checkBoxGeneratorWhiteFlute->setChecked(false);
             ui->checkBoxGeneratorWhiteFlute->setEnabled(false);
+            ui->checkBoxGeneratorSwitch->setChecked(false);
+            ui->checkBoxGeneratorSwitch->setEnabled(false);
             ui->labelGeneratorMovement->setEnabled(false);
             ui->comboBoxGeneratorMovement->setEnabled(false);
             ui->labelGeneratorDateModifier->setEnabled(false);

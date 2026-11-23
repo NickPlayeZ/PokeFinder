@@ -384,10 +384,17 @@
             </property>
            </widget>
           </item>
-          <item row="7" column="2" colspan="2">
+          <item row="7" column="2">
            <widget class="QCheckBox" name="checkBoxGeneratorWhiteFlute">
             <property name="text">
              <string>White Flute</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="3">
+           <widget class="QCheckBox" name="checkBoxGeneratorSwitch">
+            <property name="text">
+             <string>Swap ! Steps</string>
             </property>
            </widget>
           </item>

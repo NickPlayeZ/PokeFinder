@@ -49,13 +49,15 @@ public:
      */
     WildGeneratorState4(u16 prng, u32 battleAdvances, u32 advances, u32 pid, const std::array<u8, 6> &ivs, u8 ability, u8 gender, u8 level,
                         u8 nature, u8 shiny, u8 encounterSlot, u16 item, u16 specie, u8 form, const PersonalInfo *info,
-                        bool valid = true, bool stepEncounter = false, u8 movements = 0, u8 movementRatio = 0, u8 encounterRatio = 0) :
+                        bool valid = true, bool stepEncounter = false, u8 movements = 0, u8 movementRatio = 0, u8 encounterRatio = 0,
+                        bool stepCollision = false) :
         WildGeneratorState(advances, pid, ivs, ability, gender, level, nature, shiny, encounterSlot, item, specie, form, info, valid),
         battleAdvances(battleAdvances),
         call(prng % 3),
         chatot(((prng % 8192) * 100) >> 13),
         stepEncounter(stepEncounter),
         movements(movements),
+        stepCollision(stepCollision),
         movementRatio(movementRatio),
         encounterRatio(encounterRatio)
     {
@@ -111,6 +113,16 @@ public:
         return movements;
     }
 
+    /**
+     * @brief Returns whether both the grace and no-grace paths produce an encounter on this advance
+     *
+     * @return Step encounter path collision
+     */
+    bool getStepCollision() const
+    {
+        return stepCollision;
+    }
+
     u8 getMovementRatio() const
     {
         return movementRatio;
@@ -127,6 +139,7 @@ private:
     u8 chatot;
     bool stepEncounter;
     u8 movements;
+    bool stepCollision;
     u8 movementRatio;
     u8 encounterRatio;
 };

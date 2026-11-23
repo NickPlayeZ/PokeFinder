@@ -100,13 +100,8 @@ static bool getStepEncounter(u8 movementRatio, u8 encounterRatio, u16 encounterR
     return movementRatio < movementRate && encounterRatio < encounterRate;
 }
 
-static u8 getStepMovements(u8 graceRatio, u16 encounterRate, Lead lead, bool whiteFlute)
+static u8 getStepMovements(u16 encounterRate, Lead lead, bool whiteFlute)
 {
-    if (graceRatio < 5)
-    {
-        return 0;
-    }
-
     if (isStepModifier(lead))
     {
         encounterRate *= 2;
@@ -139,9 +134,9 @@ static u16 modifyHGSSStepEncounterRate(u16 encounterRate, Lead lead, bool whiteF
     return std::min<u16>(encounterRate, 100);
 }
 
-static u16 getHGSSMovementRate(Encounter encounter, u8 movement, u8 radio)
+static u8 getHGSSMovementRate(Encounter encounter, u8 movement, u8 radio, u8 turnModifier)
 {
-    u16 movementRate;
+    u8 movementRate;
     switch (movement)
     {
     case 1: // Running
@@ -165,16 +160,17 @@ static u16 getHGSSMovementRate(Encounter encounter, u8 movement, u8 radio)
         break;
     }
 
+    movementRate = static_cast<u8>(movementRate + turnModifier);
     if (radio == 4)
     {
-        movementRate += 25;
+        movementRate = static_cast<u8>(movementRate + 25);
     }
     else if (radio == 5)
     {
-        movementRate -= 25;
+        movementRate = static_cast<u8>(movementRate - 25);
     }
 
-    return std::min<u16>(movementRate, 100);
+    return std::min<u8>(movementRate, 100);
 }
 
 static u8 getHGSSStepMovements(u8 movementRatio, u8 encounterRatio, u16 encounterRate, Encounter encounter, Lead lead, bool whiteFlute,
@@ -186,20 +182,19 @@ static u8 getHGSSStepMovements(u8 movementRatio, u8 encounterRatio, u16 encounte
         return 0xff;
     }
 
-    u16 movementRate = getHGSSMovementRate(encounter, movement, radio);
-    if (movementRatio < movementRate)
+    if (movementRatio < getHGSSMovementRate(encounter, movement, radio, 0))
     {
         return 3;
     }
-    if (movementRatio < std::min<u16>(movementRate + 30, 100))
+    if (movementRatio < getHGSSMovementRate(encounter, movement, radio, 30))
     {
         return 4;
     }
-    if (movementRatio < std::min<u16>(movementRate + 40, 100))
+    if (movementRatio < getHGSSMovementRate(encounter, movement, radio, 40))
     {
         return 5;
     }
-    if (movementRatio < std::min<u16>(movementRate + 60, 100))
+    if (movementRatio < getHGSSMovementRate(encounter, movement, radio, 60))
     {
         return 6;
     }
@@ -351,15 +346,16 @@ static u16 getRockSmashItem(u8 location, Game version, Lead lead, bool rockSmash
 }
 
 WildGenerator4::WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, bool feebasTile, bool shiny,
-                               bool unownRadio, u8 happiness, bool searchStepEncounter, bool whiteFlute, bool fastMovement, s8 dateModifier,
-                               u8 movement, u8 radio, bool rockSmashPokemon, u8 leadLevel, const EncounterArea4 &area, const Profile4 &profile,
-                               const WildStateFilter &filter) :
+                               bool unownRadio, u8 happiness, bool searchStepEncounter, bool whiteFlute, bool switchStepEncounter,
+                               bool fastMovement, s8 dateModifier, u8 movement, u8 radio, bool rockSmashPokemon, u8 leadLevel,
+                               const EncounterArea4 &area, const Profile4 &profile, const WildStateFilter &filter) :
     WildGenerator(initialAdvances, maxAdvances, offset, method, lead, area, profile, filter),
     feebasTile(feebasTile),
     shiny(shiny),
     unownRadio(unownRadio),
     searchStepEncounter(searchStepEncounter),
     whiteFlute(whiteFlute),
+    switchStepEncounter(switchStepEncounter),
     fastMovement(fastMovement),
     rockSmashPokemon(rockSmashPokemon),
     dateModifier(dateModifier),
@@ -373,8 +369,8 @@ WildGenerator4::WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset,
 WildGenerator4::WildGenerator4(u32 initialAdvances, u32 maxAdvances, u32 offset, Method method, Lead lead, bool feebasTile, bool shiny,
                                bool unownRadio, u8 happiness, const EncounterArea4 &area, const Profile4 &profile,
                                const WildStateFilter &filter) :
-    WildGenerator4(initialAdvances, maxAdvances, offset, method, lead, feebasTile, shiny, unownRadio, happiness, false, false, false, 0, 0, 0,
-                   false, 0, area, profile, filter)
+    WildGenerator4(initialAdvances, maxAdvances, offset, method, lead, feebasTile, shiny, unownRadio, happiness, false, false, false, false,
+                   0, 0, 0, false, 0, area, profile, filter)
 {
 }
 
@@ -414,17 +410,29 @@ std::vector<WildGeneratorState4> WildGenerator4::generateMethodJ(u32 seed) const
         PokeRNG go(seed, payloadAdvance);
         bool valid = true;
         bool stepEncounter = false;
+        bool stepCollision = false;
         u8 movements = 0;
         if (searchStepEncounter)
         {
-            PokeRNG movementRNG(seed, targetAdvance);
-            PokeRNG encounterRNG(seed, targetAdvance + 1);
-            // During the DPPt grace period, a 5% roll immediately before the normal encounter rolls can bypass the setup movements.
-            u8 graceRatio = static_cast<u8>((movementRNG.getSeed() >> 16) / 0x290);
-            u8 movementRatio = movementRNG.nextUShort() / 0x290;
-            u8 encounterRatio = encounterRNG.nextUShort() / 0x290;
-            stepEncounter = getStepEncounter(movementRatio, encounterRatio, area.getRate(), lead, whiteFlute, fastMovement, dateModifier);
-            movements = getStepMovements(graceRatio, area.getRate(), lead, whiteFlute);
+            PokeRNG stepRNG(seed, targetAdvance);
+            u8 noGraceMovementRatio = stepRNG.nextUShort() / 0x290;
+            u8 noGraceEncounterRatio = stepRNG.nextUShort() / 0x290;
+            u8 graceEncounterRatio = stepRNG.nextUShort() / 0x290;
+
+            u8 requiredMovements = getStepMovements(area.getRate(), lead, whiteFlute);
+            bool noGraceEncounter = getStepEncounter(noGraceMovementRatio, noGraceEncounterRatio, area.getRate(), lead, whiteFlute,
+                                                     fastMovement, dateModifier);
+            bool graceEncounter = requiredMovements != 0 && noGraceMovementRatio < 5
+                && getStepEncounter(noGraceEncounterRatio, graceEncounterRatio, area.getRate(), lead, whiteFlute, fastMovement,
+                                    dateModifier);
+
+            stepCollision = noGraceEncounter && graceEncounter;
+            bool useNoGraceEncounter = noGraceEncounter && (switchStepEncounter || !graceEncounter);
+            stepEncounter = useNoGraceEncounter || graceEncounter;
+            movements = useNoGraceEncounter ? requiredMovements : 0;
+            payloadAdvance = targetAdvance + (useNoGraceEncounter ? 2 : 3);
+            battleAdvances = battleAdvancesConst + payloadAdvance;
+            go = PokeRNG(seed, payloadAdvance);
             valid = stepEncounter;
         }
 
@@ -537,7 +545,7 @@ std::vector<WildGeneratorState4> WildGenerator4::generateMethodJ(u32 seed) const
 
         WildGeneratorState4 state(rng.nextUShort(), battleAdvances, initialAdvances + cnt, pid, ivs, pid & 1,
                                   Utilities::getGender(pid, info), level, nature, Utilities::getShiny<true>(pid, tsv), encounterSlot, item,
-                                  slot.getSpecie(), form, info, valid, stepEncounter, movements);
+                                  slot.getSpecie(), form, info, valid, stepEncounter, movements, 0, 0, stepCollision);
         if (!valid || filter.compare(static_cast<const WildGeneratorState &>(state)))
         {
             states.emplace_back(state);

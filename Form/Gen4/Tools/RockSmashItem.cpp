@@ -366,7 +366,7 @@ void RockSmashItem::search()
     {
         generators.emplace_back(selected,
                                 WildGenerator4(initial, maxAdvance->getUInt() - initial, 0, Method::MethodK, selected, false, false, false, 0,
-                                               false, false, false, 0, 0, 0, rockSmashPokemon->isChecked(), 0, *found, *currentProfile,
+                                               false, false, false, false, 0, 0, 0, rockSmashPokemon->isChecked(), 0, *found, *currentProfile,
                                                unfiltered()));
     }
     auto *searcher = new ItemSearcher(minDelay->getUInt(), maxDelay->getUInt(), item->getCurrentUShort(), amount->value(), generators);
