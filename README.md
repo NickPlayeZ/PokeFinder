@@ -32,6 +32,8 @@ Gen 5
 - added Pickup RNG support
 - added Step Encounter RNG support (Wild RNG without Sweet Scent / Honey)
 - expanded Phenomena RNG support to include multi item search and full location prediction
+- added White Forest / Black City NPCs to TID/SID RNG
+- added White Forest Pokémon and Item RNG
 - added Wild Swarm RNG support
 - Hidden Grotto item searcher now lets you search for multiple items within the selected Advance range; very useful for PP Max farming
 - added multi lead search, so users don’t have to search using at most 1 lead at a time, but can now select any number of leads to search with at once

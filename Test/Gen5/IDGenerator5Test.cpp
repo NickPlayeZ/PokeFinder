@@ -69,3 +69,35 @@ void IDGenerator5Test::generate()
         QVERIFY(state == j[i]);
     }
 }
+
+void IDGenerator5Test::generateResidents()
+{
+    Profile5 profile("-", Game::White, 12345, 54321, "", "", 0,
+                     { false, false, false, false, false, false, false, false, false }, 0, 0, 0, false, 0, 0, false,
+                     false, DSType::DS, Language::English);
+
+    IDFilter filter({ }, { }, { }, { }, { }, { });
+    IDGenerator5 generator(0, 0, 0, false, false, profile, filter, {}, {}, true);
+
+    const auto states = generator.generate(0x844171e3c8952bb5);
+    QCOMPARE(states.size(), 1);
+    QCOMPARE(states[0].getAdvances(), 32);
+    QCOMPARE(states[0].getTID(), 32676);
+    QCOMPARE(states[0].getSID(), 14901);
+
+    const std::array<u8, 10> residents = { 25, 22, 28, 15, 23, 18, 4, 5, 0, 24 };
+    const std::array<u8, 3> entralinkResidents = { 12, 10, 16 };
+    QVERIFY(states[0].getResidents() == residents);
+    QVERIFY(states[0].getEntralinkResidents() == entralinkResidents);
+
+    const auto secondStates = generator.generate(0xf4e21772f04081d0);
+    QCOMPARE(secondStates.size(), 1);
+    QCOMPARE(secondStates[0].getAdvances(), 28);
+    QCOMPARE(secondStates[0].getTID(), 11407);
+    QCOMPARE(secondStates[0].getSID(), 57293);
+
+    const std::array<u8, 10> secondResidents = { 15, 22, 16, 5, 7, 23, 0, 18, 12, 21 };
+    const std::array<u8, 3> secondEntralinkResidents = { 20, 28, 6 };
+    QVERIFY(secondStates[0].getResidents() == secondResidents);
+    QVERIFY(secondStates[0].getEntralinkResidents() == secondEntralinkResidents);
+}

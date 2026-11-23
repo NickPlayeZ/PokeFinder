@@ -187,6 +187,9 @@ add_library(PokeFinderCore STATIC
     Gen5/Generators/StaticGenerator5.hpp
     Gen5/Generators/WildGenerator5.cpp
     Gen5/Generators/WildGenerator5.hpp
+    Gen5/Generators/WhiteForestGenerator.cpp
+    Gen5/Generators/WhiteForestGenerator.hpp
+    Gen5/WhiteForestData.hpp
     Gen5/HiddenGrottoArea.cpp
     Gen5/HiddenGrottoArea.hpp
     Gen5/IVCache.cpp

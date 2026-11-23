@@ -22,6 +22,7 @@
 
 #include <Core/Global.hpp>
 #include <QDialog>
+#include <array>
 
 namespace Ui
 {
@@ -30,6 +31,7 @@ namespace Ui
 
 class ProfileSearcherState5;
 class Profile5;
+class QPushButton;
 enum class DSType : u8;
 enum class Game : u32;
 enum class Language : u8;
@@ -82,7 +84,13 @@ public:
     Profile5 getProfile();
 
 private:
+    void editWhiteForestResidents();
+    void showWhiteForestResidentInfo();
+
     Ui::ProfileEditor5 *ui;
+    QPushButton *residentButton;
+    QPushButton *residentInfoButton;
+    std::array<u8, 10> whiteForestResidents { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
 
 private slots:
     /**

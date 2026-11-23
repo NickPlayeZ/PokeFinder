@@ -57,6 +57,7 @@
 #include <Form/Gen5/Tools/AdjacentSeeds.hpp>
 #include <Form/Gen5/Tools/IVCacheFinder.hpp>
 #include <Form/Gen5/Tools/SHA1CacheFinder.hpp>
+#include <Form/Gen5/Tools/WhiteForest.hpp>
 #include <Form/Gen5/Wild5.hpp>
 #include <Form/Gen8/Eggs8.hpp>
 #include <Form/Gen8/Event8.hpp>
@@ -130,6 +131,7 @@ MainWindow::MainWindow(bool profile, QWidget *parent) : QMainWindow(parent), ui(
     connect(ui->actionProfileCalibrator, &QAction::triggered, this, &MainWindow::openProfileCalibrator);
     connect(ui->actionProfileManager5, &QAction::triggered, this, &MainWindow::openProfileManager5);
     connect(ui->actionSHA1Cache, &QAction::triggered, this, &MainWindow::openSHA1CacheFinder);
+    connect(ui->actionWhiteForest, &QAction::triggered, this, &MainWindow::openWhiteForest);
 
     connect(ui->pushButtonEgg8, &QPushButton::clicked, this, &MainWindow::openEgg8);
     connect(ui->pushButtonEvent8, &QPushButton::clicked, this, &MainWindow::openEvent8);
@@ -728,6 +730,25 @@ void MainWindow::openSHA1CacheFinder() const
     {
         connect(window, &SHA1CacheFinder::profilesChanged, this, &MainWindow::updateProfiles);
         connect(this, &MainWindow::profilesChanged5, window, &SHA1CacheFinder::updateProfiles);
+        window->show();
+        window->raise();
+    }
+}
+
+void MainWindow::openWhiteForest() const
+{
+    auto *window = new WhiteForest();
+    if (!window->hasProfiles())
+    {
+        QMessageBox msg(QMessageBox::Warning, tr("No White profiles found"),
+                        tr("Create a Pokémon White profile in the Gen 5 Profile Manager first."));
+        msg.exec();
+        window->close();
+    }
+    else
+    {
+        connect(window, &WhiteForest::profilesChanged, this, &MainWindow::updateProfiles);
+        connect(this, &MainWindow::profilesChanged5, window, &WhiteForest::updateProfiles);
         window->show();
         window->raise();
     }

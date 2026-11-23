@@ -34,6 +34,12 @@ class QStandardItemModel;
 class CheckList : public QComboBox
 {
     Q_OBJECT
+signals:
+    /**
+     * @brief Emitted when a user changes the checked items
+     */
+    void checksChanged();
+
 public:
     /**
      * @brief Construct a new CheckList object
@@ -139,6 +145,13 @@ public:
      * @return Vector of checked data
      */
     std::vector<u16> getExplicitCheckedData() const;
+
+    /**
+     * @brief Sets the checked items by their assigned data
+     *
+     * @param data Data values whose items should be checked
+     */
+    void setCheckedData(const std::vector<u16> &data);
 
     /**
      * @brief Determines the current check state of the check boxes

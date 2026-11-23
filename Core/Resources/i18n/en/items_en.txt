@@ -2,6 +2,13 @@
 2,Ultra Ball
 3,Great Ball
 4,Poké Ball
+6,Net Ball
+7,Dive Ball
+8,Nest Ball
+9,Repeat Ball
+10,Timer Ball
+11,Luxury Ball
+15,Quick Ball
 17,Potion
 18,Antidote
 23,Full Restore
@@ -10,6 +17,7 @@
 27,Full Heal
 28,Revive
 29,Max Revive
+30,Fresh Water
 33,Moomoo Milk
 38,Ether
 39,Max Ether
@@ -20,6 +28,8 @@
 50,Rare Candy
 51,PP Up
 53,PP Max
+63,Poké Doll
+64,Fluffy Tail
 72,Red Shard
 73,Blue Shard
 74,Yellow Shard

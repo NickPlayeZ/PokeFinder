@@ -70,33 +70,80 @@
        <widget class="TextBox" name="textBoxSID"/>
       </item>
       <item row="3" column="0">
+       <widget class="QCheckBox" name="checkBoxResidents">
+        <property name="text">
+         <string>Forest/City Residents</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="CheckList" name="comboMenuResidents">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelEntralinkResidents">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Entralink Residents</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="CheckList" name="comboMenuEntralinkResidents">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2" rowspan="2">
+       <widget class="QPushButton" name="pushButtonResidentInfo">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Resident Info</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
        <widget class="QLabel" name="labelDateTime">
         <property name="text">
          <string>Start/End Date</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="5" column="1">
        <widget class="DateEdit" name="dateEditStart"/>
       </item>
-      <item row="3" column="2">
+      <item row="5" column="2">
        <widget class="DateEdit" name="dateEditEnd"/>
       </item>
-      <item row="4" column="0">
+      <item row="6" column="0">
        <widget class="QLabel" name="labelMaxFrame">
         <property name="text">
          <string>Max Advances</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
+      <item row="6" column="1">
        <widget class="TextBox" name="textBoxMaxAdvances">
         <property name="text">
          <string notr="true">100</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="0" colspan="3">
+      <item row="7" column="0" colspan="3">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
          <widget class="QPushButton" name="pushButtonSearch">
@@ -211,6 +258,13 @@
        </widget>
       </item>
       <item row="6" column="0" colspan="3">
+       <widget class="QCheckBox" name="checkBoxSeedFinderResidents">
+        <property name="text">
+         <string>Show Forest/City Residents</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0" colspan="3">
        <widget class="QPushButton" name="pushButtonFind">
         <property name="text">
          <string>Find</string>
@@ -250,6 +304,11 @@
    <extends>QDateEdit</extends>
    <header>Form/Controls/DateEdit.hpp</header>
   </customwidget>
+  <customwidget>
+   <class>CheckList</class>
+   <extends>QComboBox</extends>
+   <header>Form/Controls/CheckList.hpp</header>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>checkBoxPID</tabstop>
@@ -259,6 +318,10 @@
   <tabstop>textBoxTID</tabstop>
   <tabstop>checkBoxSID</tabstop>
   <tabstop>textBoxSID</tabstop>
+  <tabstop>checkBoxResidents</tabstop>
+  <tabstop>comboMenuResidents</tabstop>
+  <tabstop>comboMenuEntralinkResidents</tabstop>
+  <tabstop>pushButtonResidentInfo</tabstop>
   <tabstop>dateEditStart</tabstop>
   <tabstop>dateEditEnd</tabstop>
   <tabstop>textBoxMaxAdvances</tabstop>
@@ -271,6 +334,7 @@
   <tabstop>textBoxTimer0Min</tabstop>
   <tabstop>textBoxTimer0Max</tabstop>
   <tabstop>textBoxSeedFinderMaxAdvances</tabstop>
+  <tabstop>checkBoxSeedFinderResidents</tabstop>
   <tabstop>pushButtonFind</tabstop>
   <tabstop>tableView</tabstop>
  </tabstops>

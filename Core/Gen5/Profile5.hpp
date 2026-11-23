@@ -58,7 +58,8 @@ public:
      */
     Profile5(const std::string &name, Game version, u16 tid, u16 sid, const std::string &ivCache, const std::string &shaCache, u64 mac,
              const std::array<bool, 9> &keypresses, u8 vcount, u8 gxstat, u8 vframe, bool skipLR, u16 timer0Min, u16 timer0Max,
-             bool memoryLink, bool shinyCharm, DSType dsType, Language language, bool nsPokemonReleased = false, bool ovalCharm = false) :
+             bool memoryLink, bool shinyCharm, DSType dsType, Language language, bool nsPokemonReleased = false, bool ovalCharm = false,
+             const std::array<u8, 10> &whiteForestResidents = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 }) :
         Profile(name, version, tid, sid),
         ivCache(ivCache),
         shaCache(shaCache),
@@ -75,8 +76,14 @@ public:
         keypresses(keypresses),
         gxstat(gxstat),
         vcount(vcount),
-        vframe(vframe)
+        vframe(vframe),
+        whiteForestResidents(whiteForestResidents)
     {
+    }
+
+    std::array<u8, 10> getWhiteForestResidents() const
+    {
+        return whiteForestResidents;
     }
 
     /**
@@ -296,6 +303,7 @@ private:
     u8 gxstat;
     u8 vcount;
     u8 vframe;
+    std::array<u8, 10> whiteForestResidents;
 };
 
 #endif // PROFILE5_HPP

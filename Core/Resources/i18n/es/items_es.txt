@@ -2,6 +2,13 @@
 2,Ultra Ball
 3,Super Ball
 4,Poké Ball
+6,Malla Ball
+7,Buceo Ball
+8,Nido Ball
+9,Acopio Ball
+10,Turno Ball
+11,Lujo Ball
+15,Veloz Ball
 17,Poción
 18,Antídoto
 23,Restau. Todo
@@ -10,6 +17,7 @@
 27,Cura Total
 28,Revivir
 29,Revivir Máximo
+30,Agua Fresca
 33,Leche Mu-mu
 38,Éter
 39,Éter Máx.
@@ -20,6 +28,8 @@
 50,Caramelo Raro
 51,Más PP
 53,PP Máximos
+63,Poké Muñeco
+64,Cola Skitty
 72,Parte Roja
 73,Parte Azul
 74,Parte Amarilla

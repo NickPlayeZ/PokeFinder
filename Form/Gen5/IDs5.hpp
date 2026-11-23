@@ -20,10 +20,14 @@
 #ifndef IDS5_HPP
 #define IDS5_HPP
 
+#include <Core/Global.hpp>
+#include <QPointer>
 #include <QWidget>
+#include <vector>
 
 class IDModel5;
 class Profile5;
+class QTableWidget;
 
 namespace Ui
 {
@@ -74,6 +78,12 @@ private:
 
     IDModel5 *model;
     const Profile5 *currentProfile;
+    std::vector<u16> residentSelection;
+    std::vector<u16> entralinkResidentSelection;
+    std::vector<QPointer<QTableWidget>> residentInfoTables;
+    bool updatingResidents;
+
+    void updateResidentInfoMarks();
 
 private slots:
     /**
@@ -90,6 +100,10 @@ private slots:
      * @brief Searches and displays results
      */
     void search();
+
+    void showResidentInfo();
+
+    void updateResidentSelection(bool entralink);
 
     /**
      * @brief Toggles whether or not the XOR check controls are enabled

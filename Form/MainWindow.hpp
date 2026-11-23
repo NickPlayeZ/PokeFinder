@@ -336,6 +336,8 @@ private slots:
      */
     void openSHA1CacheFinder() const;
 
+    void openWhiteForest() const;
+
     // Gen 8
     /**
      * @brief Opens the Den Map window

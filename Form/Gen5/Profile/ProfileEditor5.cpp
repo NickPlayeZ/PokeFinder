@@ -26,9 +26,23 @@
 #include <Core/Gen5/Profile5.hpp>
 #include <Core/Gen5/SHA1Cache.hpp>
 #include <Core/Gen5/States/ProfileSearcherState5.hpp>
+#include <Core/Gen5/WhiteForestData.hpp>
+#include <Core/Util/Translator.hpp>
 #include <Form/Gen5/Profile/ProfileCalibrator5.hpp>
+#include <QAbstractItemView>
+#include <QColor>
+#include <QComboBox>
+#include <QDialogButtonBox>
 #include <QFileDialog>
+#include <QGridLayout>
 #include <QMessageBox>
+#include <QPalette>
+#include <QPushButton>
+#include <QSettings>
+#include <QSignalBlocker>
+#include <QTableWidget>
+#include <QVBoxLayout>
+#include <QLabel>
 
 ProfileEditor5::ProfileEditor5(QWidget *parent) : QDialog(parent), ui(new Ui::ProfileEditor5)
 {
@@ -51,6 +65,11 @@ ProfileEditor5::ProfileEditor5(QWidget *parent) : QDialog(parent), ui(new Ui::Pr
     ui->comboBoxLanguage->setup({ toInt(Language::English), toInt(Language::Spanish), toInt(Language::French), toInt(Language::Italian),
                                   toInt(Language::German), toInt(Language::Japanese), toInt(Language::Korean) });
 
+    residentButton = new QPushButton(tr("Residents"), this);
+    residentInfoButton = new QPushButton(tr("Resident Info"), this);
+    ui->gridLayout->addWidget(residentButton, 0, 7);
+    ui->gridLayout->addWidget(residentInfoButton, 1, 7);
+
     connect(ui->pushButtonOkay, &QPushButton::clicked, this, &ProfileEditor5::okay);
     connect(ui->pushButtonCancel, &QPushButton::clicked, this, &ProfileEditor5::reject);
     connect(ui->pushButtonFindParameters, &QPushButton::clicked, this, &ProfileEditor5::findParameters);
@@ -59,6 +78,8 @@ ProfileEditor5::ProfileEditor5(QWidget *parent) : QDialog(parent), ui(new Ui::Pr
     connect(ui->pushButtonSelectSHACache, &QPushButton::clicked, this, &ProfileEditor5::selectSHACache);
     connect(ui->pushButtonClearIVCache, &QPushButton::clicked, this, &ProfileEditor5::clearIVCache);
     connect(ui->pushButtonClearSHACache, &QPushButton::clicked, this, &ProfileEditor5::clearSHACache);
+    connect(residentButton, &QPushButton::clicked, this, &ProfileEditor5::editWhiteForestResidents);
+    connect(residentInfoButton, &QPushButton::clicked, this, &ProfileEditor5::showWhiteForestResidentInfo);
     connect(ui->checkBoxMemoryLink, &QCheckBox::toggled, this, [this](bool checked) {
         ui->checkBoxNsPokemonReleased->setEnabled(checked);
         if (!checked)
@@ -102,6 +123,7 @@ ProfileEditor5::ProfileEditor5(const Profile5 &profile, QWidget *parent) : Profi
     ui->checkBoxNsPokemonReleased->setChecked(profile.getMemoryLink() && profile.getNsPokemonReleased());
     ui->checkBoxOvalCharm->setChecked(profile.getOvalCharm());
     ui->checkBoxShinyCharm->setChecked(profile.getShinyCharm());
+    whiteForestResidents = profile.getWhiteForestResidents();
 }
 
 ProfileEditor5::ProfileEditor5(Game version, Language language, DSType dsType, u64 mac, const ProfileSearcherState5 &calibration,
@@ -132,7 +154,137 @@ Profile5 ProfileEditor5::getProfile()
                     ui->textBoxGxStat->getUChar(), ui->textBoxVFrame->getUChar(), ui->checkBoxSkipLR->isChecked(),
                     ui->textBoxTimer0Min->getUShort(), ui->textBoxTimer0Max->getUShort(), ui->checkBoxMemoryLink->isChecked(),
                     ui->checkBoxShinyCharm->isChecked(), ui->comboBoxDSType->getEnum<DSType>(), ui->comboBoxLanguage->getEnum<Language>(),
-                    ui->checkBoxMemoryLink->isChecked() && ui->checkBoxNsPokemonReleased->isChecked(), ui->checkBoxOvalCharm->isChecked());
+                    ui->checkBoxMemoryLink->isChecked() && ui->checkBoxNsPokemonReleased->isChecked(), ui->checkBoxOvalCharm->isChecked(),
+                    whiteForestResidents);
+}
+
+void ProfileEditor5::editWhiteForestResidents()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("White Forest Residents"));
+    auto *layout = new QVBoxLayout(&dialog);
+    auto *residentLayout = new QGridLayout;
+    std::array<QComboBox *, 10> inputs;
+
+    for (u8 residentSlot = 0; residentSlot < inputs.size(); residentSlot++)
+    {
+        residentLayout->addWidget(new QLabel(tr("Slot %1").arg(residentSlot + 1), &dialog), residentSlot / 5,
+                                  (residentSlot % 5) * 2);
+        inputs[residentSlot] = new QComboBox(&dialog);
+        inputs[residentSlot]->addItem(tr("None"), 255);
+        for (u8 resident : WhiteForest5::residentNameOrder)
+            inputs[residentSlot]->addItem(QString::fromUtf8(WhiteForest5::residentNames[resident]), resident);
+        inputs[residentSlot]->setCurrentIndex(inputs[residentSlot]->findData(whiteForestResidents[residentSlot]));
+        residentLayout->addWidget(inputs[residentSlot], residentSlot / 5, (residentSlot % 5) * 2 + 1);
+    }
+
+    const auto updateResidentChoices = [&] {
+        std::array<u8, 10> selected;
+        for (u8 residentSlot = 0; residentSlot < selected.size(); residentSlot++)
+            selected[residentSlot] = inputs[residentSlot]->currentData().toUInt();
+
+        for (u8 residentSlot = 0; residentSlot < inputs.size(); residentSlot++)
+        {
+            const QSignalBlocker blocker(inputs[residentSlot]);
+            inputs[residentSlot]->clear();
+            inputs[residentSlot]->addItem(tr("None"), 255);
+            for (u8 resident : WhiteForest5::residentNameOrder)
+            {
+                bool selectedElsewhere = false;
+                for (u8 otherSlot = 0; otherSlot < selected.size(); otherSlot++)
+                {
+                    if (otherSlot != residentSlot && selected[otherSlot] == resident)
+                    {
+                        selectedElsewhere = true;
+                        break;
+                    }
+                }
+                if (!selectedElsewhere)
+                    inputs[residentSlot]->addItem(QString::fromUtf8(WhiteForest5::residentNames[resident]), resident);
+            }
+            inputs[residentSlot]->setCurrentIndex(inputs[residentSlot]->findData(selected[residentSlot]));
+        }
+    };
+
+    const auto updateResidentEnabledState = [&] {
+        bool previousOccupied = true;
+        for (auto *input : inputs)
+        {
+            input->setEnabled(previousOccupied);
+            previousOccupied = previousOccupied && input->currentData().toUInt() != 255;
+        }
+    };
+
+    for (auto *input : inputs)
+    {
+        connect(input, &QComboBox::currentIndexChanged, &dialog, [&] {
+            updateResidentEnabledState();
+            updateResidentChoices();
+        });
+    }
+    updateResidentEnabledState();
+    updateResidentChoices();
+    layout->addLayout(residentLayout);
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    layout->addWidget(buttons);
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    if (dialog.exec() != QDialog::Accepted) return;
+
+    for (u8 residentSlot = 0; residentSlot < whiteForestResidents.size(); residentSlot++)
+        whiteForestResidents[residentSlot] = inputs[residentSlot]->currentData().toUInt();
+}
+
+void ProfileEditor5::showWhiteForestResidentInfo()
+{
+    std::array<bool, 30> selectedResidents {};
+    for (u8 resident : whiteForestResidents)
+        if (resident < selectedResidents.size()) selectedResidents[resident] = true;
+
+    auto *dialog = new QDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle(tr("Resident Info"));
+    auto *layout = new QVBoxLayout(dialog);
+    auto *table = new QTableWidget(static_cast<int>(WhiteForest5::residents.size()), 7, dialog);
+    table->setHorizontalHeaderLabels(
+        { tr("Resident"), tr("Grass Pokémon"), tr("Weight"), tr("Surfing Pokémon"), tr("Weight"), tr("Item"), tr("Item Odds") });
+
+    QSettings settings;
+    const bool markEnabled = settings.value(QStringLiteral("settings/targetMarkEnabled"), true).toBool();
+    const QColor mark = settings.value(QStringLiteral("settings/targetMarkColor"), QColor(Qt::red)).value<QColor>();
+    const int alpha = settings.value(QStringLiteral("settings/targetMarkAlpha"), 128).toInt();
+    const QColor base = table->palette().color(QPalette::Base);
+    auto blend = [alpha](int foreground, int background) {
+        return (foreground * alpha + background * (255 - alpha)) / 255;
+    };
+    const QColor markedBackground(blend(mark.red(), base.red()), blend(mark.green(), base.green()), blend(mark.blue(), base.blue()));
+
+    for (u8 row = 0; row < WhiteForest5::residentNameOrder.size(); row++)
+    {
+        const u8 resident = WhiteForest5::residentNameOrder[row];
+        const auto &data = WhiteForest5::residents[resident];
+        const QStringList values = { QString::fromUtf8(WhiteForest5::residentNames[resident]),
+                                     QString::fromStdString(Translator::getSpecie(data.grassSpecies)),
+                                     QString::number(data.grassWeight),
+                                     QString::fromStdString(Translator::getSpecie(data.waterSpecies)),
+                                     QString::number(data.waterWeight), QString::fromStdString(Translator::getItem(data.item)),
+                                     tr("%1%").arg(data.itemChance) };
+        for (int column = 0; column < values.size(); column++)
+        {
+            auto *item = new QTableWidgetItem(values[column]);
+            if (markEnabled && selectedResidents[resident]) item->setBackground(markedBackground);
+            table->setItem(row, column, item);
+        }
+    }
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->resizeColumnsToContents();
+    layout->addWidget(table);
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+    connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+    layout->addWidget(buttons);
+    dialog->resize(850, 350);
+    dialog->show();
 }
 
 void ProfileEditor5::clearIVCache()
@@ -162,6 +314,20 @@ void ProfileEditor5::okay()
         QMessageBox msg(QMessageBox::Warning, tr("Missing name"), tr("Enter a profile name"));
         msg.exec();
         return;
+    }
+    if (ui->comboBoxVersion->getEnum<Game>() == Game::White)
+    {
+        std::array<bool, 30> used {};
+        for (u8 resident : whiteForestResidents)
+        {
+            if (resident < used.size() && used[resident])
+            {
+                QMessageBox msg(QMessageBox::Warning, tr("Duplicate resident"), tr("Each White Forest resident can only occupy one slot."));
+                msg.exec();
+                return;
+            }
+            if (resident < used.size()) used[resident] = true;
+        }
     }
 
     done(QDialog::Accepted);
@@ -206,6 +372,8 @@ void ProfileEditor5::versionIndexChanged(int index)
     if (index >= 0)
     {
         Game version = static_cast<Game>(ui->comboBoxVersion->currentData().toUInt());
+        residentButton->setVisible(version == Game::White);
+        residentInfoButton->setVisible(version == Game::White);
         if ((version & Game::BW2) != Game::None)
         {
             ui->checkBoxMemoryLink->show();

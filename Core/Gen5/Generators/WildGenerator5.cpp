@@ -25,6 +25,7 @@
 #include <Core/Enum/Shiny.hpp>
 #include <Core/Gen5/States/WildState5.hpp>
 #include <Core/Gen5/StepEncounter.hpp>
+#include <Core/Gen5/WhiteForestData.hpp>
 #include <Core/RNG/LCRNG64.hpp>
 #include <Core/RNG/MT.hpp>
 #include <Core/RNG/RNGList.hpp>
@@ -32,6 +33,7 @@
 #include <Core/Util/Utilities.hpp>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <iterator>
 #include <unordered_map>
 #include <variant>
@@ -219,6 +221,25 @@ static u16 getStepEncounterModifier(Lead lead, u8 passPower)
     u16 modifier = isStepModifier(lead) ? 200 : 100;
     modifier = std::min<u16>(10000, modifier * getEncounterPowerModifier(passPower) / 100);
     return modifier;
+}
+
+static u8 getWhiteForestSteps(u8 ratio, u8 people)
+{
+    if (people == 0)
+    {
+        return StepEncounter5::impossible;
+    }
+
+    u32 sqrt = static_cast<u32>(std::sqrt(static_cast<double>(people)) * 4096.0);
+    for (u8 walkCount = 1; walkCount < StepEncounter5::impossible; walkCount++)
+    {
+        u32 probability = (4u * (walkCount - 1) * sqrt) >> 12;
+        if (probability > ratio)
+        {
+            return walkCount - 1;
+        }
+    }
+    return StepEncounter5::impossible;
 }
 
 static u8 getMovingTrigger(BWRNG &rng, bool bw, Lead lead, Encounter encounter)
@@ -677,6 +698,27 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
         auto evaluateLead = [&](Lead currentLead) {
             BWRNG go(payloadRng, jump);
+            u8 whiteForestRatio = 0;
+            u8 whiteForestSlot = 0;
+            u8 whiteForestPeople = 0;
+            u16 whiteForestTotalWeight = 0;
+            std::array<bool, 30> whiteForestPresent {};
+            if (whiteForest)
+            {
+                // White Forest calls GFUser_GetPublicRand(100) directly rather than
+                // the regular BW encounter-percent helper.
+                whiteForestRatio = go.nextUInt(100);
+                for (u8 resident : whiteForestResidents)
+                {
+                    if (resident < whiteForestPresent.size() && !whiteForestPresent[resident])
+                    {
+                        whiteForestPresent[resident] = true;
+                        whiteForestPeople++;
+                        whiteForestTotalWeight += whiteForestSurfing ? WhiteForest5::residents[resident].waterWeight
+                                                                    : WhiteForest5::residents[resident].grassWeight;
+                    }
+                }
+            }
             u32 triggerOffset = 0;
             if (searchMovingTrigger)
             {
@@ -777,6 +819,30 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                 }
             }
 
+            // ENCPOKE_SetEFPStruct evaluates the lead before
+            // ENCPOKE_GetWFBCEncountPoke selects the resident encounter.
+            if (whiteForest && whiteForestTotalWeight != 0)
+            {
+                u16 selection = go.nextUInt(whiteForestTotalWeight);
+                u16 cumulative = 0;
+                for (u8 i = 0; i < whiteForestPresent.size(); i++)
+                {
+                    if (!whiteForestPresent[i]) continue;
+                    cumulative += whiteForestSurfing ? WhiteForest5::residents[i].waterWeight
+                                                     : WhiteForest5::residents[i].grassWeight;
+                    if (selection < cumulative)
+                    {
+                        break;
+                    }
+                    whiteForestSlot++;
+                }
+            }
+
+            if (whiteForest && (whiteForestTotalWeight == 0 || whiteForestSlot >= area.getCount()))
+            {
+                return;
+            }
+
             bool doubleBattle = false;
             if (!phenomenonItem && area.getEncounter() == Encounter::GrassDark && getPercentRand(go, bw) < 40)
             {
@@ -789,14 +855,15 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                 valid = false;
             }
 
-            u8 movingTrigger = searchMovingTrigger
+            u8 movingTrigger = whiteForest ? whiteForestRatio : searchMovingTrigger
                 ? (bw2 ? getMovingTrigger(go) : getMovingTrigger(triggerGo, bw, currentLead, area.getEncounter()))
                 : StepEncounter5::impossible;
-            u8 movingSteps = searchMovingTrigger ? StepEncounter5::getSteps(profile.getVersion(), area.getEncounter(), area.getRate(),
+            u8 movingSteps = whiteForest ? getWhiteForestSteps(whiteForestRatio, whiteForestPeople)
+                : searchMovingTrigger ? StepEncounter5::getSteps(profile.getVersion(), area.getEncounter(), area.getRate(),
                                                                             movingTrigger, getStepEncounterModifier(currentLead, passPower))
                                                  : StepEncounter5::impossible;
-            valid &= !searchMovingTrigger || movingSteps != StepEncounter5::impossible;
-            if (searchMovingTrigger && !bw2)
+            valid &= (!searchMovingTrigger && !whiteForest) || movingSteps != StepEncounter5::impossible;
+            if (searchMovingTrigger && !whiteForest && !bw2)
             {
                 getMovingTrigger(go);
             }
@@ -812,7 +879,12 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
             u8 secondLevel = 0;
             u16 item = 0;
 
-            if (phenomenonItem)
+            if (whiteForest)
+            {
+                encounterSlot = whiteForestSlot;
+                level = 5;
+            }
+            else if (phenomenonItem)
             {
                 item = getPhenomenonItem(go, area.getEncounter(), profile.getVersion(), area.getLocation());
                 go.advance(1);
@@ -852,6 +924,10 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
 
             const Slot *slot = &area.getPokemon(encounterSlot);
             const PersonalInfo *info = slot->getInfo();
+            if (slot->getSpecie() == 0 || info == nullptr)
+            {
+                return;
+            }
 
             u32 pid = 0;
             for (u8 i = 0; i < shinyRolls; i++)
@@ -997,8 +1073,8 @@ std::vector<WildState5> WildGenerator5::generate(u64 seed, const std::vector<std
                     std::ranges::generate(displayIVs, [&secondIVRng] { return secondIVRng.next(); });
                 }
                 WildState5 state(prng, movingTrigger, movingSteps, phenomenon, phenomenonItem, advances + initialAdvances + cnt, iv.first,
-                                 pid, displayIVs, ability, gender, level, nature, shiny, encounterSlot, item, slot->getSpecie(),
-                                 slot->getForm(), info, valid, passPower, currentLead, variableNature, leadRequired, doubleBattle);
+                                 pid, displayIVs, ability, gender, level, nature, shiny, encounterSlot, item, slot->getSpecie(), slot->getForm(),
+                                 info, valid, passPower, currentLead, variableNature, leadRequired, doubleBattle);
                 if (phenomenonRegion >= 0)
                 {
                     state.setPhenomenonPosition(

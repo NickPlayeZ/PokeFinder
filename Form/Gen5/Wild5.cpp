@@ -30,9 +30,12 @@
 #include <Core/Gen5/Profile5.hpp>
 #include <Core/Gen5/SHA1Cache.hpp>
 #include <Core/Gen5/Searchers/WildSearcher5.hpp>
+#include <Core/Gen5/WhiteForestData.hpp>
 #include <Core/Parents/Filters/StateFilter.hpp>
+#include <Core/Parents/PersonalLoader.hpp>
 #include <Core/Parents/ProfileLoader.hpp>
 #include <Core/Util/Translator.hpp>
+#include <Form/Controls/ComboBoxProxy.hpp>
 #include <Form/Controls/Controls.hpp>
 #include <Form/Controls/ComboMenu.hpp>
 #include <Form/Controls/Filter.hpp>
@@ -43,15 +46,99 @@
 #include <Model/Gen5/WildModel5.hpp>
 #include <Model/SortFilterProxyModel.hpp>
 #include <QAction>
+#include <QAbstractItemView>
 #include <QCheckBox>
+#include <QColor>
+#include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFileDialog>
+#include <QGridLayout>
+#include <QLabel>
 #include <QMessageBox>
+#include <QPalette>
+#include <QPushButton>
 #include <QSettings>
 #include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QTimer>
+#include <QTableWidget>
+#include <QVBoxLayout>
 #include <algorithm>
 #include <vector>
+
+static constexpr u16 whiteForestLocation = 255;
+
+static bool isWhiteForestLocation(const ComboBoxProxy *location)
+{
+    return location->getCurrentUShort() == whiteForestLocation;
+}
+
+static bool hasWhiteForestResidents(const Profile5 *profile)
+{
+    if (profile == nullptr) return false;
+    return std::ranges::any_of(profile->getWhiteForestResidents(), [](u8 resident) {
+        return resident < WhiteForest5::residents.size();
+    });
+}
+
+static EncounterArea5 getWhiteForestArea(Encounter encounter, const Profile5 *profile)
+{
+    std::array<Slot, 13> encounterSlots;
+    std::array<bool, 30> present {};
+    for (u8 resident : profile->getWhiteForestResidents())
+        if (resident < present.size()) present[resident] = true;
+
+    u8 encounterSlot = 0;
+    for (u8 resident = 0; resident < present.size(); resident++)
+    {
+        if (!present[resident]) continue;
+        const auto &data = WhiteForest5::residents[resident];
+        const u16 species = encounter == Encounter::Surfing ? data.waterSpecies : data.grassSpecies;
+        encounterSlots[encounterSlot++] = Slot(species, 5, 5, PersonalLoader::getPersonal(profile->getVersion(), species));
+    }
+    return EncounterArea5(whiteForestLocation, 0, false, encounter, encounterSlots);
+}
+
+static std::vector<std::string> getWhiteForestSlotLabels(const EncounterArea5 &area)
+{
+    std::vector<std::string> labels;
+    for (u8 encounterSlot = 0; encounterSlot < area.getCount(); encounterSlot++)
+    {
+        labels.emplace_back(std::to_string(encounterSlot) + ": " + Translator::getSpecie(area.getPokemon(encounterSlot).getSpecie()));
+    }
+    return labels;
+}
+
+static bool isWhiteForestLead(Lead lead)
+{
+    return lead == Lead::None || lead == Lead::CompoundEyes || lead == Lead::CuteCharmM || lead == Lead::CuteCharmF
+        || lead <= Lead::SynchronizeEnd;
+}
+
+static void updateWhiteForestLeadActions(ComboMenu *leadMenu, bool whiteForest, bool fishing, bool multiSelect)
+{
+    constexpr Lead conditionalLeads[] = { Lead::StickyHold, Lead::SuctionCups, Lead::Hustle,     Lead::Pressure,
+                                          Lead::VitalSpirit, Lead::MagnetPull, Lead::Static,     Lead::ArenaTrap,
+                                          Lead::Illuminate, Lead::NoGuard };
+    for (Lead lead : conditionalLeads)
+    {
+        leadMenu->hideAction(toInt(lead), whiteForest || (lead == Lead::SuctionCups && !fishing));
+    }
+
+    if (!whiteForest) return;
+    if (multiSelect)
+    {
+        auto selected = leadMenu->getRawCheckedData();
+        std::erase_if(selected, [](int lead) { return !isWhiteForestLead(static_cast<Lead>(lead)); });
+        if (selected.empty()) selected.emplace_back(toInt(Lead::None));
+        leadMenu->setCheckedData(selected);
+    }
+    else if (!isWhiteForestLead(leadMenu->getEnum<Lead>()))
+    {
+        leadMenu->setCheckedData({ toInt(Lead::None) });
+    }
+}
 
 static bool supportsMovingTrigger(Encounter encounter, const Profile5 *profile)
 {
@@ -421,6 +508,10 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     connect(ui->tabRNGSelector, &TabWidget::transferSettings, this, &Wild5::transferSettings);
     connect(ui->pushButtonGenerate, &QPushButton::clicked, this, &Wild5::generate);
     connect(ui->pushButtonSearch, &QPushButton::clicked, this, &Wild5::search);
+    connect(ui->pushButtonGeneratorResidents, &QPushButton::clicked, this, &Wild5::editWhiteForestResidents);
+    connect(ui->pushButtonSearcherResidents, &QPushButton::clicked, this, &Wild5::editWhiteForestResidents);
+    connect(ui->pushButtonGeneratorResidentInfo, &QPushButton::clicked, this, &Wild5::showWhiteForestResidentInfo);
+    connect(ui->pushButtonSearcherResidentInfo, &QPushButton::clicked, this, &Wild5::showWhiteForestResidentInfo);
     connect(ui->comboBoxGeneratorEncounter, &QComboBox::currentIndexChanged, this, &Wild5::generatorEncounterIndexChanged);
     connect(ui->comboBoxSearcherEncounter, &QComboBox::currentIndexChanged, this, &Wild5::searcherEncounterIndexChanged);
     connect(ui->comboBoxGeneratorLocation, &QComboBox::currentIndexChanged, this, &Wild5::generatorLocationIndexChanged);
@@ -439,13 +530,15 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     connect(ui->filterGenerator, &Filter::showStatsChanged, generatorModel, &WildGeneratorModel5::setShowStats);
     connect(ui->filterSearcher, &Filter::showStatsChanged, searcherModel, &WildSearcherModel5::setShowStats);
     connect(ui->checkBoxGeneratorMovingTrigger, &QCheckBox::toggled, this, [this](bool checked) {
-        generatorModel->setShowMovingTrigger(checked);
+        generatorModel->setShowMovingTrigger(isWhiteForestLocation(ui->comboBoxGeneratorLocation) || checked);
         if (generatorModel->rowCount() > 0)
         {
             generate();
         }
     });
-    connect(ui->checkBoxSearcherMovingTrigger, &QCheckBox::toggled, searcherModel, &WildSearcherModel5::setShowMovingTrigger);
+    connect(ui->checkBoxSearcherMovingTrigger, &QCheckBox::toggled, this, [this](bool checked) {
+        searcherModel->setShowMovingTrigger(isWhiteForestLocation(ui->comboBoxSearcherLocation) || checked);
+    });
     connect(ui->comboBoxGeneratorLuckyPower, &ComboMenu::checkedDataChanged, this, [this] {
         QSignalBlocker blocker(ui->comboBoxGeneratorLuckyPower);
         bool bw1 = (currentProfile->getVersion() & Game::BW) != Game::None;
@@ -526,8 +619,175 @@ bool Wild5::fastSearchEnabled() const
     return min[0] >= 30 && min[2] >= 30 && min[4] >= 30 && (min[1] >= 30 || min[3] >= 30) && (min[5] >= 30 || max[5] <= 1);
 }
 
+void Wild5::editWhiteForestResidents()
+{
+    if (currentProfile == nullptr || currentProfile->getVersion() != Game::White) return;
+
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("White Forest Residents"));
+    auto *layout = new QVBoxLayout(&dialog);
+    auto *residentLayout = new QGridLayout;
+    std::array<QComboBox *, 10> inputs;
+    std::array<u8, 10> displayedResidents;
+    displayedResidents.fill(255);
+    u8 displayedSlot = 0;
+    for (u8 resident : currentProfile->getWhiteForestResidents())
+        if (resident < WhiteForest5::residentNames.size()) displayedResidents[displayedSlot++] = resident;
+
+    for (u8 residentSlot = 0; residentSlot < inputs.size(); residentSlot++)
+    {
+        residentLayout->addWidget(new QLabel(tr("Slot %1").arg(residentSlot + 1), &dialog), residentSlot / 5,
+                                  (residentSlot % 5) * 2);
+        inputs[residentSlot] = new QComboBox(&dialog);
+        inputs[residentSlot]->addItem(tr("None"), 255);
+        for (u8 resident : WhiteForest5::residentNameOrder)
+            inputs[residentSlot]->addItem(QString::fromUtf8(WhiteForest5::residentNames[resident]), resident);
+        inputs[residentSlot]->setCurrentIndex(inputs[residentSlot]->findData(displayedResidents[residentSlot]));
+        residentLayout->addWidget(inputs[residentSlot], residentSlot / 5, (residentSlot % 5) * 2 + 1);
+    }
+
+    const auto updateResidentChoices = [&] {
+        std::array<u8, 10> selected;
+        for (u8 residentSlot = 0; residentSlot < selected.size(); residentSlot++)
+            selected[residentSlot] = inputs[residentSlot]->currentData().toUInt();
+
+        for (u8 residentSlot = 0; residentSlot < inputs.size(); residentSlot++)
+        {
+            const QSignalBlocker blocker(inputs[residentSlot]);
+            inputs[residentSlot]->clear();
+            inputs[residentSlot]->addItem(tr("None"), 255);
+            for (u8 resident : WhiteForest5::residentNameOrder)
+            {
+                bool selectedElsewhere = false;
+                for (u8 otherSlot = 0; otherSlot < selected.size(); otherSlot++)
+                {
+                    if (otherSlot != residentSlot && selected[otherSlot] == resident)
+                    {
+                        selectedElsewhere = true;
+                        break;
+                    }
+                }
+                if (!selectedElsewhere)
+                    inputs[residentSlot]->addItem(QString::fromUtf8(WhiteForest5::residentNames[resident]), resident);
+            }
+            inputs[residentSlot]->setCurrentIndex(inputs[residentSlot]->findData(selected[residentSlot]));
+        }
+    };
+
+    const auto updateResidentEnabledState = [&] {
+        bool previousOccupied = true;
+        for (auto *input : inputs)
+        {
+            input->setEnabled(previousOccupied);
+            previousOccupied = previousOccupied && input->currentData().toUInt() != 255;
+        }
+    };
+
+    for (auto *input : inputs)
+    {
+        connect(input, &QComboBox::currentIndexChanged, &dialog, [&] {
+            updateResidentEnabledState();
+            updateResidentChoices();
+        });
+    }
+    updateResidentEnabledState();
+    updateResidentChoices();
+
+    layout->addLayout(residentLayout);
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    layout->addWidget(buttons);
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    if (dialog.exec() != QDialog::Accepted) return;
+
+    std::array<u8, 10> selected;
+    std::array<bool, 30> used {};
+    for (u8 residentSlot = 0; residentSlot < selected.size(); residentSlot++)
+    {
+        selected[residentSlot] = inputs[residentSlot]->currentData().toUInt();
+        const u8 resident = selected[residentSlot];
+        if (resident >= used.size()) continue;
+        if (used[resident])
+        {
+            QMessageBox::warning(this, tr("Duplicate resident"), tr("Each White Forest resident can only occupy one slot."));
+            return;
+        }
+        used[resident] = true;
+    }
+
+    const Profile5 original = *currentProfile;
+    const Profile5 update(original.getName(), original.getVersion(), original.getTID(), original.getSID(), original.getIVCache(),
+                          original.getSHACache(), original.getMac(), original.getKeypresses(), original.getVCount(), original.getGxStat(),
+                          original.getVFrame(), original.getSkipLR(), original.getTimer0Min(), original.getTimer0Max(),
+                          original.getMemoryLink(), original.getShinyCharm(), original.getDSType(), original.getLanguage(),
+                          original.getNsPokemonReleased(), original.getOvalCharm(), selected);
+    ProfileLoader5::updateProfile(update, original);
+    ui->profileDisplay->updateProfiles();
+    emit profilesChanged(5);
+}
+
+void Wild5::showWhiteForestResidentInfo()
+{
+    if (currentProfile == nullptr) return;
+
+    std::array<bool, 30> selectedResidents {};
+    for (u8 resident : currentProfile->getWhiteForestResidents())
+        if (resident < selectedResidents.size()) selectedResidents[resident] = true;
+
+    auto *dialog = new QDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle(tr("Resident Info"));
+    auto *layout = new QVBoxLayout(dialog);
+    auto *table = new QTableWidget(static_cast<int>(WhiteForest5::residents.size()), 7, dialog);
+    table->setHorizontalHeaderLabels(
+        { tr("Resident"), tr("Grass Pokémon"), tr("Weight"), tr("Surfing Pokémon"), tr("Weight"), tr("Item"), tr("Item Odds") });
+
+    QSettings settings;
+    const bool markEnabled = settings.value(QStringLiteral("settings/targetMarkEnabled"), true).toBool();
+    const QColor mark = settings.value(QStringLiteral("settings/targetMarkColor"), QColor(Qt::red)).value<QColor>();
+    const int alpha = settings.value(QStringLiteral("settings/targetMarkAlpha"), 128).toInt();
+    const QColor base = table->palette().color(QPalette::Base);
+    auto blend = [alpha](int foreground, int background) {
+        return (foreground * alpha + background * (255 - alpha)) / 255;
+    };
+    const QColor markedBackground(blend(mark.red(), base.red()), blend(mark.green(), base.green()), blend(mark.blue(), base.blue()));
+
+    for (u8 row = 0; row < WhiteForest5::residentNameOrder.size(); row++)
+    {
+        const u8 resident = WhiteForest5::residentNameOrder[row];
+        const auto &data = WhiteForest5::residents[resident];
+        const QStringList values = { QString::fromUtf8(WhiteForest5::residentNames[resident]),
+                                     QString::fromStdString(Translator::getSpecie(data.grassSpecies)),
+                                     QString::number(data.grassWeight),
+                                     QString::fromStdString(Translator::getSpecie(data.waterSpecies)),
+                                     QString::number(data.waterWeight), QString::fromStdString(Translator::getItem(data.item)),
+                                     tr("%1%").arg(data.itemChance) };
+        for (int column = 0; column < values.size(); column++)
+        {
+            auto *item = new QTableWidgetItem(values[column]);
+            if (markEnabled && selectedResidents[resident]) item->setBackground(markedBackground);
+            table->setItem(row, column, item);
+        }
+    }
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->resizeColumnsToContents();
+    layout->addWidget(table);
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+    connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+    layout->addWidget(buttons);
+    dialog->resize(850, 350);
+    dialog->show();
+}
+
 void Wild5::generate()
 {
+    const bool whiteForest = isWhiteForestLocation(ui->comboBoxGeneratorLocation);
+    if (whiteForest && !hasWhiteForestResidents(currentProfile))
+    {
+        QMessageBox::warning(this, tr("No residents"), tr("Select at least one White Forest resident."));
+        return;
+    }
     if (!ui->filterGenerator->isValid(ui->spinBoxGeneratorLevelMin->value(), ui->spinBoxGeneratorLevelMax->value()))
     {
         return;
@@ -542,7 +802,8 @@ void Wild5::generate()
     u32 offset = ui->textBoxGeneratorOffset->getUInt();
     auto lead = ui->comboMenuGeneratorLead->getEnum<Lead>();
     u8 passPower = (currentProfile->getVersion() & Game::BW2) != Game::None ? getGeneratorPassPower(ui->comboBoxGeneratorLuckyPower) : PassPower5::None;
-    bool searchMovingTrigger = ui->checkBoxGeneratorMovingTrigger->isChecked() && (currentProfile->getVersion() & Game::Gen5) != Game::None;
+    bool searchMovingTrigger
+        = !whiteForest && ui->checkBoxGeneratorMovingTrigger->isChecked() && (currentProfile->getVersion() & Game::Gen5) != Game::None;
     if (!searchMovingTrigger)
     {
         passPower = PassPower5::combine(PassPower5::getLuckyPower(passPower), PassPower5::None);
@@ -551,6 +812,11 @@ void Wild5::generate()
     auto filter = ui->filterGenerator->getFilter<WildStateFilter, true>();
     WildGenerator5 generator(initialAdvances, maxAdvances, offset, Method::None, lead, passPower, searchMovingTrigger, false,
                              encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()], *currentProfile, filter);
+    if (whiteForest)
+    {
+        generator.setWhiteForest(currentProfile->getWhiteForestResidents(),
+                                 ui->comboBoxGeneratorEncounter->getEnum<Encounter>() == Encounter::Surfing);
+    }
     generator.setShowSecondEncounter(ui->comboBoxGeneratorEncounter->getEnum<Encounter>() == Encounter::GrassDark
                                      && ui->checkBoxGeneratorSwarm->isChecked());
 
@@ -623,11 +889,22 @@ void Wild5::generatorEncounterIndexChanged(int index)
 
         encounterGenerator = Encounters5::getEncounters(encounter, settings, currentProfile);
 
+        const bool supportsWhiteForest = currentProfile->getVersion() == Game::White
+            && (encounter == Encounter::Grass || encounter == Encounter::Surfing);
+        if (supportsWhiteForest) encounterGenerator.emplace_back(getWhiteForestArea(encounter, currentProfile));
+
         std::vector<u16> locs;
         std::ranges::transform(encounterGenerator, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });
+        if (supportsWhiteForest) locs.pop_back();
 
         ui->comboBoxGeneratorLocation->clear();
-        ui->comboBoxGeneratorLocation->addItems(Translator::getLocations(locs, currentProfile->getVersion()), locs);
+        auto locationNames = Translator::getLocations(locs, currentProfile->getVersion());
+        if (supportsWhiteForest)
+        {
+            locs.emplace_back(whiteForestLocation);
+            locationNames.emplace_back(tr("White Forest").toStdString());
+        }
+        ui->comboBoxGeneratorLocation->addItems(locationNames, locs);
         ui->comboBoxGeneratorLocation->setCurrentIndexByData(currentLocation);
     }
 }
@@ -637,10 +914,25 @@ void Wild5::generatorLocationIndexChanged(int index)
     if (index >= 0)
     {
         auto &area = encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()];
+        const bool whiteForest = area.getLocation() == whiteForestLocation;
         auto species = area.getUniqueSpecies();
         auto names = area.getSpecieNames();
 
-        ui->filterGenerator->setEncounterSlots(area.getCount());
+        ui->filterGenerator->setEncounterSlots(whiteForest ? getWhiteForestSlotLabels(area)
+                                                           : [&area] {
+                                                                 std::vector<std::string> labels;
+                                                                 for (u8 i = 0; i < area.getCount(); i++) labels.emplace_back(std::to_string(i));
+                                                                 return labels;
+                                                             }());
+
+        ui->comboBoxGeneratorSeason->setEnabled(!whiteForest);
+        ui->checkBoxGeneratorSwarm->setVisible(!whiteForest
+                                               && (area.getEncounter() == Encounter::Grass || area.getEncounter() == Encounter::GrassDark));
+        ui->checkBoxGeneratorMovingTrigger->setVisible(!whiteForest);
+        ui->pushButtonGeneratorResidents->setVisible(whiteForest);
+        ui->pushButtonGeneratorResidentInfo->setVisible(whiteForest);
+        generatorModel->setShowMovingTrigger(whiteForest || ui->checkBoxGeneratorMovingTrigger->isChecked());
+        updateWhiteForestLeadActions(ui->comboMenuGeneratorLead, whiteForest, area.getEncounter() == Encounter::SuperRod, false);
 
         ui->comboBoxGeneratorPokemon->clear();
         ui->comboBoxGeneratorPokemon->addItem("-");
@@ -753,6 +1045,12 @@ void Wild5::profileChanged(const Profile5 &profile)
 
 void Wild5::search()
 {
+    const bool whiteForest = isWhiteForestLocation(ui->comboBoxSearcherLocation);
+    if (whiteForest && !hasWhiteForestResidents(currentProfile))
+    {
+        QMessageBox::warning(this, tr("No residents"), tr("Select at least one White Forest resident."));
+        return;
+    }
     Date start = ui->dateEditSearcherStartDate->getDate();
     Date end = ui->dateEditSearcherEndDate->getDate();
     if (start > end)
@@ -772,8 +1070,8 @@ void Wild5::search()
     u32 initialAdvances = ui->textBoxSearcherInitialAdvances->getUInt();
     u32 maxAdvances = ui->textBoxSearcherMaxAdvances->getUInt();
     auto leads = getSearcherLeads(ui->comboMenuSearcherLead);
-    bool searchMovingTrigger
-        = ui->checkBoxSearcherMovingTrigger->isChecked() && supportsMovingTrigger(ui->comboBoxSearcherEncounter->getEnum<Encounter>(), currentProfile);
+    bool searchMovingTrigger = !whiteForest && ui->checkBoxSearcherMovingTrigger->isChecked()
+        && supportsMovingTrigger(ui->comboBoxSearcherEncounter->getEnum<Encounter>(), currentProfile);
     auto passPowers = (currentProfile->getVersion() & Game::BW2) != Game::None
         ? getPassPowers(getCheckedUChars(ui->comboBoxSearcherLuckyPower), searchMovingTrigger,
                         (currentProfile->getVersion() & Game::BW) != Game::None)
@@ -795,6 +1093,11 @@ void Wild5::search()
     auto filter = ui->filterSearcher->getFilter<WildStateFilter, true>();
     WildGenerator5 generator(initialAdvances, maxAdvances, 0, Method::Method5, leads, passPowers, searchMovingTrigger, searchMovingTrigger,
                              encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()], *currentProfile, filter, true);
+    if (whiteForest)
+    {
+        generator.setWhiteForest(currentProfile->getWhiteForestResidents(),
+                                 ui->comboBoxSearcherEncounter->getEnum<Encounter>() == Encounter::Surfing);
+    }
     bool darkGrass = ui->comboBoxSearcherEncounter->getEnum<Encounter>() == Encounter::GrassDark;
     generator.setSearchBothDarkGrassEncounters(darkGrass);
 
@@ -896,11 +1199,22 @@ void Wild5::searcherEncounterIndexChanged(int index)
 
         encounterSearcher = Encounters5::getEncounters(encounter, settings, currentProfile);
 
+        const bool supportsWhiteForest = currentProfile->getVersion() == Game::White
+            && (encounter == Encounter::Grass || encounter == Encounter::Surfing);
+        if (supportsWhiteForest) encounterSearcher.emplace_back(getWhiteForestArea(encounter, currentProfile));
+
         std::vector<u16> locs;
         std::ranges::transform(encounterSearcher, std::back_inserter(locs), [](const EncounterArea5 &area) { return area.getLocation(); });
+        if (supportsWhiteForest) locs.pop_back();
 
         ui->comboBoxSearcherLocation->clear();
-        ui->comboBoxSearcherLocation->addItems(Translator::getLocations(locs, currentProfile->getVersion()), locs);
+        auto locationNames = Translator::getLocations(locs, currentProfile->getVersion());
+        if (supportsWhiteForest)
+        {
+            locs.emplace_back(whiteForestLocation);
+            locationNames.emplace_back(tr("White Forest").toStdString());
+        }
+        ui->comboBoxSearcherLocation->addItems(locationNames, locs);
         ui->comboBoxSearcherLocation->setCurrentIndexByData(currentLocation);
     }
 }
@@ -941,10 +1255,24 @@ void Wild5::searcherLocationIndexChanged(int index)
     if (index >= 0)
     {
         auto &area = encounterSearcher[ui->comboBoxSearcherLocation->currentIndex()];
+        const bool whiteForest = area.getLocation() == whiteForestLocation;
         auto species = area.getUniqueSpecies();
         auto names = area.getSpecieNames();
 
-        ui->filterSearcher->setEncounterSlots(area.getCount());
+        ui->filterSearcher->setEncounterSlots(whiteForest ? getWhiteForestSlotLabels(area)
+                                                          : [&area] {
+                                                                std::vector<std::string> labels;
+                                                                for (u8 i = 0; i < area.getCount(); i++) labels.emplace_back(std::to_string(i));
+                                                                return labels;
+                                                            }());
+
+        ui->comboBoxSearcherSeason->setEnabled(!whiteForest);
+        ui->checkBoxSearcherSwarm->setVisible(!whiteForest && area.getEncounter() == Encounter::Grass);
+        ui->checkBoxSearcherMovingTrigger->setVisible(!whiteForest);
+        ui->pushButtonSearcherResidents->setVisible(whiteForest);
+        ui->pushButtonSearcherResidentInfo->setVisible(whiteForest);
+        searcherModel->setShowMovingTrigger(whiteForest || ui->checkBoxSearcherMovingTrigger->isChecked());
+        updateWhiteForestLeadActions(ui->comboMenuSearcherLead, whiteForest, area.getEncounter() == Encounter::SuperRod, true);
 
         ui->comboBoxSearcherPokemon->clear();
         ui->comboBoxSearcherPokemon->addItem("-");

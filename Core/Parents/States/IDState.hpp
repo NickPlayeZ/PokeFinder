@@ -21,6 +21,7 @@
 #define IDSTATE_HPP
 
 #include <Core/Global.hpp>
+#include <array>
 
 /**
  * @brief Parent state that contains all the common information for TID/SID across each game
@@ -47,7 +48,9 @@ public:
      * @param sid Secret ID
      * @param tsv Trainer shiny value
      */
-    IDState(u32 advances, u16 tid, u16 sid, u16 tsv) : advances(advances), sid(sid), tid(tid), tsv(tsv)
+    IDState(u32 advances, u16 tid, u16 sid, u16 tsv, const std::array<u8, 10> &residents = {},
+            const std::array<u8, 3> &entralinkResidents = {}) :
+        advances(advances), sid(sid), tid(tid), tsv(tsv), residents(residents), entralinkResidents(entralinkResidents)
     {
     }
 
@@ -91,11 +94,23 @@ public:
         return tsv;
     }
 
+    const std::array<u8, 10> &getResidents() const
+    {
+        return residents;
+    }
+
+    const std::array<u8, 3> &getEntralinkResidents() const
+    {
+        return entralinkResidents;
+    }
+
 protected:
     u32 advances;
     u16 sid;
     u16 tid;
     u16 tsv;
+    std::array<u8, 10> residents {};
+    std::array<u8, 3> entralinkResidents {};
 };
 
 #endif // IDSTATE_HPP

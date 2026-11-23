@@ -371,6 +371,17 @@ namespace Utilities5
         return count;
     }
 
+    void advanceBWIDRNGToFieldInit(BWRNG &rng)
+    {
+        // The trainer ID is generated after the third startup probability
+        // table. Four more tables occur before GAME_FieldFirstInit generates
+        // the Black City/White Forest residents.
+        for (u8 i = 0; i < 4; i++)
+        {
+            advanceProbabilityTable(rng);
+        }
+    }
+
     u32 initialAdvancesBW2ID(u64 seed)
     {
         BWRNG rng(seed);

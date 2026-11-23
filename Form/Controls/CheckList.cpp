@@ -190,6 +190,16 @@ std::vector<u16> CheckList::getExplicitCheckedData() const
     return data;
 }
 
+void CheckList::setCheckedData(const std::vector<u16> &data)
+{
+    for (int i = 0; i < model->rowCount(); i++)
+    {
+        auto *item = model->item(i);
+        const bool checked = std::ranges::contains(data, static_cast<u16>(item->data().toUInt()));
+        item->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+    }
+}
+
 Qt::CheckState CheckList::getCheckState() const
 {
     return checkState();
@@ -344,6 +354,7 @@ void CheckList::onItemClicked(const QModelIndex &index)
         {
             item->setCheckState(Qt::Checked);
         }
+        emit checksChanged();
     }
 }
 

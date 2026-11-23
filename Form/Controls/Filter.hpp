@@ -24,6 +24,8 @@
 #include <Core/Util/StackVector.hpp>
 #include <QString>
 #include <QWidget>
+#include <string>
+#include <vector>
 
 enum class Controls : u16;
 class QSpinBox;
@@ -253,6 +255,13 @@ public:
      * @param max Number of encounter slots
      */
     void setEncounterSlots(u8 max) const;
+
+    /**
+     * @brief Sets custom encounter slot labels
+     *
+     * @param items Encounter slot labels
+     */
+    void setEncounterSlots(const std::vector<std::string> &items) const;
 
     /**
      * @brief Sets level range

@@ -24,6 +24,7 @@
 #include <Core/Parents/ProfileLoader.hpp>
 #include <Core/Util/Translator.hpp>
 #include <Form/Gen5/Profile/ProfileManager5.hpp>
+#include <QLabel>
 #include <QSettings>
 #include <QSpinBox>
 
@@ -69,6 +70,26 @@ ProfileDisplay5::~ProfileDisplay5()
 bool ProfileDisplay5::hasProfiles() const
 {
     return !profiles.empty();
+}
+
+void ProfileDisplay5::addControl(const QString &label, QWidget *widget)
+{
+    const int column = ui->gridLayout->columnCount();
+    ui->gridLayout->addWidget(new QLabel(label, ui->groupBoxProfile), 0, column);
+    ui->gridLayout->addWidget(widget, 0, column + 1, 2, 1);
+}
+
+void ProfileDisplay5::addControl(QWidget *widget)
+{
+    const int column = ui->gridLayout->columnCount();
+    ui->gridLayout->addWidget(widget, 0, column, 2, 1);
+}
+
+void ProfileDisplay5::addControls(QWidget *topWidget, QWidget *bottomWidget)
+{
+    const int column = ui->gridLayout->columnCount();
+    ui->gridLayout->addWidget(topWidget, 0, column);
+    ui->gridLayout->addWidget(bottomWidget, 1, column);
 }
 
 void ProfileDisplay5::setProfile(const Profile5 &profile)
@@ -156,7 +177,7 @@ void ProfileDisplay5::updateIDs()
                           original.getMac(), original.getKeypresses(), original.getVCount(), original.getGxStat(), original.getVFrame(),
                           original.getSkipLR(), original.getTimer0Min(), original.getTimer0Max(), original.getMemoryLink(),
                           original.getShinyCharm(), original.getDSType(), original.getLanguage(), original.getNsPokemonReleased(),
-                          original.getOvalCharm());
+                          original.getOvalCharm(), original.getWhiteForestResidents());
     ProfileLoader5::updateProfile(update, original);
     profiles[index] = update;
     QSettings setting;

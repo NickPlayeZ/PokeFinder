@@ -343,7 +343,14 @@ void Filter::setEncounterSlots(u8 max) const
     {
         items.emplace_back(std::to_string(i));
     }
-    ui->checkListEncounterSlot->addItems(items);
+    ui->checkListEncounterSlot->clear();
+    if (!items.empty()) ui->checkListEncounterSlot->addItems(items);
+}
+
+void Filter::setEncounterSlots(const std::vector<std::string> &items) const
+{
+    ui->checkListEncounterSlot->clear();
+    if (!items.empty()) ui->checkListEncounterSlot->addItems(items);
 }
 
 void Filter::setLevelRange(u32 min, u32 max)

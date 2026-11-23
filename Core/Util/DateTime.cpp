@@ -199,7 +199,11 @@ DateTime DateTime::addSeconds(int seconds) const
 
     int days = dt.time.addSeconds(seconds);
     dt.date += days;
-    if (dt.date.jd > maxJD)
+    if (dt.date.jd < minJD)
+    {
+        dt.date.jd = maxJD - ((minJD - dt.date.jd - 1) % jdRange);
+    }
+    else if (dt.date.jd > maxJD)
     {
         dt.date.jd = minJD + ((dt.date.jd - minJD) % jdRange);
     }

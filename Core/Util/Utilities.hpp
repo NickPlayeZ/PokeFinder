@@ -269,6 +269,14 @@ namespace Utilities5
     u32 initialAdvancesBWID(u64 seed);
 
     /**
+     * @brief Advances the BW RNG from immediately after the trainer ID call to
+     * the point where Black City/White Forest residents are generated
+     *
+     * @param rng PRNG state immediately after the trainer ID call
+     */
+    void advanceBWIDRNGToFieldInit(BWRNG &rng);
+
+    /**
      * @brief Calculates the initial set of advances for BW2
      *
      * @param seed PRNG state

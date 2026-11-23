@@ -77,10 +77,21 @@ public:
      */
     void setGame(Game version);
 
+    /**
+     * @brief Sets whether Black City/White Forest resident columns are shown
+     *
+     * @param showResidents Whether to show resident columns
+     */
+    void setShowResidents(bool showResidents);
+
 private:
-    QStringList header = { tr("Seed"), tr("Initial Advances"), tr("Advances"), tr("TID"),    tr("SID"),
-                           tr("TSV"),  tr("Date/Time"),        tr("Timer0"),   tr("Buttons") };
+    QStringList header = { tr("Seed"), tr("Initial Advances"), tr("Advances"), tr("TID"), tr("SID"), tr("TSV"),
+                           tr("Res. 1"), tr("Res. 2"), tr("Res. 3"), tr("Res. 4"), tr("Res. 5"),
+                           tr("Res. 6"), tr("Res. 7"), tr("Res. 8"), tr("Res. 9"), tr("Res. 10"),
+                           tr("Entr. Res. 1"), tr("Entr. Res. 2"), tr("Entr. Res. 3"),
+                           tr("Date/Time"), tr("Timer0"), tr("Buttons") };
     Game version;
+    bool showResidents;
 };
 
 #endif // IDMODEL5_HPP

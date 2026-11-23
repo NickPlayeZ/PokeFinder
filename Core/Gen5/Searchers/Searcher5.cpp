@@ -87,6 +87,7 @@ void Searcher5<Generator, State>::search(const Date &start, const Date &end)
 #include <Core/Gen5/Generators/IDGenerator5.hpp>
 #include <Core/Gen5/Generators/PickupGenerator.hpp>
 #include <Core/Gen5/Generators/PhenomenonGenerator.hpp>
+#include <Core/Gen5/Generators/WhiteForestGenerator.hpp>
 #include <Core/Gen5/States/DreamRadarState.hpp>
 #include <Core/Gen5/States/EggState5.hpp>
 #include <Core/Gen5/States/EventState5.hpp>
@@ -104,3 +105,4 @@ template class Searcher5<HiddenGrottoSlotGenerator, HiddenGrottoState>;
 template class Searcher5<IDGenerator5, IDState>;
 template class Searcher5<PickupGenerator, PickupState>;
 template class Searcher5<PhenomenonGenerator, PhenomenonState>;
+template class Searcher5<WhiteForestGenerator, WhiteForestItemState>;

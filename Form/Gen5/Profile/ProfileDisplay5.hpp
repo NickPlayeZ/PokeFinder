@@ -70,6 +70,10 @@ public:
      */
     bool hasProfiles() const;
 
+    void addControl(const QString &label, QWidget *widget);
+    void addControl(QWidget *widget);
+    void addControls(QWidget *topWidget, QWidget *bottomWidget);
+
     /**
      * @brief Sets index to match the provided \p profile
      *

@@ -373,6 +373,7 @@ namespace ProfileLoader5
             j["shinyCharm"] = profile.getShinyCharm();
             j["dsType"] = profile.getDSType();
             j["language"] = profile.getLanguage();
+            j["whiteForestResidents"] = profile.getWhiteForestResidents();
             return j;
         }
 
@@ -420,8 +421,28 @@ namespace ProfileLoader5
             shinyCharm &= ovalCharm;
             DSType dsType = j.value("dsType", DSType::DS);
             Language language = j.value("language", Language::English);
+            std::array<u8, 10> whiteForestResidents { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
+            try
+            {
+                whiteForestResidents = j.value("whiteForestResidents", whiteForestResidents);
+                std::array<bool, 30> used {};
+                for (u8 &resident : whiteForestResidents)
+                {
+                    if (resident >= used.size() || used[resident])
+                    {
+                        resident = 255;
+                    }
+                    else
+                    {
+                        used[resident] = true;
+                    }
+                }
+            } catch (...)
+            {
+                whiteForestResidents.fill(255);
+            }
             return Profile5(name, version, tid, sid, ivCache, shaCache, mac, keypresses, vcount, gxstat, vframe, skipLR, timer0Min,
-                            timer0Max, memoryLink, shinyCharm, dsType, language, nsPokemonReleased, ovalCharm);
+                            timer0Max, memoryLink, shinyCharm, dsType, language, nsPokemonReleased, ovalCharm, whiteForestResidents);
         }
 
     }

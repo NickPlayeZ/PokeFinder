@@ -42,7 +42,6 @@ namespace PassPower5
     constexpr u8 Encounter1 = 1 << EncounterShift;
     constexpr u8 Encounter2 = 2 << EncounterShift;
     constexpr u8 Encounter3 = 3 << EncounterShift;
-
     constexpr u8 ExploringShift = EncounterShift;
     constexpr u8 Exploring1 = 1 << ExploringShift;
     constexpr u8 Exploring2 = 2 << ExploringShift;
@@ -158,6 +157,13 @@ public:
         showSecondEncounter = flag;
     }
 
+    void setWhiteForest(const std::array<u8, 10> &residents, bool surfing)
+    {
+        whiteForestResidents = residents;
+        whiteForestSurfing = surfing;
+        whiteForest = true;
+    }
+
     /**
      * @brief Makes dark grass searches evaluate both encountered Pokemon
      */
@@ -176,6 +182,9 @@ private:
     bool useExploringPower;
     bool showSecondEncounter = false;
     bool searchBothDarkGrassEncounters = false;
+    bool whiteForest = false;
+    bool whiteForestSurfing = false;
+    std::array<u8, 10> whiteForestResidents { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
     bool predictPhenomenonPosition = false;
     std::array<bool, 1024> phenomenonTiles { };
     std::array<bool, 1024> phenomenonNpcTiles { };

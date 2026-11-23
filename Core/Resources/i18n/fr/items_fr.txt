@@ -2,6 +2,13 @@
 2,Hyper Ball
 3,Super Ball
 4,Poké Ball
+6,Filet Ball
+7,Scuba Ball
+8,Faiblo Ball
+9,Bis Ball
+10,Chrono Ball
+11,Luxe Ball
+15,Rapide Ball
 17,Potion
 18,Antidote
 23,Guérison
@@ -10,6 +17,7 @@
 27,Total Soin
 28,Rappel
 29,Rappel Max
+30,Eau Fraîche
 33,Lait Meumeu
 38,Huile
 39,Huile Max
@@ -20,6 +28,8 @@
 50,Super Bonbon
 51,PP Plus
 53,PP Max
+63,Poképoupée
+64,Queue Skitty
 72,Tesson Rouge
 73,Tesson Bleu
 74,Tesson Jaune

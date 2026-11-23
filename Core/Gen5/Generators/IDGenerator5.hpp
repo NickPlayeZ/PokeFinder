@@ -22,6 +22,7 @@
 
 #include <Core/Gen5/Profile5.hpp>
 #include <Core/Parents/Generators/IDGenerator.hpp>
+#include <vector>
 
 /**
  * @brief TID/SID generator for Gen5
@@ -39,9 +40,11 @@ public:
      * @param checkXOR Whether to check for PID XORed
      * @param profile Profile information
      * @param filter State filter
+     * @param generateResidents Whether to generate Black City/White Forest residents
      */
     IDGenerator5(u32 initialAdvances, u32 maxAdvances, u32 pid, bool checkPID, bool checkXOR, const Profile5 &profile,
-                 const IDFilter &filter);
+                 const IDFilter &filter, const std::vector<u8> &residents = {}, const std::vector<u8> &entralinkResidents = {},
+                 bool generateResidents = false);
 
     /**
      * @brief Generates states
@@ -57,6 +60,9 @@ private:
     u32 pid;
     bool checkPID;
     bool checkXOR;
+    std::vector<u8> residents;
+    std::vector<u8> entralinkResidents;
+    bool generateResidents;
 };
 
 #endif // IDGENERATOR5_HPP

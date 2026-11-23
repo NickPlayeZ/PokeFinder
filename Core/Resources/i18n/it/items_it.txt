@@ -2,6 +2,13 @@
 2,Ultra Ball
 3,Mega Ball
 4,Poké Ball
+6,Rete Ball
+7,Sub Ball
+8,Minor Ball
+9,Bis Ball
+10,Timer Ball
+11,Chic Ball
+15,Velox Ball
 17,Pozione
 18,Antidoto
 23,Ricarica Tot
@@ -10,6 +17,7 @@
 27,Cura Totale
 28,Revitalizzante
 29,Revitalizzante max
+30,Acqua Fresca
 33,Latte Mumu
 38,Etere
 39,Etere Max
@@ -20,6 +28,8 @@
 50,Caramella rara
 51,PP-su
 53,PP-max
+63,Poké Bambola
+64,Coda Skitty
 72,Coccio rosso
 73,Coccio blu
 74,Coccio giallo

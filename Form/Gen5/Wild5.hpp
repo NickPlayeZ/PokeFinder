@@ -86,6 +86,9 @@ private:
     WildGeneratorModel5 *generatorModel;
     WildSearcherModel5 *searcherModel;
 
+    void editWhiteForestResidents();
+    void showWhiteForestResidentInfo();
+
     /**
      * @brief Determines if the IV seed cache can be used for fast IV search
      *

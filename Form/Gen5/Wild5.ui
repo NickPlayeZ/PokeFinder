@@ -237,6 +237,26 @@
             </property>
            </widget>
           </item>
+          <item row="4" column="0">
+           <widget class="QPushButton" name="pushButtonGeneratorResidents">
+            <property name="visible">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Residents</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1" colspan="2">
+           <widget class="QPushButton" name="pushButtonGeneratorResidentInfo">
+            <property name="visible">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Resident Info</string>
+            </property>
+           </widget>
+          </item>
           <item row="5" column="0" colspan="3">
            <widget class="Line" name="lineGeneratorMovingTrigger">
             <property name="orientation">
@@ -539,6 +559,26 @@
            <widget class="QCheckBox" name="checkBoxSearcherMovingTrigger">
             <property name="text">
              <string>Step Encounter</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QPushButton" name="pushButtonSearcherResidents">
+            <property name="visible">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Residents</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1" colspan="2">
+           <widget class="QPushButton" name="pushButtonSearcherResidentInfo">
+            <property name="visible">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Resident Info</string>
             </property>
            </widget>
           </item>

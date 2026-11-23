@@ -28,6 +28,7 @@ class IDGenerator5Test : public QObject
 private slots:
     void generate_data();
     void generate();
+    void generateResidents();
 };
 
 #endif // IDGENERATOR5TEST_HPP

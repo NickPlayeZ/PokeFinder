@@ -234,6 +234,8 @@ set(PROJECT_SOURCES
     Gen5/Tools/IVCacheFinder.hpp
     Gen5/Tools/SHA1CacheFinder.cpp
     Gen5/Tools/SHA1CacheFinder.hpp
+    Gen5/Tools/WhiteForest.cpp
+    Gen5/Tools/WhiteForest.hpp
     Gen5/Wild5.cpp
     Gen5/Wild5.hpp
     Gen8/Eggs8.cpp

@@ -2,6 +2,13 @@
 2,Hyperball
 3,Superball
 4,Pokéball
+6,Netzball
+7,Tauchball
+8,Nestball
+9,Wiederball
+10,Timerball
+11,Luxusball
+15,Flottball
 17,Trank
 18,Gegengift
 23,Top-Genesung
@@ -10,6 +17,7 @@
 27,Hyperheiler
 28,Beleber
 29,Top-Beleber
+30,Tafelwasser
 33,Kuhmuh-Milch
 38,Äther
 39,Top-Äther
@@ -20,6 +28,8 @@
 50,Sonderbonbon
 51,AP-Plus
 53,AP-Top
+63,Poképuppe
+64,Eneco-Rute
 72,Purpurstück
 73,Indigostück
 74,Gelbstück
