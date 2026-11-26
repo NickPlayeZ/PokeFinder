@@ -1,7 +1,6 @@
 include(FetchContent)
 
 # gf2
-include(FetchContent)
 FetchContent_Declare(gf2 URL https://github.com/nessan/gf2/releases/download/current/gf2.zip)
 FetchContent_MakeAvailable(gf2)
 
@@ -22,7 +21,7 @@ set(ZSTD_BUILD_TESTS OFF)
 
 FetchContent_Declare(
     zstd
-    URL "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz"
+    URL "https://github.com/meta/zstd/releases/download/v1.6.0/zstd-1.6.0.tar.gz"
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     SOURCE_SUBDIR build/cmake
 )
