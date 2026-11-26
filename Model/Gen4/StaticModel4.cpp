@@ -95,14 +95,20 @@ QVariant StaticGeneratorModel4::headerData(int section, Qt::Orientation orientat
 
 void StaticGeneratorModel4::setGame(Game version)
 {
-    dppt = (version & Game::DPPt) != Game::None;
-    emit headerDataChanged(Qt::Horizontal, 0, columnCount());
+    bool flag = (version & Game::DPPt) != Game::None;
+    if (dppt != flag)
+    {
+        beginResetModel();
+        dppt = (version & Game::DPPt) != Game::None;
+        endResetModel();
+    }
 }
 
 void StaticGeneratorModel4::setShowStats(bool flag)
 {
     showStats = flag;
-    emit dataChanged(index(0, getColumn(7)), index(rowCount() - 1, getColumn(12)), { Qt::DisplayRole });
+    int hp = dppt ? 6 : 7;
+    emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 
 int StaticGeneratorModel4::getColumn(int column) const

@@ -128,14 +128,20 @@ QVariant WildGeneratorModel4::headerData(int section, Qt::Orientation orientatio
 
 void WildGeneratorModel4::setGame(Game version)
 {
-    dppt = (version & Game::DPPt) != Game::None;
-    emit headerDataChanged(Qt::Horizontal, 0, columnCount());
+    bool flag = (version & Game::DPPt) != Game::None;
+    if (dppt != flag)
+    {
+        beginResetModel();
+        dppt = (version & Game::DPPt) != Game::None;
+        endResetModel();
+    }
 }
 
 void WildGeneratorModel4::setShowStats(bool flag)
 {
     showStats = flag;
-    emit dataChanged(index(0, 11), index(rowCount() - 1, 16), { Qt::DisplayRole });
+    int hp = dppt ? 10 : 11;
+    emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 
 int WildGeneratorModel4::getColumn(int column) const

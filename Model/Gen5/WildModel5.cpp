@@ -138,14 +138,19 @@ QVariant WildGeneratorModel5::headerData(int section, Qt::Orientation orientatio
 
 void WildGeneratorModel5::setPhenomenon(bool flag)
 {
-    phenomenon = flag;
-    emit headerDataChanged(Qt::Horizontal, 0, columnCount());
+    if (phenomenon != flag)
+    {
+        beginResetModel();
+        phenomenon = flag;
+        endResetModel();
+    }
 }
 
 void WildGeneratorModel5::setShowStats(bool flag)
 {
     showStats = flag;
-    emit dataChanged(index(0, 11), index(rowCount() - 1, 16), { Qt::DisplayRole });
+    int hp = phenomenon ? 11 : 10;
+    emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 
 int WildGeneratorModel5::getColumn(int column) const

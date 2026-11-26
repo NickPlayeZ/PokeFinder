@@ -25,8 +25,12 @@ ResearcherModel::ResearcherModel(QObject *parent, bool flag) : TableModel(parent
 
 void ResearcherModel::setFlag(bool flag)
 {
-    this->flag = flag;
-    emit headerDataChanged(Qt::Horizontal, 0, columnCount());
+    if (this->flag != flag)
+    {
+        beginResetModel();
+        this->flag = flag;
+        endResetModel();
+    }
 }
 
 void ResearcherModel::setHex(const std::array<bool, 10> &hex)
