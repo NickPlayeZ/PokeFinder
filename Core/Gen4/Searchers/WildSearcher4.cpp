@@ -54,11 +54,6 @@ static u16 getItem(u8 rand, Lead lead, const PersonalInfo *info)
     }
 }
 
-static bool isStepModifier(Lead lead)
-{
-    return lead == Lead::ArenaTrap;
-}
-
 enum HGSSSearcherStepOption : u16
 {
     StepWhiteFlute = 1 << 0,
@@ -102,13 +97,13 @@ static bool getStepEncounter(u32 seed, u32 targetAdvance, u16 encounterRate, Lea
     u8 encounterRatio = encounterRNG.nextUShort() / 0x290;
     u16 movementRate = (fastMovement ? 70 : 40) + dateModifier;
 
-    if (isStepModifier(lead))
+    if (lead == Lead::ArenaTrap)
     {
         encounterRate *= 2;
     }
     if (whiteFlute)
     {
-        encounterRate = (encounterRate * 3) / 2;
+        encounterRate += encounterRate / 2;
     }
 
     return movementRatio < movementRate && encounterRatio < encounterRate;
@@ -158,42 +153,6 @@ static bool getHGSSStepEncounter(u32 seed, u32 targetAdvance, u16 encounterRate,
     return false;
 }
 
-static bool hasLongGrass(Game version, Encounter encounter, u8 location)
-{
-    if (encounter == Encounter::BugCatchingContest)
-    {
-        return true;
-    }
-
-    if ((version & Game::HGSS) != Game::None)
-    {
-        return location == 23 || location == 24;
-    }
-
-    return location == 156 || location == 163;
-}
-
-static bool isBikeOnlyLocation(Game version, u8 location)
-{
-    return (version & Game::HGSS) != Game::None && location == 126;
-}
-
-static bool isBikeRestrictedLocation(Game version, Encounter encounter, u8 location)
-{
-    if ((version & Game::DPPt) != Game::None)
-    {
-        return location == 13 || location == 139 || location == 165 || location == 166;
-    }
-
-    if ((version & Game::HGSS) == Game::None)
-    {
-        return false;
-    }
-
-    return encounter == Encounter::BugCatchingContest || location == 6 || location == 11 || location == 28 || location == 29 || location == 30
-        || location == 89;
-}
-
 static bool getBestDPPtStepEncounter(u32 seed, u32 targetAdvance, u16 encounterRate, const EncounterArea4 &area, const Profile4 &profile,
                                      Lead lead, u16 stepOptions, u8 *movements, u8 *movement, u8 *modifier)
 {
@@ -206,10 +165,9 @@ static bool getBestDPPtStepEncounter(u32 seed, u32 targetAdvance, u16 encounterR
 
     std::vector<Candidate> candidates;
     auto encounter = area.getEncounter();
-    u8 location = area.getLocation();
     bool surf = encounter == Encounter::Surfing;
-    bool bikeRestricted = isBikeRestrictedLocation(profile.getVersion(), encounter, location);
-    bool longGrass = hasLongGrass(profile.getVersion(), encounter, location);
+    bool bikeRestricted = area.bikeRestrictedLocation(profile.getVersion());
+    bool longGrass = area.longGrass(profile.getVersion());
 
     auto addMovement = [&](u8 currentMovement, u8 rank) {
         std::vector<u8> dateModifiers = { 0 };
@@ -307,11 +265,10 @@ static bool getBestHGSSStepEncounter(u32 seed, u32 targetAdvance, u16 encounterR
 
     std::vector<Candidate> candidates;
     auto encounter = area.getEncounter();
-    u8 location = area.getLocation();
     bool surf = encounter == Encounter::Surfing;
-    bool bikeOnly = isBikeOnlyLocation(profile.getVersion(), location);
-    bool bikeRestricted = isBikeRestrictedLocation(profile.getVersion(), encounter, location);
-    bool longGrass = hasLongGrass(profile.getVersion(), encounter, location);
+    bool bikeOnly = area.bikeOnlyLocation(profile.getVersion());
+    bool bikeRestricted = area.bikeRestrictedLocation(profile.getVersion());
+    bool longGrass = area.longGrass(profile.getVersion());
 
     auto addMovement = [&](u8 currentMovement, u8 rank) {
         std::array<u8, 6> modifiers = {
@@ -458,7 +415,7 @@ static u8 getStepMovements(u8 graceRatio, u16 encounterRate, Lead lead, bool whi
         return 0;
     }
 
-    if (isStepModifier(lead))
+    if (lead == Lead::ArenaTrap)
     {
         encounterRate *= 2;
     }
@@ -478,7 +435,7 @@ static u8 getStepMovements(u8 graceRatio, u16 encounterRate, Lead lead, bool whi
 
 static u16 modifyHGSSStepEncounterRate(u16 encounterRate, Lead lead, bool whiteFlute)
 {
-    if (isStepModifier(lead))
+    if (lead == Lead::ArenaTrap)
     {
         encounterRate *= 2;
     }

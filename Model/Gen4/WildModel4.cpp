@@ -24,49 +24,46 @@
 #include <QColor>
 #include <QFont>
 
-WildGeneratorModel4::WildGeneratorModel4(QObject *parent) :
-    TableModel(parent), showStats(false), showStepEncounter(false), method(Method::MethodJ)
+WildGeneratorModel4::WildGeneratorModel4(QObject *parent) : TableModel(parent), dppt(false), showStats(false), showStepEncounter(false)
 {
 }
 
 int WildGeneratorModel4::columnCount(const QModelIndex &parent) const
 {
     int extra = showStepEncounter ? 1 : 0;
-    switch (method)
+    if (dppt)
     {
-    case Method::MethodJ:
-    case Method::HoneyTree:
-    case Method::PokeRadar:
         return 20 + extra;
-    case Method::MethodK:
+    }
+    else
+    {
         return 21 + extra;
-    default:
-        return 0;
     }
 }
 
 QVariant WildGeneratorModel4::data(const QModelIndex &index, int role) const
 {
     const auto &state = model[index.row()];
-    bool invalid = !state.isValid() || (showStepEncounter && !state.getStepEncounter());
-    if (invalid)
+    if (role == Qt::FontRole)
     {
-        if (role == Qt::FontRole)
+        if (!state.isValid())
         {
             QFont font;
             font.setItalic(true);
             return font;
         }
-        else if (role == Qt::ForegroundRole)
+    }
+    else if (role == Qt::ForegroundRole)
+    {
+        if (!state.isValid())
         {
             return QColor(128, 128, 128);
         }
     }
-
-    if (role == Qt::DisplayRole)
+    else if (role == Qt::DisplayRole)
     {
         int column = getColumn(index.column());
-        if (invalid && column > 4)
+        if (!state.isValid() && column > 3)
         {
             return "-";
         }
@@ -82,7 +79,7 @@ QVariant WildGeneratorModel4::data(const QModelIndex &index, int role) const
         case 3:
             return QString::fromStdString(Utilities4::getChatot(state.getChatot()));
         case 4:
-            return state.getStepEncounter() ? QVariant(static_cast<int>(state.getMovements())) : QVariant("-");
+            return state.getMovements();
         case 5:
             return QString::fromStdString(Translator::getItem(state.getItem()));
         case 6:
@@ -135,14 +132,7 @@ QVariant WildGeneratorModel4::headerData(int section, Qt::Orientation orientatio
 void WildGeneratorModel4::setGame(Game version)
 {
     beginResetModel();
-    method = (version & Game::HGSS) != Game::None ? Method::MethodK : Method::MethodJ;
-    endResetModel();
-}
-
-void WildGeneratorModel4::setMethod(Method method)
-{
-    beginResetModel();
-    this->method = method;
+    dppt = (version & Game::DPPt) != Game::None;
     endResetModel();
 }
 
@@ -156,33 +146,22 @@ void WildGeneratorModel4::setShowStepEncounter(bool flag)
 void WildGeneratorModel4::setShowStats(bool flag)
 {
     showStats = flag;
-    int hp = showStepEncounter ? (method == Method::MethodK ? 12 : 11) : 11;
+    int hp = getColumn(11); // Base column of HP without any extra data being shown
     emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 
 int WildGeneratorModel4::getColumn(int column) const
 {
-    switch (method)
+    if (dppt)
     {
-    case Method::MethodJ:
-    case Method::HoneyTree:
-    case Method::PokeRadar:
         column = column > 1 ? column + 1 : column;
-        break;
-    case Method::MethodK:
-    default:
-        break;
     }
 
-    return !showStepEncounter && column >= 4 ? column + 1 : column;
+    return (!showStepEncounter && column >= 4) ? column + 1 : column;
 }
 
 WildSearcherModel4::WildSearcherModel4(QObject *parent) :
-    TableModel(parent),
-    showStats(false),
-    showStepEncounter(false),
-    showStepMovement(true),
-    method(Method::MethodJ)
+    TableModel(parent), dppt(false), showStats(false), showStepEncounter(false), showStepMovement(true)
 {
 }
 
@@ -196,15 +175,7 @@ QVariant WildSearcherModel4::data(const QModelIndex &index, int role) const
     if (role == Qt::DisplayRole)
     {
         const auto &state = model[index.row()];
-        int column = index.column();
-        if (!showStepEncounter && column >= 4)
-        {
-            column += 3;
-        }
-        else if (showStepEncounter && !showStepMovement && column >= 5)
-        {
-            column++;
-        }
+        int column = getColumn(index.column());
         switch (column)
         {
         case 0:
@@ -225,14 +196,14 @@ QVariant WildSearcherModel4::data(const QModelIndex &index, int role) const
             case 2:
                 return tr("Biking");
             case 3:
-                return method == Method::MethodK ? tr("Walking in Long Grass") : tr("Walking / Running in Long Grass");
+                return dppt ? tr("Walking / Running in Long Grass") : tr("Walking in Long Grass");
             case 4:
                 return tr("Running in Long Grass");
             case 5:
                 return tr("Surfing");
             case 0:
             default:
-                return method == Method::MethodK ? tr("Walking") : tr("Walking / Running");
+                return dppt ? tr("Walking / Running") : tr("Walking");
             }
         case 6:
             switch (state.getStepModifier())
@@ -306,30 +277,23 @@ QVariant WildSearcherModel4::headerData(int section, Qt::Orientation orientation
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
-        if (!showStepEncounter && section >= 4)
-        {
-            section += 3;
-        }
-        else if (showStepEncounter && !showStepMovement && section >= 5)
-        {
-            section++;
-        }
+        section = getColumn(section);
         return header[section];
     }
     return QVariant();
 }
 
-void WildSearcherModel4::setMethod(Method method)
+void WildSearcherModel4::setGame(Game version)
 {
     beginResetModel();
-    this->method = method;
+    dppt = (version & Game::DPPt) != Game::None;
     endResetModel();
 }
 
 void WildSearcherModel4::setShowStats(bool flag)
 {
     showStats = flag;
-    int hp = showStepEncounter ? showStepMovement ? 14 : 13 : 11;
+    int hp = getColumn(11); // Base column of HP without any extra data being shown
     emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 
@@ -345,4 +309,18 @@ void WildSearcherModel4::setShowStepMovement(bool flag)
     beginResetModel();
     showStepMovement = flag;
     endResetModel();
+}
+
+int WildSearcherModel4::getColumn(int column) const
+{
+    if (!showStepEncounter && column >= 4)
+    {
+        return column + 3;
+    }
+    else if (showStepEncounter && !showStepMovement && column >= 5)
+    {
+        return column + 1;
+    }
+
+    return column;
 }

@@ -18,6 +18,7 @@
  */
 
 #include "EncounterArea4.hpp"
+#include <Core/Enum/Encounter.hpp>
 #include <Core/Enum/Game.hpp>
 
 constexpr std::array<u8, 20> unown0 = { 0, 1, 2, 6, 7, 9, 10, 11, 12, 14, 15, 16, 18, 19, 20, 21, 22, 23, 24, 25 };
@@ -28,6 +29,27 @@ constexpr std::array<u8, 1> unown4 = { 13 };
 constexpr std::array<u8, 1> unown5 = { 4 };
 constexpr std::array<u8, 1> unown6 = { 3 };
 constexpr std::array<u8, 2> unown7 = { 26, 27 };
+
+bool EncounterArea4::bikeOnlyLocation(Game version) const
+{
+    return (version & Game::HGSS) != Game::None && location == 126; // Route 17
+}
+
+bool EncounterArea4::bikeRestrictedLocation(Game version) const
+{
+    if ((version & Game::DPPt) != Game::None)
+    {
+        return location == 13 || location == 139 || location == 165
+            || location == 166; // Mt. Coronet Summit, Acuity Lakefront, Route 216/217
+    }
+
+    if ((version & Game::HGSS) == Game::None)
+    {
+        return false;
+    }
+    return encounter == Encounter::BugCatchingContest || location == 6 || location == 11 || location == 28 || location == 29
+        || location == 30 || location == 89;
+}
 
 bool EncounterArea4::feebasLocation(Game version) const
 {
@@ -54,6 +76,21 @@ bool EncounterArea4::greatMarsh(Game version) const
         }
     }
     return false;
+}
+
+bool EncounterArea4::longGrass(Game version) const
+{
+    if (encounter == Encounter::BugCatchingContest)
+    {
+        return true;
+    }
+
+    if ((version & Game::HGSS) != Game::None)
+    {
+        return location == 23 || location == 24; // National Park
+    }
+
+    return location == 156 || location == 163; // Route 210 (South), Route 214
 }
 
 bool EncounterArea4::safariZone(Game version) const

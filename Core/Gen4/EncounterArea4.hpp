@@ -43,6 +43,26 @@ public:
     }
 
     /**
+     * @brief Checks if the location is bike only
+     *
+     * @param version Game version
+     *
+     * @return true Location is bike only
+     * @return false Location isn't bike only
+     */
+    bool bikeOnlyLocation(Game version) const;
+
+    /**
+     * @brief Checks if the location can't have bike
+     *
+     * @param version Game version
+     *
+     * @return true Location is bike restricted
+     * @return false Location isn't bike restricted
+     */
+    bool bikeRestrictedLocation(Game version) const;
+
+    /**
      * @brief Calculates the level of a pokemon
      *
      * @tparam diff Whether min and max levels are different
@@ -165,6 +185,16 @@ public:
      * @return false Location is not Great Marsh
      */
     bool greatMarsh(Game version) const;
+
+    /**
+     * @brief Checks if the location can have long grass
+     *
+     * @param version Game version
+     *
+     * @return true Location can have long grass
+     * @return false Location can't have long grass
+     */
+    bool longGrass(Game version) const;
 
     /**
      * @brief Checks if the location is in the Safari Zone

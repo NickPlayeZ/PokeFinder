@@ -50,52 +50,6 @@
 
 static const QString settingPrefix = QStringLiteral("static5");
 
-template <typename Container>
-static bool hasUnchecked(const Container &values, size_t count)
-{
-    count = std::min(count, values.size());
-    auto end = values.begin() + count;
-    return std::ranges::find(values.begin(), end, false) != end;
-}
-
-template <typename Container>
-static bool hasUnchecked(const Container &values)
-{
-    return hasUnchecked(values, values.size());
-}
-
-static bool hasActiveGeneratorFilter(const Filter *filter, u8 encounterSlots)
-{
-    if (filter->getDisableFilters())
-    {
-        return false;
-    }
-
-    if (filter->getAbility() != 255 || filter->getGender() != 255 || filter->getShiny() != 255)
-    {
-        return true;
-    }
-
-    if (filter->getLevelMin() != 1 || filter->getLevelMax() != 100 || filter->getHeightMin() != 0 || filter->getHeightMax() != 255
-        || filter->getWeightMin() != 0 || filter->getWeightMax() != 255)
-    {
-        return true;
-    }
-
-    auto min = filter->getMinIVs();
-    auto max = filter->getMaxIVs();
-    for (size_t i = 0; i < min.size(); i++)
-    {
-        if (min[i] != 0 || max[i] != 31)
-        {
-            return true;
-        }
-    }
-
-    return hasUnchecked(filter->getNatures()) || hasUnchecked(filter->getHiddenPowers())
-        || hasUnchecked(filter->getEncounterSlots(), encounterSlots);
-}
-
 static bool supportsMovingTrigger(Encounter encounter, const Profile5 *profile)
 {
     return profile != nullptr && (profile->getVersion() & Game::Gen5) != Game::None
@@ -205,14 +159,6 @@ Wild5::Wild5(QWidget *parent) : QWidget(parent), ui(new Ui::Wild5), ivCache(null
     connect(ui->checkBoxSearcherSwarm, &QCheckBox::checkStateChanged, this, [this] { searcherEncounterIndexChanged(0); });
     connect(ui->filterGenerator, &Filter::showStatsChanged, generatorModel, &WildGeneratorModel5::setShowStats);
     connect(ui->filterSearcher, &Filter::showStatsChanged, searcherModel, &WildSearcherModel5::setShowStats);
-    connect(ui->checkBoxGeneratorMovingTrigger, &QCheckBox::toggled, this, [this](bool checked) {
-        generatorModel->setShowMovingTrigger(checked);
-        if (generatorModel->rowCount() > 0)
-        {
-            generate();
-        }
-    });
-    connect(ui->checkBoxSearcherMovingTrigger, &QCheckBox::toggled, searcherModel, &WildSearcherModel5::setShowMovingTrigger);
     connect(ui->filterSearcher, &Filter::ivsChanged, this, &Wild5::searcherFastSearchChanged);
     connect(ui->textBoxSearcherInitialIVAdvances, &TextBox::textChanged, this, &Wild5::searcherFastSearchChanged);
     connect(ui->textBoxSearcherMaxIVAdvances, &TextBox::textChanged, this, &Wild5::searcherFastSearchChanged);
@@ -313,11 +259,6 @@ void Wild5::generate()
 
     auto states = generator.generate(seed, ivAdvances, 0);
     generatorModel->setPhenomenon(area.getPhenomenonType() != PhenomenonType::None);
-    if (searchMovingTrigger
-        && hasActiveGeneratorFilter(ui->filterGenerator, encounterGenerator[ui->comboBoxGeneratorLocation->currentIndex()].getCount()))
-    {
-        std::erase_if(states, [](const auto &state) { return !state.isValid(); });
-    }
     generatorModel->addItems(states);
 }
 

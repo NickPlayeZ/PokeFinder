@@ -20,7 +20,6 @@
 #ifndef WILD4MODEL_HPP
 #define WILD4MODEL_HPP
 
-#include <Core/Enum/Method.hpp>
 #include <Core/Gen4/States/WildState4.hpp>
 #include <Model/Gen4/IRNGProvider4.hpp>
 #include <Model/TableModel.hpp>
@@ -98,8 +97,6 @@ public:
      */
     void setGame(Game verson);
 
-    void setMethod(Method method);
-
     /**
      * @brief Sets flag that controls whether the model displays step encounter information
      *
@@ -116,13 +113,20 @@ public slots:
     void setShowStats(bool flag);
 
 private:
-    QStringList header = { tr("Advances"), tr("Battle Advances"), tr("Call"),   tr("Chatot"), tr("Steps"), tr("Item"),
-                           tr("Slot"),     tr("Level"),           tr("PID"),    tr("Shiny"),  tr("Nature"),    tr("Ability"),
-                           tr("HP"),       tr("Atk"),             tr("Def"),    tr("SpA"),    tr("SpD"),       tr("Spe"),
-                           tr("Hidden"),   tr("Power"),           tr("Gender"), tr("Characteristic") };
+    QStringList header = { tr("Advances"), tr("Battle Advances"),
+                           tr("Call"),     tr("Chatot"),
+                           tr("Steps"),    tr("Item"),
+                           tr("Slot"),     tr("Level"),
+                           tr("PID"),      tr("Shiny"),
+                           tr("Nature"),   tr("Ability"),
+                           tr("HP"),       tr("Atk"),
+                           tr("Def"),      tr("SpA"),
+                           tr("SpD"),      tr("Spe"),
+                           tr("Hidden"),   tr("Power"),
+                           tr("Gender"),   tr("Characteristic") };
+    bool dppt;
     bool showStats;
     bool showStepEncounter;
-    Method method;
 
     /**
      * @brief Gets modified column index based on model method
@@ -179,11 +183,11 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
     /**
-     * @brief Sets current \p method of the model
+     * @brief Sets current \p version of the model
      *
-     * @param method Method
+     * @param version Game version
      */
-    void setMethod(Method method);
+    void setGame(Game verson);
 
 public slots:
     /**
@@ -208,14 +212,23 @@ public slots:
     void setShowStepMovement(bool flag);
 
 private:
-    QStringList header = { tr("Seed"),          tr("Delay"), tr("Hour"),   tr("Advances"), tr("Steps"),   tr("Movement"),
-                           tr("Step Modifier"), tr("Item"),  tr("Slot"),   tr("Level"),    tr("PID"),     tr("Shiny"),
-                           tr("Nature"),        tr("Ability"), tr("HP"),   tr("Atk"),      tr("Def"),     tr("SpA"),
-                           tr("SpD"),           tr("Spe"),   tr("Hidden"), tr("Power"),    tr("Gender"),  tr("Characteristic") };
+    QStringList header = { tr("Seed"),          tr("Delay"),   tr("Hour"),   tr("Advances"), tr("Steps"),  tr("Movement"),
+                           tr("Step Modifier"), tr("Item"),    tr("Slot"),   tr("Level"),    tr("PID"),    tr("Shiny"),
+                           tr("Nature"),        tr("Ability"), tr("HP"),     tr("Atk"),      tr("Def"),    tr("SpA"),
+                           tr("SpD"),           tr("Spe"),     tr("Hidden"), tr("Power"),    tr("Gender"), tr("Characteristic") };
+    bool dppt;
     bool showStats;
     bool showStepEncounter;
     bool showStepMovement;
-    Method method;
+
+    /**
+     * @brief Gets modified column index based on model method
+     *
+     * @param column Original column
+     *
+     * @return Modified column
+     */
+    int getColumn(int column) const;
 };
 
 #endif // WILD4MODEL_HPP

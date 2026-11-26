@@ -23,7 +23,6 @@
 #include <Core/Global.hpp>
 #include <QWidget>
 
-class CheckList;
 class EncounterArea4;
 class Profile4;
 class SortFilterProxyModel;
@@ -75,7 +74,6 @@ private:
     std::vector<EncounterArea4> encounterSearcher;
     WildGeneratorModel4 *generatorModel;
     WildSearcherModel4 *searcherModel;
-    CheckList *checkListSearcherStepOptions;
 
     /**
      * @brief Updates generator encounter tables
@@ -96,11 +94,6 @@ private:
      * @brief Updates the HGSS searcher step encounter option popup
      */
     void updateSearcherStepOptions();
-
-    /**
-     * @brief Updates the displayed HGSS searcher step option summary
-     */
-    void updateSearcherStepOptionsText();
 
     /**
      * @brief Gets the enabled HGSS searcher step options
