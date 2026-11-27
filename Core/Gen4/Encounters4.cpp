@@ -485,11 +485,11 @@ static std::vector<EncounterArea4> getDPPt(Game version, Encounter encounter, co
         auto getForm = [&data](u16 specie) -> u8 {
             if (specie == 422)
             {
-                return !data->form[0];
+                return !data->form[0] ? 0 : 1;
             }
             else if (specie == 423)
             {
-                return !data->form[1];
+                return !data->form[1] ? 0 : 1;
             }
             return 0;
         };
