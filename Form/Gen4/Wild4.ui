@@ -937,16 +937,6 @@
               <string>Mysterious Transmission</string>
              </property>
             </item>
-            <item>
-             <property name="text">
-              <string>Pokémon March</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Pokémon Lullaby</string>
-             </property>
-            </item>
            </widget>
           </item>
           <item row="8" column="0">

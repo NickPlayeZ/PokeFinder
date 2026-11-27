@@ -84,8 +84,6 @@ Wild4::Wild4(QWidget *parent) : QWidget(parent), ui(new Ui::Wild4)
     generatorModel = new WildGeneratorModel4(ui->tableViewGenerator);
     searcherModel = new WildSearcherModel4(ui->tableViewSearcher);
     proxyModel = new SortFilterProxyModel(ui->tableViewSearcher, searcherModel);
-    ui->comboBoxSearcherRadio->removeItem(3);
-    ui->comboBoxSearcherRadio->removeItem(3);
 
     ui->checkBoxGeneratorStepEncounter->setVisible(false);
     ui->checkBoxGeneratorWhiteFlute->setVisible(false);
