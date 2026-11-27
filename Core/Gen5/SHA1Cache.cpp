@@ -22,6 +22,8 @@
 #include <Core/Enum/Game.hpp>
 #include <Core/Gen5/Keypresses.hpp>
 #include <Core/Util/DateTime.hpp>
+#include <bitset>
+#include <span>
 
 constexpr u32 DATA_OFFSET = 42;
 
@@ -67,7 +69,13 @@ fph::MetaFphMap<u64, u64> SHA1Cache::getCache(u32 initialAdvance, u32 maxAdvance
                                               const Profile5 &profile)
 {
     fph::MetaFphMap<u64, u64> cache;
+
     auto keypresses = Keypresses::getKeypresses(profile);
+    std::bitset<4096> validButtons;
+    for (const auto &keypress : keypresses)
+    {
+        validButtons.set(toInt(keypress.button));
+    }
 
     u32 countEntralink;
     u32 countNormal;
@@ -94,20 +102,27 @@ fph::MetaFphMap<u64, u64> SHA1Cache::getCache(u32 initialAdvance, u32 maxAdvance
         count = countRoamer;
     }
 
-    for (u32 i = 0; i < count; i++)
-    {
-        SHA1Seed entry;
-        file.read(reinterpret_cast<char *>(&entry), sizeof(entry));
+    constexpr u32 CHUNK_SIZE = 16384;
+    std::vector<SHA1Seed> buffer(CHUNK_SIZE);
 
-        if (entry.key.date >= (start.getJD() - Date().getJD()) && entry.key.date <= (end.getJD() - Date().getJD())
-            && std::ranges::find_if(keypresses, [&entry](const Keypress keypress) { return entry.key.button == toInt(keypress.button); })
-                != keypresses.end())
+    u32 remaining = count;
+    while (remaining > 0)
+    {
+        u32 readSize = std::min(remaining, CHUNK_SIZE);
+        file.read(reinterpret_cast<char *>(buffer.data()), readSize * sizeof(SHA1Seed));
+        remaining -= readSize;
+
+        for (const auto &entry : std::span(buffer).first(readSize))
         {
-            for (u64 j = initialAdvance; j <= (initialAdvance + maxAdvance); j++)
+            if (entry.key.date >= (start.getJD() - Date().getJD()) && entry.key.date <= (end.getJD() - Date().getJD())
+                && validButtons.test(entry.key.button))
             {
-                if (ivCache.contains((j << 32) | (entry.seed >> 32)))
+                for (u64 j = initialAdvance; j <= (initialAdvance + maxAdvance); j++)
                 {
-                    cache.emplace(entry.key.key, entry.seed);
+                    if (ivCache.contains((j << 32) | (entry.seed >> 32)))
+                    {
+                        cache.emplace(entry.key.key, entry.seed);
+                    }
                 }
             }
         }
