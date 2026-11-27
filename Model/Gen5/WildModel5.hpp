@@ -118,6 +118,15 @@ private:
     bool phenomenon;
     bool showStats;
     bool showMovingTrigger;
+
+    /**
+     * @brief Gets modified column index based on model method
+     *
+     * @param column Original column
+     *
+     * @return Modified column
+     */
+    int getColumn(int column) const;
 };
 
 /**
@@ -187,6 +196,15 @@ private:
                            tr("Characteristic"), tr("Date/Time"), tr("Timer0"),     tr("Buttons") };
     bool showStats;
     bool showMovingTrigger;
+
+    /**
+     * @brief Gets modified column index based on model method
+     *
+     * @param column Original column
+     *
+     * @return Modified column
+     */
+    int getColumn(int column) const;
 };
 
 #endif // WILDMODEL5_HPP

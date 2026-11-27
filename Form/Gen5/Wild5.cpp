@@ -242,6 +242,7 @@ void Wild5::generate()
     }
 
     generatorModel->clearModel();
+    generatorModel->setShowMovingTrigger(ui->checkBoxGeneratorMovingTrigger->isChecked());
 
     u64 seed = ui->textBoxGeneratorSeed->getULong();
     u32 ivAdvances = ui->textBoxGeneratorIVAdvances->getUInt();
@@ -429,6 +430,7 @@ void Wild5::search()
     }
 
     searcherModel->clearModel();
+    searcherModel->setShowMovingTrigger(ui->checkBoxSearcherMovingTrigger->isChecked());
 
     ui->pushButtonSearch->setEnabled(false);
     ui->pushButtonCancel->setEnabled(true);

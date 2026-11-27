@@ -742,13 +742,8 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
                         level = area.EncounterArea::calculateLevel(encounterSlot, levelRand);
                     }
 
+                    u8 form = slot.getSpecie() == 201 ? unownForm : slot.getForm();
                     u16 item = getItem(itemRand, lead, info);
-
-                    u8 form = 0;
-                    if (slot.getSpecie() == 201)
-                    {
-                        form = unownForm;
-                    }
 
                     u32 pid = nature + buffer;
                     WildSearcherState4 state(rng.next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
@@ -1027,13 +1022,9 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodJ(u8 hp, u8 atk, u8 d
 
                         const Slot &slot = area.getPokemon(encounterSlot[i]);
                         const PersonalInfo *info = slot.getInfo();
-                        u16 item = getItem(itemRand, lead, info);
 
-                        u8 form = 0;
-                        if (slot.getSpecie() == 201)
-                        {
-                            form = unownForm;
-                        }
+                        u8 form = slot.getSpecie() == 201 ? unownForm : slot.getForm();
+                        u16 item = getItem(itemRand, lead, info);
 
                         WildSearcherState4 state(test[i].next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
                                                  Utilities::getShiny<true>(pid, tsv), encounterSlot[i], item, slot.getSpecie(), form, info);
@@ -1070,20 +1061,20 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
         PokeRNG forward(origin, 1);
         u8 itemRand = forward.nextUShort(100);
 
-        u8 form = 0;
+        u8 unknownForm = 0;
         if (area.getLocation() == 10)
         {
-            form = 26 + forward.nextUShort(2);
+            unknownForm = 26 + forward.nextUShort(2);
         }
         else if (area.getLocation() == 11 && !unlockedUnown.empty())
         {
             if (unownRadio && !undiscoveredUnown.empty() && forward.nextUShort(100) < 50)
             {
-                form = undiscoveredUnown[forward.nextUShort(undiscoveredUnown.size())];
+                unknownForm = undiscoveredUnown[forward.nextUShort(undiscoveredUnown.size())];
             }
             else
             {
-                form = unlockedUnown[forward.nextUShort(unlockedUnown.size())];
+                unknownForm = unlockedUnown[forward.nextUShort(unlockedUnown.size())];
             }
         }
 
@@ -1146,12 +1137,12 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
                         level = area.EncounterArea::calculateLevel(encounterSlot, levelRand);
                     }
 
+                    u8 form = slot.getSpecie() == 201 ? unknownForm : slot.getForm();
                     u16 item = getItem(itemRand, lead, info);
 
                     u32 pid = nature + buffer;
                     WildSearcherState4 state(rng.next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
-                                             Utilities::getShiny<true>(pid, tsv), encounterSlot, item, slot.getSpecie(),
-                                             slot.getSpecie() == 201 ? form : 0, info);
+                                             Utilities::getShiny<true>(pid, tsv), encounterSlot, item, slot.getSpecie(), form, info);
                     if (filter.compare(static_cast<const WildSearcherState &>(state)))
                     {
                         states.emplace_back(state);
@@ -1313,11 +1304,12 @@ std::vector<WildSearcherState4> WildSearcher4::searchMethodK(u8 hp, u8 atk, u8 d
 
                         const Slot &slot = area.getPokemon(encounterSlot[i]);
                         const PersonalInfo *info = slot.getInfo();
+
+                        u8 form = slot.getSpecie() == 201 ? unknownForm : slot.getForm();
                         u16 item = getItem(itemRand, lead, info);
 
                         WildSearcherState4 state(test[i].next(), pid, ivs, pid & 1, Utilities::getGender(pid, info), level, nature,
-                                                 Utilities::getShiny<true>(pid, tsv), encounterSlot[i], item, slot.getSpecie(),
-                                                 slot.getSpecie() == 201 ? form : 0, info);
+                                                 Utilities::getShiny<true>(pid, tsv), encounterSlot[i], item, slot.getSpecie(), form, info);
                         if (filter.compare(static_cast<const WildSearcherState &>(state)))
                         {
                             states.emplace_back(state);

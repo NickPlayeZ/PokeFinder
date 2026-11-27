@@ -22,8 +22,7 @@
 #include <Core/Util/Translator.hpp>
 #include <Core/Util/Utilities.hpp>
 
-EggGeneratorModel4::EggGeneratorModel4(QObject *parent) :
-    TableModel(parent), dppt(true), showInheritance(false), showStats(false)
+EggGeneratorModel4::EggGeneratorModel4(QObject *parent) : TableModel(parent), dppt(true), showInheritance(false), showStats(false)
 {
 }
 
@@ -107,20 +106,27 @@ QVariant EggGeneratorModel4::headerData(int section, Qt::Orientation orientation
 
 void EggGeneratorModel4::setVersion(Game version)
 {
-    dppt = (version & Game::DPPt) != Game::None;
-    emit headerDataChanged(Qt::Horizontal, 0, columnCount());
+    bool flag = (version & Game::DPPt) != Game::None;
+    if (dppt != flag)
+    {
+        beginResetModel();
+        dppt = (version & Game::DPPt) != Game::None;
+        endResetModel();
+    }
 }
 
 void EggGeneratorModel4::setShowInheritance(bool flag)
 {
     showInheritance = flag;
-    emit dataChanged(index(0, 7), index(rowCount() - 1, 12), { Qt::DisplayRole });
+    int hp = dppt ? 7 : 8;
+    emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 
 void EggGeneratorModel4::setShowStats(bool flag)
 {
     showStats = flag;
-    emit dataChanged(index(0, 7), index(rowCount() - 1, 12), { Qt::DisplayRole });
+    int hp = dppt ? 7 : 8;
+    emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 
 int EggGeneratorModel4::getColumn(int column) const

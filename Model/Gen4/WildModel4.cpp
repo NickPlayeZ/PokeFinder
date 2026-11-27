@@ -131,23 +131,30 @@ QVariant WildGeneratorModel4::headerData(int section, Qt::Orientation orientatio
 
 void WildGeneratorModel4::setGame(Game version)
 {
-    beginResetModel();
-    dppt = (version & Game::DPPt) != Game::None;
-    endResetModel();
-}
-
-void WildGeneratorModel4::setShowStepEncounter(bool flag)
-{
-    beginResetModel();
-    showStepEncounter = flag;
-    endResetModel();
+    bool flag = (version & Game::DPPt) != Game::None;
+    if (dppt != flag)
+    {
+        beginResetModel();
+        dppt = flag;
+        endResetModel();
+    }
 }
 
 void WildGeneratorModel4::setShowStats(bool flag)
 {
     showStats = flag;
-    int hp = getColumn(11); // Base column of HP without any extra data being shown
+    int hp = dppt ? 10 : 11;
     emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
+}
+
+void WildGeneratorModel4::setShowStepEncounter(bool flag)
+{
+    if (showStepEncounter != flag)
+    {
+        beginResetModel();
+        showStepEncounter = flag;
+        endResetModel();
+    }
 }
 
 int WildGeneratorModel4::getColumn(int column) const

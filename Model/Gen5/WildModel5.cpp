@@ -23,7 +23,8 @@
 #include <QColor>
 #include <QFont>
 
-WildGeneratorModel5::WildGeneratorModel5(QObject *parent) : TableModel(parent), phenomenon(false), showStats(false), showMovingTrigger(false)
+WildGeneratorModel5::WildGeneratorModel5(QObject *parent) :
+    TableModel(parent), phenomenon(false), showStats(false), showMovingTrigger(false)
 {
 }
 
@@ -35,32 +36,26 @@ int WildGeneratorModel5::columnCount(const QModelIndex &parent) const
 QVariant WildGeneratorModel5::data(const QModelIndex &index, int role) const
 {
     const auto &state = model[index.row()];
-    if (!state.isValid())
+    if (role == Qt::FontRole)
     {
-        if (role == Qt::FontRole)
+        if (!state.isValid())
         {
             QFont font;
             font.setItalic(true);
             return font;
         }
-        else if (role == Qt::ForegroundRole)
+    }
+    else if (role == Qt::ForegroundRole)
+    {
+        if (!state.isValid())
         {
             return QColor(128, 128, 128);
         }
     }
-
-    if (role == Qt::DisplayRole)
+    else if (role == Qt::DisplayRole)
     {
-        int column = index.column();
-        if (!phenomenon && column >= 3)
-        {
-            column++;
-        }
-        if (!showMovingTrigger && column >= 4)
-        {
-            column++;
-        }
-
+        int column = getColumn(index.column());
+        // This would normally hide the Phenomenon data, but since valid can only be false during normal fishing this is fine
         if (!state.isValid() && column > 4)
         {
             return "-";
@@ -135,15 +130,7 @@ QVariant WildGeneratorModel5::headerData(int section, Qt::Orientation orientatio
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
-        if (!phenomenon && section >= 3)
-        {
-            section++;
-        }
-        if (!showMovingTrigger && section >= 4)
-        {
-            section++;
-        }
-
+        section = getColumn(section);
         return header[section];
     }
     return QVariant();
@@ -151,22 +138,49 @@ QVariant WildGeneratorModel5::headerData(int section, Qt::Orientation orientatio
 
 void WildGeneratorModel5::setPhenomenon(bool flag)
 {
-    phenomenon = flag;
-    emit headerDataChanged(Qt::Horizontal, 0, columnCount());
+    if (phenomenon != flag)
+    {
+        beginResetModel();
+        phenomenon = flag;
+        endResetModel();
+    }
+}
+
+void WildGeneratorModel5::setShowMovingTrigger(bool flag)
+{
+    if (showMovingTrigger != flag)
+    {
+        beginResetModel();
+        showMovingTrigger = flag;
+        endResetModel();
+    }
 }
 
 void WildGeneratorModel5::setShowStats(bool flag)
 {
     showStats = flag;
-    int offset = (phenomenon ? 0 : 1) + (showMovingTrigger ? 0 : 1);
-    emit dataChanged(index(0, 12 - offset), index(rowCount() - 1, 17 - offset), { Qt::DisplayRole });
+    int hp = 12 - (phenomenon ? 0 : 1) - (showMovingTrigger ? 0 : 1);
+    emit dataChanged(index(0, hp), index(rowCount() - 1, hp + 5), { Qt::DisplayRole });
 }
 
-void WildGeneratorModel5::setShowMovingTrigger(bool flag)
+int WildGeneratorModel5::getColumn(int column) const
 {
-    showMovingTrigger = flag;
-    emit headerDataChanged(Qt::Horizontal, 0, columnCount());
-    emit layoutChanged();
+    if (phenomenon)
+    {
+        return column > 3 ? column + 1 : column;
+    }
+    else if (showMovingTrigger)
+    {
+        return column > 2 ? column + 1 : column;
+    }
+    else if (phenomenon && showMovingTrigger)
+    {
+        return column;
+    }
+    else
+    {
+        return column > 2 ? column + 2 : column;
+    }
 }
 
 WildSearcherModel5::WildSearcherModel5(QObject *parent) : TableModel(parent), showStats(false), showMovingTrigger(false)
@@ -282,7 +296,22 @@ void WildSearcherModel5::setShowStats(bool flag)
 
 void WildSearcherModel5::setShowMovingTrigger(bool flag)
 {
-    showMovingTrigger = flag;
-    emit headerDataChanged(Qt::Horizontal, 0, columnCount());
-    emit layoutChanged();
+    if (showMovingTrigger != flag)
+    {
+        beginResetModel();
+        showMovingTrigger = flag;
+        endResetModel();
+    }
+}
+
+int WildSearcherModel5::getColumn(int column) const
+{
+    if (showMovingTrigger)
+    {
+        return column;
+    }
+    else
+    {
+        return column > 2 ? column + 1 : column;
+    }
 }
